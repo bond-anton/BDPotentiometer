@@ -64,6 +64,20 @@ class MCP4xxx(SPIDevice):
 
     def __init__(self, **spi_args) -> None:
         super(MCP4xxx, self).__init__(shared=True, **spi_args)
+        # self.channels: tuple[int]
+        # self.__values: list[int]
+
+    @property
+    def value(self) -> tuple[int]:
+        return tuple(self._values)
+
+    @value.setter
+    def value(self, v: list[int] | tuple[int]) -> None:
+        for i in range(len(self.channels)):
+            ch = self.channels[i]
+            value = self._coerce_value(v[i])
+            data = self._set_value(ch, value)
+            self._values[ch] = data
 
     def _set_value(self, ch, value):
         data = self._spi.transfer([_w_cmd | _ch[ch], value])

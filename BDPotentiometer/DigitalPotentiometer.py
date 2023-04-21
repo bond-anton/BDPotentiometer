@@ -11,15 +11,15 @@ class DigitalRheostatDevice(object):
         # terminal A is floating, terminals B and W are operational
         self.channels: tuple[int] = tuple([i for i in range(channels)])
         self.default_value: int | None = default_value
-        self.__values: list[int]
+        self._values: list[int]
         if self.default_value is None:
-            self.__values = [0 for _ in self.channels]
+            self._values = [0 for _ in self.channels]
         else:
-            self.__values = [self.default_value for _ in self.channels]
+            self._values = [self.default_value for _ in self.channels]
         self.min_value: int = 0
         self.max_value: int = max_value
         for i in range(len(self.channels)):
-            self.__values[i] = self._read_value(self.channels[i])
+            self._values[i] = self._read_value(self.channels[i])
         self.r_ab: float = r_ab
         self.r_w: float = r_w
 
@@ -27,7 +27,7 @@ class DigitalRheostatDevice(object):
         if ch not in self.channels:
             raise ValueError('Channel must be in %s' % self.channels)
 
-    def __coerce_value(self, value: int) -> int:
+    def _coerce_value(self, value: int) -> int:
         if value < 0:
             return 0
         elif value > self.max_value:
@@ -44,36 +44,36 @@ class DigitalRheostatDevice(object):
     def _set_value(self, ch: int, value: int) -> int:
         # actually w do not need to repeat the check for ch and value again
         self.__check_channel(ch)
-        value = self.__coerce_value(value)
+        value = self._coerce_value(value)
         return value
 
     def _read_value(self, ch: int) -> int:
-        return self.__values[ch]
+        return self._values[ch]
 
     def set(self, ch: int = 0, value: int = 0) -> int:
         self.__check_channel(ch)
-        value = self.__coerce_value(value)
+        value = self._coerce_value(value)
         data = self._set_value(ch, value)
-        self.__values[ch] = data
+        self._values[ch] = data
         return data
 
     def read(self, ch: int = 0) -> int:
         self.__check_channel(ch)
         data = self._read_value(ch)
-        self.__values[ch] = data
+        self._values[ch] = data
         return data
 
     @property
     def value(self) -> tuple[int]:
-        return tuple(self.__values)
+        return tuple(self._values)
 
     @value.setter
     def value(self, v: list[int] | tuple[int]) -> None:
         for i in range(len(self.channels)):
             ch = self.channels[i]
-            value = self.__coerce_value(v[i])
+            value = self._coerce_value(v[i])
             data = self._set_value(ch, value)
-            self.__values[ch] = data
+            self._values[ch] = data
 
     def set_r(self, ch: int = 0, r: float = 0) -> int:
         r = self.__coerce_r(r)
@@ -84,7 +84,7 @@ class DigitalRheostatDevice(object):
     @property
     def r_wb(self) -> tuple[float]:
         result: list[float] = []
-        for v in self.__values:
+        for v in self._values:
             r = self.r_ab * v / self.max_value + self.r_w
             result.append(r)
         return tuple(result)
@@ -126,7 +126,7 @@ class DigitalPotentiometerDevice(DigitalRheostatDevice):
         return voltage
 
     def __value_to_voltage(self, ch: int = 0) -> float:
-        value = self.__values[ch]
+        value = self._values[ch]
         r_lim = self.r_lim[ch]
         r_l = self.r_l[ch] + self.r_w
         div = r_lim / r_l * value

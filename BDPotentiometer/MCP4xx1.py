@@ -2,7 +2,7 @@ from BDPotentiometer.DigitalPotentiometer import DigitalPotentiometerDevice
 from BDPotentiometer.MCP4xxx import MCP4xxx, _coerce_r_ab
 
 
-class MCP4xx1(DigitalPotentiometerDevice, MCP4xxx):
+class MCP4xx1(MCP4xxx, DigitalPotentiometerDevice):
 
     def __init__(self, max_value: int = 128, default_value: int | None = 64, channels: int = 1, r_ab: float = 10e3,
                  r_lim: float | int | list[float] | tuple[float] = 0,
