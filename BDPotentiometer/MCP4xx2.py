@@ -11,6 +11,10 @@ class MCP4xx2(MCP4xxx, DigitalRheostatDevice):
         DigitalRheostatDevice.__init__(self, max_value=max_value, default_value=default_value, channels=channels,
                                        r_ab=_coerce_r_ab(r_ab), r_w=75)
 
+    @DigitalRheostatDevice.r_w.setter
+    def r_w(self, r_w: float) -> None:
+        pass
+
 
 class MCP41x2(MCP4xx2):
 

@@ -69,7 +69,7 @@ class DigitalRheostatDevice(object):
             pass
 
     @channels_num.setter
-    def channels_num(self, channels_num):
+    def channels_num(self, channels_num: int) -> None:
         self.__channels_num = check_positive(check_integer(channels_num))
         self.__channels: tuple[int] = tuple([i for i in range(self.__channels_num)])
         self._init_channels()
