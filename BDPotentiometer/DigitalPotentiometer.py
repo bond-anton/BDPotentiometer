@@ -1,4 +1,5 @@
 import math as m
+from typing import Union
 
 from .__helpers import check_integer, check_not_negative, check_positive, coerce, build_tuple, adjust_tuple
 
@@ -8,10 +9,10 @@ class DigitalRheostatDevice(object):
     Represents a digital potentiometer device connected to SPI (serial interface).
     """
 
-    def __init__(self, max_value: int = 128, default_value: int | None = 64, channels: int = 1,
+    def __init__(self, max_value: int = 128, default_value: Union[int, None] = 64, channels: int = 1,
                  r_ab: float = 10e3, r_w: float = 75) -> None:
         # terminal A is floating, terminals B and W are operational
-        self.__default_value: int | None = None
+        self.__default_value: Union[int, None] = None
         self.__min_value: int = 0
         self.__max_value: int = 1
         self.max_value = max_value
@@ -43,11 +44,11 @@ class DigitalRheostatDevice(object):
             pass
 
     @property
-    def default_value(self) -> int | None:
+    def default_value(self) -> Union[int, None]:
         return self.__default_value
 
     @default_value.setter
-    def default_value(self, default_value: int | None) -> None:
+    def default_value(self, default_value: Union[int, None]) -> None:
         if default_value is None:
             self.__default_value = None
         else:
@@ -131,7 +132,7 @@ class DigitalRheostatDevice(object):
         return tuple(self._values)
 
     @value.setter
-    def value(self, v: list[int] | tuple[int]) -> None:
+    def value(self, v: Union[list[int], tuple[int]]) -> None:
         if not isinstance(v, (list, tuple)):
             raise ValueError('A tuple or list of values expected')
         elif len(v) != self.channels_num:
@@ -157,7 +158,7 @@ class DigitalRheostatDevice(object):
         return tuple(result)
 
     @r_wb.setter
-    def r_wb(self, r: list[float] | tuple[float]) -> None:
+    def r_wb(self, r: Union[list[float], tuple[float]]) -> None:
         if not isinstance(r, (list, tuple)):
             raise ValueError('A tuple or list of values expected')
         elif len(r) != self.channels_num:
@@ -171,10 +172,10 @@ class DigitalPotentiometerDevice(DigitalRheostatDevice):
     Represents a digital potentiometer device connected to SPI (serial interface).
     """
 
-    def __init__(self, max_value: int = 128, default_value: int | None = 64, channels: int = 1,
+    def __init__(self, max_value: int = 128, default_value: Union[int, None] = 64, channels: int = 1,
                  r_ab: float = 10e3, r_w: float = 75,
-                 r_lim: float | int | list[float] | tuple[float] = 0,
-                 r_l: float | int | list[float] | tuple[float] = 1e6,
+                 r_lim: Union[float, int, list[float], tuple[float]] = 0,
+                 r_l: Union[float, int, list[float], tuple[float]] = 1e6,
                  max_voltage: float = 5.0) -> None:
         # connect A to max_voltage and B to ground
         self.__r_lim: tuple[float] = (0.0,)
@@ -190,7 +191,7 @@ class DigitalPotentiometerDevice(DigitalRheostatDevice):
         return self.__r_lim
 
     @r_lim.setter
-    def r_lim(self, r_lim: float | tuple[float] | list[float]) -> None:
+    def r_lim(self, r_lim: Union[float, tuple[float], list[float]]) -> None:
         self.__r_lim = build_tuple(r_lim, self.channels_num, check_not_negative)
 
     @property
@@ -198,7 +199,7 @@ class DigitalPotentiometerDevice(DigitalRheostatDevice):
         return self.__r_l
 
     @r_l.setter
-    def r_l(self, r_l: float | tuple[float] | list[float]) -> None:
+    def r_l(self, r_l: Union[float, tuple[float], list[float]]) -> None:
         self.__r_l = build_tuple(r_l, self.channels_num, check_not_negative)
 
     def _init_channels(self) -> None:
@@ -246,7 +247,7 @@ class DigitalPotentiometerDevice(DigitalRheostatDevice):
         return tuple(result)
 
     @voltage.setter
-    def voltage(self, voltage: list[float] | tuple[float]) -> None:
+    def voltage(self, voltage: Union[list[float], tuple[float]]) -> None:
         for i in range(self.channels_num):
             self.set_voltage(ch=self.channels[i], voltage=voltage[i])
 

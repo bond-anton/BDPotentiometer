@@ -1,4 +1,6 @@
-def check_integer(num: float | int) -> int:
+from typing import Union
+
+def check_integer(num: Union[float, int]) -> int:
     if isinstance(num, float):
         if not num.is_integer():
             raise ValueError('Argument should be positive integer number')
@@ -7,7 +9,7 @@ def check_integer(num: float | int) -> int:
     return int(num)
 
 
-def check_not_negative(num: float | int) -> float | int:
+def check_not_negative(num: Union[float, int]) -> Union[float, int]:
     if not isinstance(num, (float, int)):
         raise ValueError('Argument should be not negative number')
     if num < 0:
@@ -15,7 +17,7 @@ def check_not_negative(num: float | int) -> float | int:
     return num
 
 
-def check_positive(num: float | int) -> float | int:
+def check_positive(num: Union[float, int]) -> Union[float, int]:
     if not isinstance(num, (float, int)):
         raise ValueError('Argument should be a positive number')
     if num <= 0:
@@ -23,7 +25,7 @@ def check_positive(num: float | int) -> float | int:
     return num
 
 
-def coerce(value: float | int, min_value: float | int, max_value: float | int) -> float | int:
+def coerce(value: Union[float, int], min_value: Union[float, int], max_value: Union[float, int]) -> Union[float, int]:
     if not (isinstance(value, (float, int))
             and isinstance(min_value, (float, int))
             and isinstance(max_value, (float, int))):
@@ -61,7 +63,7 @@ def build_tuple(value, num, func=None):
         raise ValueError('A number or a tuple or list of numbers of of length {0} expected'.format(num))
 
 
-def adjust_tuple(value: tuple[float] | list[float], num: int, default_value: float) -> tuple[float]:
+def adjust_tuple(value: Union[tuple[float], list[float]], num: int, default_value: float) -> tuple[float]:
     if not isinstance(value, (tuple, list)):
         raise ValueError('Argument should be a list or a tuple of numbers')
     if not isinstance(num, (float, int)):

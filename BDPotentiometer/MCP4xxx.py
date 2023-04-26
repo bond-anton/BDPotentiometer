@@ -1,4 +1,5 @@
 from gpiozero import SPIDevice
+from typing import Union
 
 
 def _coerce_r_ab(r_ab: float) -> float:
@@ -72,7 +73,7 @@ class MCP4xxx(SPIDevice):
         return tuple(self._values)
 
     @value.setter
-    def value(self, v: list[int] | tuple[int]) -> None:
+    def value(self, v: Union[list[int], tuple[int]]) -> None:
         for i in range(len(self.channels)):
             ch = self.channels[i]
             value = self._coerce_value(v[i])
