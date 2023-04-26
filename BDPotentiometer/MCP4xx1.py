@@ -10,10 +10,10 @@ class MCP4xx1(MCP4xxx, DigitalPotentiometerDevice):
                  r_lim: Union[float, int, list[float], tuple[float]] = 0,
                  r_l: Union[float, int, list[float], tuple[float]] = 1e6,
                  max_voltage: float = 5.0, **spi_args) -> None:
+        MCP4xxx.__init__(self, **spi_args)
         DigitalPotentiometerDevice.__init__(self, max_value=max_value, default_value=default_value, channels=channels,
                                             r_ab=_coerce_r_ab(r_ab), r_w=75, r_lim=r_lim, r_l=r_l,
                                             max_voltage=max_voltage)
-        MCP4xxx.__init__(self, **spi_args)
 
 
 class MCP41x1(MCP4xx1):

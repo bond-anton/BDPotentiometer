@@ -7,9 +7,9 @@ class MCP4xx2(MCP4xxx, DigitalRheostatDevice):
 
     def __init__(self, max_value: int = 128, default_value: Union[int, None] = 64, channels: int = 1,
                  r_ab: float = 10e3, **spi_args) -> None:
+        MCP4xxx.__init__(**spi_args)
         DigitalRheostatDevice.__init__(self, max_value=max_value, default_value=default_value, channels=channels,
                                        r_ab=_coerce_r_ab(r_ab), r_w=75)
-        MCP4xxx.__init__(**spi_args)
 
 
 class MCP41x2(MCP4xx2):
