@@ -15,8 +15,8 @@ class DigitalRheostatDevice(object):
         self.__default_value: Union[int, None] = None
         self.__min_value: int = 0
         self.__max_value: int = 1
-        self.max_value = max_value
-        self.default_value = default_value
+        self.__max_value_setter(max_value)
+        self.__default_value_setter(default_value)
         self.__channels_num: int = 1
         self.__channels: tuple[int] = (0,)
         self._values: list[int] = [0]
@@ -33,26 +33,32 @@ class DigitalRheostatDevice(object):
     def max_value(self) -> int:
         return self.__max_value
 
-    @max_value.setter
-    def max_value(self, max_value: int) -> None:
+    def __max_value_setter(self, max_value: int) -> None:
         self.__max_value = check_positive(check_integer(max_value))
-        self.default_value = self.default_value
+        self.__default_value_setter(self.default_value)
         try:
             for i in range(self.channels_num):
                 self.set(ch=i, value=self._values[i])
         except AttributeError:
             pass
 
+    @max_value.setter
+    def max_value(self, max_value: int) -> None:
+        self.__max_value_setter(max_value)
+
     @property
     def default_value(self) -> Union[int, None]:
         return self.__default_value
 
-    @default_value.setter
-    def default_value(self, default_value: Union[int, None]) -> None:
+    def __default_value_setter(self, default_value: Union[int, None]) -> None:
         if default_value is None:
             self.__default_value = None
         else:
             self.__default_value = self._coerce_value(check_not_negative(check_integer(default_value)))
+
+    @default_value.setter
+    def default_value(self, default_value: Union[int, None]) -> None:
+        self.__default_value_setter(default_value)
 
     @property
     def channels_num(self) -> int:
@@ -68,11 +74,14 @@ class DigitalRheostatDevice(object):
         except AttributeError:
             pass
 
-    @channels_num.setter
-    def channels_num(self, channels_num: int) -> None:
+    def __channels_num_setter(self, channels_num: int) -> None:
         self.__channels_num = check_positive(check_integer(channels_num))
         self.__channels: tuple[int] = tuple([i for i in range(self.__channels_num)])
         self._init_channels()
+
+    @channels_num.setter
+    def channels_num(self, channels_num: int) -> None:
+        self.__channels_num_setter(channels_num)
 
     @property
     def channels(self) -> tuple[int]:

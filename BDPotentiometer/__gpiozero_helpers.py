@@ -1,4 +1,4 @@
-def fix_gpiozero_dual_cs_spi():
+def fix_gpiozero_dual_cs_spi() -> None:
     from gpiozero import Device
     from gpiozero.pins.local import (
         LocalPiHardwareSPI,
@@ -29,4 +29,5 @@ def fix_gpiozero_dual_cs_spi():
     Device.pin_factory = FixedRPiGPIOFactory()
 
 
-fix_gpiozero_dual_cs_spi()
+def fix_gpiozero_dual_cs_spi_dummy() -> None:
+    pass
