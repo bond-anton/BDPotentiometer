@@ -16,7 +16,7 @@ class MCP41x2(MCP4xx2):
 
     def __init__(self, max_value: int = 128, default_value: Union[int, None] = 64,
                  r_ab: float = 10e3, **spi_args) -> None:
-        super(MCP41x2, self).__init__(self, max_value=max_value, default_value=default_value, channels=1,
+        super(MCP41x2, self).__init__(max_value=max_value, default_value=default_value, channels=1,
                                       r_ab=r_ab, **spi_args)
 
 
