@@ -65,8 +65,6 @@ class MCP4xxx(SPIDevice):
 
     def __init__(self, **spi_args) -> None:
         super(MCP4xxx, self).__init__(shared=True, **spi_args)
-        # self.channels: tuple[int]
-        # self.__values: list[int]
 
     @property
     def value(self) -> tuple[int]:
