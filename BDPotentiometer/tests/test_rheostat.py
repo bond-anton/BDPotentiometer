@@ -47,12 +47,7 @@ class TestRheostat(unittest.TestCase):
         with self.assertRaises(ValueError):
             _ = DigitalRheostatDevice(max_value=128, default_value=64, channels=2, r_ab=-10e3, r_w=75)
         with self.assertRaises(ValueError):
-            _ = DigitalRheostatDevice(max_value=128, default_value=64, channels=2, r_ab=0.0, r_w=75)
-        with self.assertRaises(ValueError):
             _ = DigitalRheostatDevice(max_value=128, default_value=64, channels=2, r_ab=10.0e3, r_w=-75)
-        with self.assertRaises(ValueError):
-            _ = DigitalRheostatDevice(max_value=128, default_value=64, channels=2, r_ab=10.0e3, r_w=0.0)
-
 
     def test_min_value(self):
         rheo = DigitalRheostatDevice(max_value=128, default_value=64, channels=1, r_ab=10e3, r_w=75)

@@ -1,5 +1,5 @@
 from typing import Union
-from BDPotentiometer.DigitalPotentiometer import DigitalPotentiometerDevice
+from BDPotentiometer.DigitalPotentiometer import DigitalPotentiometerDevice, check_not_negative
 from BDPotentiometer.MCP4xxx import MCP4xxx, _coerce_r_ab
 
 
@@ -14,6 +14,22 @@ class MCP4xx1(MCP4xxx, DigitalPotentiometerDevice):
         DigitalPotentiometerDevice.__init__(self, max_value=max_value, default_value=default_value, channels=channels,
                                             r_ab=_coerce_r_ab(r_ab), r_w=75, r_lim=r_lim, r_l=r_l,
                                             max_voltage=max_voltage)
+
+    @DigitalPotentiometerDevice.max_value.setter
+    def max_value(self, max_value: int) -> None:
+        pass
+
+    @DigitalPotentiometerDevice.default_value.setter
+    def default_value(self, default_value: Union[int, None]) -> None:
+        pass
+
+    @DigitalPotentiometerDevice.channels_num.setter
+    def channels_num(self, channels_num: int) -> None:
+        pass
+
+    @DigitalPotentiometerDevice.r_ab.setter
+    def r_ab(self, r_ab: float) -> None:
+        DigitalPotentiometerDevice.r_ab.fset(self, _coerce_r_ab(check_not_negative(r_ab)))
 
     @DigitalPotentiometerDevice.r_w.setter
     def r_w(self, r_w: float) -> None:

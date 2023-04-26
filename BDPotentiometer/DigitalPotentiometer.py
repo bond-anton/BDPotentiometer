@@ -20,10 +20,10 @@ class DigitalRheostatDevice(object):
         self.__channels_num: int = 1
         self.__channels: tuple[int] = (0,)
         self._values: list[int] = [0]
-        self.channels_num = channels
+        self.__channels_num_setter(channels)
 
-        self.__r_ab: float = float(check_positive(r_ab))
-        self.__r_w: float = float(check_positive(r_w))
+        self.__r_ab: float = float(check_not_negative(r_ab))
+        self.__r_w: float = float(check_not_negative(r_w))
 
     @property
     def min_value(self) -> int:
