@@ -63,7 +63,10 @@ class DigitalRheostatDevice(object):
             self._values = [0 for _ in self.channels]
         else:
             self._values = [self.default_value for _ in self.channels]
-        self._read_all()
+        try:
+            self._read_all()
+        except AttributeError:
+            pass
 
     @channels_num.setter
     def channels_num(self, channels_num):
