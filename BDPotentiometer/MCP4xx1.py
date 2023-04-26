@@ -30,18 +30,6 @@ class MCP41x1(MCP4xx1):
                                       r_ab=_coerce_r_ab(r_ab), r_lim=r_lim, r_l=r_l,
                                       max_voltage=max_voltage, **spi_args)
 
-    @MCP4xx1.channels_num.setter
-    def channels_num(self, channels_num: int) -> None:
-        pass
-
-    @MCP4xx1.max_value.setter
-    def max_value(self, max_value: int) -> None:
-        pass
-
-    @MCP4xx1.default_value.setter
-    def default_value(self, default_value: Union[int, None]) -> None:
-        pass
-
 
 class MCP4131(MCP41x1):
 
@@ -52,14 +40,6 @@ class MCP4131(MCP41x1):
         super(MCP4131, self).__init__(max_value=128, default_value=64,
                                       r_ab=_coerce_r_ab(r_ab), r_lim=r_lim, r_l=r_l,
                                       max_voltage=max_voltage, **spi_args)
-
-    @MCP41x1.max_value.setter
-    def max_value(self, max_value: int) -> None:
-        pass
-
-    @MCP41x1.default_value.setter
-    def default_value(self, default_value: Union[int, None]) -> None:
-        pass
 
 
 class MCP4141(MCP41x1):
@@ -72,14 +52,6 @@ class MCP4141(MCP41x1):
                                       r_ab=_coerce_r_ab(r_ab), r_lim=r_lim, r_l=r_l,
                                       max_voltage=max_voltage, **spi_args)
 
-    @MCP41x1.max_value.setter
-    def max_value(self, max_value: int) -> None:
-        pass
-
-    @MCP41x1.default_value.setter
-    def default_value(self, default_value: Union[int, None]) -> None:
-        pass
-
 
 class MCP4151(MCP41x1):
 
@@ -90,14 +62,6 @@ class MCP4151(MCP41x1):
         super(MCP4151, self).__init__(max_value=256, default_value=128,
                                       r_ab=_coerce_r_ab(r_ab), r_lim=r_lim, r_l=r_l,
                                       max_voltage=max_voltage, **spi_args)
-
-    @MCP41x1.max_value.setter
-    def max_value(self, max_value: int) -> None:
-        pass
-
-    @MCP41x1.default_value.setter
-    def default_value(self, default_value: Union[int, None]) -> None:
-        pass
 
 
 class MCP4161(MCP41x1):
@@ -110,14 +74,6 @@ class MCP4161(MCP41x1):
                                       r_ab=_coerce_r_ab(r_ab), r_lim=r_lim, r_l=r_l,
                                       max_voltage=max_voltage, **spi_args)
 
-    @MCP41x1.max_value.setter
-    def max_value(self, max_value: int) -> None:
-        pass
-
-    @MCP41x1.default_value.setter
-    def default_value(self, default_value: Union[int, None]) -> None:
-        pass
-
 
 class MCP42x1(MCP4xx1):
 
@@ -128,10 +84,6 @@ class MCP42x1(MCP4xx1):
         super(MCP42x1, self).__init__(max_value=max_value, default_value=default_value, channels=2,
                                       r_ab=_coerce_r_ab(r_ab), r_lim=r_lim, r_l=r_l,
                                       max_voltage=max_voltage, **spi_args)
-
-    @MCP4xx1.channels_num.setter
-    def channels_num(self, channels_num: int) -> None:
-        pass
 
 
 class MCP4231(MCP42x1):
@@ -144,14 +96,6 @@ class MCP4231(MCP42x1):
                                       r_ab=_coerce_r_ab(r_ab), r_lim=r_lim, r_l=r_l,
                                       max_voltage=max_voltage, **spi_args)
 
-    @MCP42x1.max_value.setter
-    def max_value(self, max_value: int) -> None:
-        pass
-
-    @MCP42x1.default_value.setter
-    def default_value(self, default_value: Union[int, None]) -> None:
-        pass
-
 
 class MCP4241(MCP42x1):
 
@@ -162,14 +106,6 @@ class MCP4241(MCP42x1):
         super(MCP4241, self).__init__(max_value=128, default_value=None,
                                       r_ab=_coerce_r_ab(r_ab), r_lim=r_lim, r_l=r_l,
                                       max_voltage=max_voltage, **spi_args)
-
-    @MCP42x1.max_value.setter
-    def max_value(self, max_value: int) -> None:
-        pass
-
-    @MCP42x1.default_value.setter
-    def default_value(self, default_value: Union[int, None]) -> None:
-        pass
 
 
 class MCP4251(MCP42x1):
@@ -182,14 +118,6 @@ class MCP4251(MCP42x1):
                                       r_ab=_coerce_r_ab(r_ab), r_lim=r_lim, r_l=r_l,
                                       max_voltage=max_voltage, **spi_args)
 
-    @MCP42x1.max_value.setter
-    def max_value(self, max_value: int) -> None:
-        pass
-
-    @MCP42x1.default_value.setter
-    def default_value(self, default_value: Union[int, None]) -> None:
-        pass
-
 
 class MCP4261(MCP42x1):
 
@@ -200,11 +128,3 @@ class MCP4261(MCP42x1):
         super(MCP4261, self).__init__(max_value=256, default_value=None,
                                       r_ab=_coerce_r_ab(r_ab), r_lim=r_lim, r_l=r_l,
                                       max_voltage=max_voltage, **spi_args)
-
-    @MCP42x1.max_value.setter
-    def max_value(self, max_value: int) -> None:
-        pass
-
-    @MCP42x1.default_value.setter
-    def default_value(self, default_value: Union[int, None]) -> None:
-        pass
