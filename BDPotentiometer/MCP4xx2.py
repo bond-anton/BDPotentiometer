@@ -1,5 +1,5 @@
 from typing import Union
-from BDPotentiometer.DigitalPotentiometer import DigitalRheostatDevice, check_not_negative
+from BDPotentiometer.DigitalPotentiometer import DigitalRheostatDevice
 from BDPotentiometer.MCP4xxx import MCP4xxx, _coerce_r_ab
 
 
@@ -9,27 +9,7 @@ class MCP4xx2(MCP4xxx, DigitalRheostatDevice):
                  r_ab: float = 10e3, **spi_args) -> None:
         MCP4xxx.__init__(self, **spi_args)
         DigitalRheostatDevice.__init__(self, max_value=max_value, default_value=default_value, channels=channels,
-                                       r_ab=_coerce_r_ab(r_ab), r_w=75)
-
-    @DigitalRheostatDevice.max_value.setter
-    def max_value(self, max_value: int) -> None:
-        pass
-
-    @DigitalRheostatDevice.default_value.setter
-    def default_value(self, default_value: Union[int, None]) -> None:
-        pass
-
-    @DigitalRheostatDevice.channels_num.setter
-    def channels_num(self, channels_num: int) -> None:
-        pass
-
-    @DigitalRheostatDevice.r_ab.setter
-    def r_ab(self, r_ab: float) -> None:
-        DigitalRheostatDevice.r_ab.fset(self, _coerce_r_ab(check_not_negative(r_ab)))
-
-    @DigitalRheostatDevice.r_w.setter
-    def r_w(self, r_w: float) -> None:
-        pass
+                                       r_ab=_coerce_r_ab(r_ab), r_w=75, fixed_parameters=True)
 
 
 class MCP41x2(MCP4xx2):

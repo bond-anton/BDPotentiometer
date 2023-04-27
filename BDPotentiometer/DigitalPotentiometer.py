@@ -10,8 +10,9 @@ class DigitalRheostatDevice(object):
     """
 
     def __init__(self, max_value: int = 128, default_value: Union[int, None] = 64, channels: int = 1,
-                 r_ab: float = 10e3, r_w: float = 75) -> None:
+                 r_ab: float = 10e3, r_w: float = 75, fixed_parameters: bool = False) -> None:
         # terminal A is floating, terminals B and W are operational
+        self.__fixed_parameters: bool = False
         self.__default_value: Union[int, None] = None
         self.__min_value: int = 0
         self.__max_value: int = 1
@@ -24,6 +25,12 @@ class DigitalRheostatDevice(object):
 
         self.__r_ab: float = float(check_not_negative(r_ab))
         self.__r_w: float = float(check_not_negative(r_w))
+
+        self.__fixed_parameters = bool(fixed_parameters)
+
+    @property
+    def fixed_parameters(self) -> bool:
+        return self.__fixed_parameters
 
     @property
     def min_value(self) -> int:
@@ -44,7 +51,8 @@ class DigitalRheostatDevice(object):
 
     @max_value.setter
     def max_value(self, max_value: int) -> None:
-        self.__max_value_setter(max_value)
+        if not self.fixed_parameters:
+            self.__max_value_setter(max_value)
 
     @property
     def default_value(self) -> Union[int, None]:
@@ -58,7 +66,8 @@ class DigitalRheostatDevice(object):
 
     @default_value.setter
     def default_value(self, default_value: Union[int, None]) -> None:
-        self.__default_value_setter(default_value)
+        if not self.fixed_parameters:
+            self.__default_value_setter(default_value)
 
     @property
     def channels_num(self) -> int:
@@ -81,7 +90,8 @@ class DigitalRheostatDevice(object):
 
     @channels_num.setter
     def channels_num(self, channels_num: int) -> None:
-        self.__channels_num_setter(channels_num)
+        if not self.fixed_parameters:
+            self.__channels_num_setter(channels_num)
 
     @property
     def channels(self) -> tuple[int]:
@@ -93,7 +103,8 @@ class DigitalRheostatDevice(object):
 
     @r_ab.setter
     def r_ab(self, r_ab: float) -> None:
-        self.__r_ab = float(check_not_negative(r_ab))
+        if not self.fixed_parameters:
+            self.__r_ab = float(check_not_negative(r_ab))
 
     @property
     def r_w(self) -> float:
@@ -101,7 +112,8 @@ class DigitalRheostatDevice(object):
 
     @r_w.setter
     def r_w(self, r_w: float) -> None:
-        self.__r_w = float(check_not_negative(r_w))
+        if not self.fixed_parameters:
+            self.__r_w = float(check_not_negative(r_w))
 
     def __check_channel(self, ch: int) -> None:
         if ch not in self.channels:
@@ -188,12 +200,13 @@ class DigitalPotentiometerDevice(DigitalRheostatDevice):
                  r_ab: float = 10e3, r_w: float = 75,
                  r_lim: Union[float, int, list[float], tuple[float]] = 0,
                  r_l: Union[float, int, list[float], tuple[float]] = 1e6,
-                 max_voltage: float = 5.0) -> None:
+                 max_voltage: float = 5.0, fixed_parameters: bool = False) -> None:
         # connect A to max_voltage and B to ground
         self.__r_lim: tuple[float] = (0.0,)
         self.__r_l: tuple[float] = (0.0,)
         super(DigitalPotentiometerDevice, self).__init__(max_value=max_value, default_value=default_value,
-                                                         channels=channels, r_ab=r_ab, r_w=r_w)
+                                                         channels=channels, r_ab=r_ab, r_w=r_w,
+                                                         fixed_parameters=fixed_parameters)
         self.r_lim = r_lim
         self.r_l = r_l
         self.__max_voltage: float = check_not_negative(max_voltage)
