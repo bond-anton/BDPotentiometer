@@ -1,6 +1,6 @@
 # BDPotentiometer
 
-![Build](https://github.com/bond-anton/BDPotentiometer/workflows/Build/badge.svg)
+![Build](https://github.com/bond-anton/BDPotentiometer/actions/workflows/python-package.yml/badge.svg)
 
 Module to operate Digital Potentiometer over SPI bus. Extends gpiozero SPIDev class.
 
