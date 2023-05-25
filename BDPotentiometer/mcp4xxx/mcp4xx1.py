@@ -15,7 +15,7 @@ class MCP4xx1(MCP4xxx, DigitalPotentiometerDevice):
         DigitalPotentiometerDevice.__init__(self, max_value=max_value, default_value=default_value,
                                             channels=channels,
                                             r_ab=_coerce_r_ab(r_ab), r_w=75, r_lim=r_lim, r_l=r_l,
-                                            max_voltage=max_voltage, fixed_parameters=True)
+                                            max_voltage=max_voltage, lock_parameters=True)
 
 
 class MCP41x1(MCP4xx1):
