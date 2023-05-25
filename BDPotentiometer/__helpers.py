@@ -1,6 +1,15 @@
-from typing import Union
+"""This module contains internal helper functions and not supposed to be used outside."""
+
+from typing import Union, Callable
+
 
 def check_integer(num: Union[float, int]) -> int:
+    """
+    Checks if `num` is an integer and converts it to int, otherwise raises ValueError.
+
+    :param num: Number (either int or float) to be checked.
+    :return: int representation of `num` or rises ValueError.
+    """
     if isinstance(num, float):
         if not num.is_integer():
             raise ValueError('Argument should be positive integer number')
@@ -10,6 +19,12 @@ def check_integer(num: Union[float, int]) -> int:
 
 
 def check_not_negative(num: Union[float, int]) -> Union[float, int]:
+    """
+    Checks if `num` is a not negative number, otherwise rises ValueError.
+
+    :param num: Either float or int number.
+    :return: `num` if it is not negative or rises ValueError.
+    """
     if not isinstance(num, (float, int)):
         raise ValueError('Argument should be not negative number')
     if num < 0:
@@ -18,6 +33,12 @@ def check_not_negative(num: Union[float, int]) -> Union[float, int]:
 
 
 def check_positive(num: Union[float, int]) -> Union[float, int]:
+    """
+    Checks if `num` is a positive number, otherwise rises ValueError.
+
+    :param num: Either float or int number.
+    :return: `num` if it is positive or rises ValueError.
+    """
     if not isinstance(num, (float, int)):
         raise ValueError('Argument should be a positive number')
     if num <= 0:
@@ -25,7 +46,17 @@ def check_positive(num: Union[float, int]) -> Union[float, int]:
     return num
 
 
-def coerce(value: Union[float, int], min_value: Union[float, int], max_value: Union[float, int]) -> Union[float, int]:
+def coerce(value: Union[float, int],
+           min_value: Union[float, int],
+           max_value: Union[float, int]) -> Union[float, int]:
+    """
+    Coerce `value` to given range between `min_value` and `max_value`.
+
+    :param value: Either float or int number to be coerced.
+    :param min_value: Lower coerce range boundary.
+    :param max_value: Upper coerce range boundary.
+    :return: Value coerced to given range.
+    """
     if not (isinstance(value, (float, int))
             and isinstance(min_value, (float, int))
             and isinstance(max_value, (float, int))):
@@ -34,14 +65,28 @@ def coerce(value: Union[float, int], min_value: Union[float, int], max_value: Un
         min_value, max_value = max_value, min_value
     if value < min_value:
         return min_value
-    elif value > max_value:
+    if value > max_value:
         return max_value
     return value
 
 
-def build_tuple(value, num, func=None):
-    def unity(v):
-        return v
+def build_tuple(value: Union[float, int, tuple, list], num: Union[int, float],
+                func: Union[Callable, None] = None) -> tuple:
+    """
+    Builds tuple of floats of given length by applying a callable `func` to value.
+    If `value` is an iterable (either list or tuple) its length must be equal to `num`.
+    The `func` will be applied to each element of the iterable.
+    If `value` is a number the resulting tuple of length `num` will be built of same `func(value)`
+    elements converted to float.
+    If `func` is None the `value` will enter resulting tuple unchanged.
+
+    :param value: Iterable (either list or tuple) or a number.
+    :param num: A number of elements in a tuple.
+    :param func: Callable to be applied to `value` or None for identity function.
+    :return: A tuple of floats of length `num` produced by application of `func` to `value`.
+    """
+    def unity(val):
+        return val
     if not isinstance(value, (float, int, tuple, list)):
         raise ValueError('Argument should be a number or list or tuple of numbers')
     if not isinstance(num, (float, int)):
@@ -54,16 +99,27 @@ def build_tuple(value, num, func=None):
         func = unity
 
     if isinstance(value, (float, int)):
-        return tuple([float(func(value)) for _ in range(num)])
-    elif isinstance(value, (list, tuple)):
+        return tuple(float(func(value)) for _ in range(num))
+    if isinstance(value, (list, tuple)):
         if len(value) != num:
-            raise ValueError('A tuple or list of length {0} expected'.format(num))
-        return tuple([float(func(value_i)) for value_i in value])
-    else:
-        raise ValueError('A number or a tuple or list of numbers of of length {0} expected'.format(num))
+            raise ValueError(f'A tuple or list of length {num} expected')
+        return tuple(float(func(value_i)) for value_i in value)
+    raise ValueError(
+        f'A number or a tuple or list of numbers of of length {num} expected')
 
 
-def adjust_tuple(value: Union[tuple[float], list[float]], num: int, default_value: float) -> tuple[float]:
+def adjust_tuple(value: Union[tuple[float], list[float]], num: int,
+                 default_value: float) -> tuple[float]:
+    """
+    Adjusts tuple or list of floats to a given length `num` and returns a tuple.
+    if `num` is less than initial length of the tuple it will be truncated to first `num` elements,
+    otherwise it will be appended using `default_value` parameter.
+
+    :param value: Initial iterable (either tuple or list) of float values.
+    :param num: Final length of the tuple.
+    :param default_value: Default value to populate the tuple if it needs to be grown.
+    :return: A tuple of floats of length `num`.
+    """
     if not isinstance(value, (tuple, list)):
         raise ValueError('Argument should be a list or a tuple of numbers')
     if not isinstance(num, (float, int)):
@@ -74,7 +130,6 @@ def adjust_tuple(value: Union[tuple[float], list[float]], num: int, default_valu
     default_value = float(default_value)
     if len(value) < num:
         return tuple(list(value) + [default_value] * (num - len(value)))
-    elif len(value) > num:
+    if len(value) > num:
         return tuple(value)[:num]
-    else:
-        return tuple(value)
+    return tuple(value)

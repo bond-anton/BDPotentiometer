@@ -1,15 +1,19 @@
+""" Digital potentiometer and digital rheostat base classes """
+
 import math as m
 from typing import Union
 
-from .__helpers import check_integer, check_not_negative, check_positive, coerce, build_tuple, adjust_tuple
+from .__helpers import (check_integer, check_not_negative, check_positive,
+                        coerce, build_tuple, adjust_tuple)
 
 
-class DigitalRheostatDevice(object):
+class DigitalRheostatDevice:
     """
-    Represents a digital potentiometer device connected to SPI (serial interface).
+    Represents a digital rheostat device connected to SPI (serial interface).
     """
 
-    def __init__(self, max_value: int = 128, default_value: Union[int, None] = 64, channels: int = 1,
+    def __init__(self, max_value: int = 128, default_value: Union[int, None] = 64,
+                 channels: int = 1,
                  r_ab: float = 10e3, r_w: float = 75, fixed_parameters: bool = False) -> None:
         # terminal A is floating, terminals B and W are operational
         self.__fixed_parameters: bool = False
@@ -62,7 +66,9 @@ class DigitalRheostatDevice(object):
         if default_value is None:
             self.__default_value = None
         else:
-            self.__default_value = self._coerce_value(check_not_negative(check_integer(default_value)))
+            self.__default_value = self._coerce_value(
+                check_not_negative(check_integer(default_value))
+            )
 
     @default_value.setter
     def default_value(self, default_value: Union[int, None]) -> None:
@@ -196,7 +202,8 @@ class DigitalPotentiometerDevice(DigitalRheostatDevice):
     Represents a digital potentiometer device connected to SPI (serial interface).
     """
 
-    def __init__(self, max_value: int = 128, default_value: Union[int, None] = 64, channels: int = 1,
+    def __init__(self, max_value: int = 128, default_value: Union[int, None] = 64,
+                 channels: int = 1,
                  r_ab: float = 10e3, r_w: float = 75,
                  r_lim: Union[float, int, list[float], tuple[float]] = 0,
                  r_l: Union[float, int, list[float], tuple[float]] = 1e6,
@@ -204,7 +211,8 @@ class DigitalPotentiometerDevice(DigitalRheostatDevice):
         # connect A to max_voltage and B to ground
         self.__r_lim: tuple[float] = (0.0,)
         self.__r_l: tuple[float] = (0.0,)
-        super(DigitalPotentiometerDevice, self).__init__(max_value=max_value, default_value=default_value,
+        super(DigitalPotentiometerDevice, self).__init__(max_value=max_value,
+                                                         default_value=default_value,
                                                          channels=channels, r_ab=r_ab, r_w=r_w,
                                                          fixed_parameters=fixed_parameters)
         self.r_lim = r_lim

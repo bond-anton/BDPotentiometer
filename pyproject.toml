@@ -1,3 +1,8 @@
 [build-system]
 # Minimum requirements for the build system to execute.
 requires = ["setuptools", "wheel", "gpiozero"]
+
+[tool.ruff]
+# Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
+select = ["E", "F"]
+ignore = ["E501"]
