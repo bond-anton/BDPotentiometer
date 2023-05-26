@@ -26,7 +26,7 @@ class DigitalWinder:
             self.__default_value = coerce(check_not_negative(check_integer(default_value)),
                                           0, self.max_value)
             self.__value = self.default_value
-        self.__value = self._read_value()
+        self.read()
 
     @property
     def locked(self) -> bool:
@@ -107,6 +107,12 @@ class DigitalWinder:
         """
         return self.__value
 
+    def read(self) -> None:
+        """
+        Read winder position into value property.
+        """
+        self.__value = self._read_value()
+
     @property
     def value(self) -> int:
         """
@@ -114,6 +120,7 @@ class DigitalWinder:
 
         :return: Winder position value (int).
         """
+        self.read()
         return self.__value
 
     @value.setter

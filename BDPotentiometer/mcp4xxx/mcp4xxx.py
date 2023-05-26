@@ -1,26 +1,28 @@
-from gpiozero import SPIDevice
+""" MCP4XXX series SPI device base class """
+
 from typing import Union
+from gpiozero import SPIDevice
 
 
 def _coerce_r_ab(r_ab: float) -> float:
     if r_ab in (5e3, 10e3, 50e3, 100e3):
         return float(r_ab)
-    elif r_ab < 7.5e3:
+    if r_ab < 7.5e3:
         return 5.e3
-    elif r_ab < 30.e3:
+    if r_ab < 30.e3:
         return 10.e3
-    elif r_ab < 75.e3:
+    if r_ab < 75.e3:
         return 100.e3
 
 
 def _check_write_response(data: list) -> None:
     if data is None:
-        raise ValueError('Wrong response %s' % data)
+        raise ValueError(f'Wrong response {data}')
 
 
 def _check_read_response(data: list) -> None:
     if data is None:
-        raise ValueError('Wrong response %s' % data)
+        raise ValueError(f'Wrong response {data}')
 
 
 def _check_status_response(data: list) -> None:

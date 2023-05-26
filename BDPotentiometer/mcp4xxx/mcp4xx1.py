@@ -1,6 +1,6 @@
 from typing import Union
 from BDPotentiometer import DigitalPotentiometerDevice
-from BDPotentiometer.mcp4xxx.mcp4xxx import MCP4xxx, _coerce_r_ab
+from .mcp4xxx import MCP4xxx, _coerce_r_ab
 
 
 class MCP4xx1(MCP4xxx, DigitalPotentiometerDevice):
