@@ -1,5 +1,6 @@
-# pylint: disable=invalid-name
 """ Module to operate SPI digital potentiometer devices """
+
+# pylint: disable=invalid-name
 
 from .potentiometer import Potentiometer
 from .digital_winder import DigitalWinder, SpiDigitalWinder
