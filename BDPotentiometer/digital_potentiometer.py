@@ -3,6 +3,8 @@
 import math as m
 from typing import Union
 
+from .potentiometer import Potentiometer
+from .digital_winder import DigitalWinder
 from .__helpers import (check_integer, check_not_negative, check_positive,
                         coerce, build_tuple, adjust_tuple)
 
@@ -11,21 +13,23 @@ class DigitalRheostatDevice:
     """
     Represents a digital rheostat device connected to SPI (serial interface).
 
-    A     ┌──────────┐     B
-     x────┤          ├─────o
-          └─────▲────┘
-                │
-                o W
+      A     ┌──────────┐     B
+       x────┤          ├─────o
+            └─────▲────┘
+    max_value <── │ ──> 0
+                  o W
     Total resistance is `r_ab`, terminal A is floating, terminals W and B are operational.
     W is a programmable winder terminal with output resistance `r_w`.
     Winder position can be set between 0 and `max_value`. Parameter `default_value` sets initial
     winder position. Use None for pots with non-volatile memory.
     """
 
-    def __init__(self, max_value: int = 128, default_value: Union[int, None] = 64,
-                 channels: int = 1, r_ab: float = 10e3, r_w: float = 75,
-                 lock_parameters: bool = False) -> None:
+    def __init__(self,
+                 potentiometer: Potentiometer,
+                 winder: DigitalWinder,
+                 channels: int = 1) -> None:
         # terminal A is floating, terminals B and W are operational
+        self.__potentiometer: Potentiometer = potentiometer
         self.__lock_parameters: bool = False
         self.__default_value: Union[int, None] = None
         self.__max_value: int = 1
@@ -35,10 +39,10 @@ class DigitalRheostatDevice:
         self._values: list[int] = [0]
         self.__channels_num_setter(channels)
 
-        self.__r_ab: float = float(check_not_negative(r_ab))
-        self.__r_w: float = float(check_not_negative(r_w))
-
-        self.__lock_parameters = bool(lock_parameters)
+    @property
+    def potentiometer(self) -> Potentiometer:
+        """ Potentiometer object access. """
+        return self.__potentiometer
 
     @property
     def locked(self) -> bool:
@@ -165,12 +169,11 @@ class DigitalRheostatDevice:
 
         :return: Total resistance as float.
         """
-        return self.__r_ab
+        return self.__potentiometer.r_ab
 
     @r_ab.setter
     def r_ab(self, r_ab: float) -> None:
-        if not self.locked:
-            self.__r_ab = float(check_not_negative(r_ab))
+        self.__potentiometer.r_ab = r_ab
 
     @property
     def r_w(self) -> float:
@@ -179,12 +182,11 @@ class DigitalRheostatDevice:
 
         :return: winder resistance as float.
         """
-        return self.__r_w
+        return self.__potentiometer.r_w
 
     @r_w.setter
     def r_w(self, r_w: float) -> None:
-        if not self.locked:
-            self.__r_w = float(check_not_negative(r_w))
+        self.__potentiometer.r_w = r_w
 
     def __check_channel(self, channel: int) -> None:
         """
@@ -203,15 +205,6 @@ class DigitalRheostatDevice:
         :return: Coerced value as int.
         """
         return coerce(value, 0, self.max_value)
-
-    def __coerce_resistance(self, resistance: float) -> float:
-        """
-        Coerce given resistance value between 'r_w' and `r_ab + r_w`.
-
-        :param resistance: Queried resistance value as float.
-        :return: Coerced resistance value as float.
-        """
-        return coerce(resistance, self.r_w, self.r_ab + self.r_w)
 
     def _set_value(self, channel: int, value: int) -> int:
         """
@@ -298,8 +291,7 @@ class DigitalRheostatDevice:
         :param resistance: Requested resistance as float.
         :return: Winder position value as int.
         """
-        resistance = self.__coerce_resistance(resistance)
-        value = int(round(((resistance - self.r_w) / self.r_ab * self.max_value)))
+        value = int(round(self.__potentiometer.r_wb_to_position(resistance) * self.max_value))
         data = self.set(channel=channel, value=value)
         return data
 
@@ -312,7 +304,7 @@ class DigitalRheostatDevice:
         """
         result: list[float] = []
         for value in self._values:
-            resistance = self.r_ab * value / self.max_value + self.r_w
+            resistance = self.__potentiometer.r_wb(value / self.max_value)
             result.append(resistance)
         return tuple(result)
 
@@ -346,7 +338,7 @@ class DigitalPotentiometerDevice(DigitalRheostatDevice):
     V     ┌────────┐ A     ┌──────────┐     B
       o───┤ R_lim  ├──o────┤          ├─────┐
           └────────┘       └─────▲────┘     │
-                                 │          │
+                   max_value <── │ ──> 0    │
                                  o W       ─┴─ GND
 
     terminal A is connected to voltage supply via current limiting resistor R_lim,
