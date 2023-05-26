@@ -15,10 +15,12 @@ class Potentiometer:
     Total resistance is `r_ab`, winder resistance is `r_w`
     """
 
-    def __init__(self, r_ab: float, r_w: float = 0, locked: bool = False) -> None:
+    def __init__(self, r_ab: float, r_w: float = 0, rheostat: bool = False,
+                 locked: bool = False) -> None:
         self.__locked: bool = bool(locked)
         self.__r_ab: float = check_positive(r_ab)
         self.__r_w: float = check_not_negative(r_w)
+        self.__rheostat: bool = bool(rheostat)
 
     @property
     def r_ab(self) -> float:
@@ -56,6 +58,16 @@ class Potentiometer:
         :return: True if locked and False otherwise
         """
         return self.__locked
+
+    @property
+    def rheostat(self) -> bool:
+        """
+        Check if device is configured as a rheostat (terminal A is floating and not available
+        for connection).
+
+        :return: True if device is a rheostat, otherwise False.
+        """
+        return self.__rheostat
 
     def r_wa(self, winder_position: float) -> float:
         """

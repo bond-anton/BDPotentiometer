@@ -1,6 +1,7 @@
 """ Module contains basic digital winder class implementation """
 
 from typing import Union
+from gpiozero import SPI
 
 from .__helpers import check_integer, check_positive, check_not_negative, coerce
 
@@ -9,23 +10,16 @@ class DigitalWinder:
     """
     Generic digital winder class.
     Digital winder change position by discrete movement between 0 and `max_value`.
-    Default value is provided by `default_value` property, which can be set to None for
-    devices with non-volatile memory.
-    Property `parameters_locked` is used to disable change of `max_value` and `default_value`
-    parameters after object is created, only winder position change is allowed.
+    Property `parameters_locked` is used to disable change of `max_value`
+    parameter after object is created, only winder position change is allowed.
     """
 
-    def __init__(self, max_value: int = 128, default_value: Union[int, None] = 64,
-                 channel: int = 0, parameters_locked: bool = False) -> None:
+    def __init__(self, max_value: int = 128, channel: int = 0,
+                 parameters_locked: bool = False) -> None:
         self.__locked: bool = bool(parameters_locked)
         self.__channel: int = check_not_negative(check_integer(channel))
         self.__max_value: int = check_positive(check_integer(max_value))
-        self.__default_value: Union[int, None] = None
         self.__value: int = 0
-        if default_value is not None:
-            self.__default_value = coerce(check_not_negative(check_integer(default_value)),
-                                          0, self.max_value)
-            self.__value = self.default_value
         self.read()
 
     @property
@@ -67,27 +61,7 @@ class DigitalWinder:
     def max_value(self, max_value: int) -> None:
         if not self.locked:
             self.__max_value = check_positive(check_integer(max_value))
-            if self.__default_value is not None:
-                self.__default_value = coerce(self.__default_value, 0, self.max_value)
             self.value = self.__value
-
-    @property
-    def default_value(self) -> Union[int, None]:
-        """
-        Returns default winder position value or None for devices with non-volatile memory.
-
-        :return: Default winder position value or None.
-        """
-        return self.__default_value
-
-    @default_value.setter
-    def default_value(self, default_value: Union[int, None]) -> None:
-        if not self.locked:
-            if default_value is None:
-                self.__default_value = None
-            else:
-                self.__default_value = coerce(check_not_negative(check_integer(default_value)),
-                                              0, self.max_value)
 
     def _set_value(self, value: int) -> int:
         """
@@ -128,3 +102,29 @@ class DigitalWinder:
         value = coerce(check_integer(value), 0, self.max_value)
         data = self._set_value(value)
         self.__value = data
+
+
+class SpiDigitalWinder(DigitalWinder):
+    """ Digital winder with SPI interface """
+
+    def __init__(self, spi: Union[SPI, None] = None,
+                 max_value: int = 128, channel: int = 0,
+                 parameters_locked: bool = False):
+        super().__init__(max_value=max_value, channel=channel, parameters_locked=parameters_locked)
+        self.__spi = None
+        if isinstance(spi, SPI):
+            self.__spi = spi
+
+    @property
+    def spi(self) -> Union[SPI, None]:
+        """
+        Get SPI interface
+        :return: SPI interface (gpiozero.SPI)
+        """
+        return self.__spi
+
+    @spi.setter
+    def spi(self, spi: Union[SPI, None]) -> None:
+        if isinstance(spi, SPI):
+            self.__spi = spi
+        self.__spi = None
