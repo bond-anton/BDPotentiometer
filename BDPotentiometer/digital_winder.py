@@ -3,6 +3,7 @@
 from typing import Union
 from gpiozero import SPI
 
+from .potentiometer import Potentiometer
 from .__helpers import check_integer, check_positive, check_not_negative, coerce
 
 
@@ -14,10 +15,11 @@ class DigitalWinder:
     parameter after object is created, only winder position change is allowed.
     """
 
-    def __init__(self, max_value: int = 128, channel: int = 0,
+    def __init__(self, potentiometer: Potentiometer, max_value: int = 128,
                  parameters_locked: bool = False) -> None:
         self.__locked: bool = bool(parameters_locked)
-        self.__channel: int = check_not_negative(check_integer(channel))
+        self.__potentiometer = potentiometer
+        self.__channel: int = 0
         self.__max_value: int = check_positive(check_integer(max_value))
         self.__value: int = 0
         self.read()
@@ -30,6 +32,14 @@ class DigitalWinder:
         :return: True if locked and False otherwise
         """
         return self.__locked
+
+    @property
+    def potentiometer(self) -> Potentiometer:
+        """
+        Access Potentiometer instance.
+        :return: Potentiometer
+        """
+        return self.__potentiometer
 
     @property
     def channel(self) -> int:
@@ -103,14 +113,68 @@ class DigitalWinder:
         data = self._set_value(value)
         self.__value = data
 
+    @property
+    def r_wb(self) -> float:
+        """
+        Calculates resistance between terminals B and W.
+
+        :return: Resistance between terminals B and W (float).
+        """
+        return self.potentiometer.r_wb(self.value / self.max_value)
+
+    @r_wb.setter
+    def r_wb(self, resistance: float) -> None:
+        self.value = int(round(self.potentiometer.r_wb_to_position(resistance) * self.max_value))
+
+    @property
+    def r_wa(self) -> float:
+        """
+        Calculates resistance between terminals A and W.
+
+        :return: Resistance between terminals A and W (float).
+        """
+        return self.potentiometer.r_wa(self.value / self.max_value)
+
+    @r_wa.setter
+    def r_wa(self, resistance: float) -> None:
+        self.value = int(round(self.potentiometer.r_wa_to_position(resistance) * self.max_value))
+
+    @property
+    def voltage_in(self) -> float:
+        """
+        Device input Voltage.
+
+        :return: Input voltage (float).
+        """
+        return self.potentiometer.voltage_in
+
+    @voltage_in.setter
+    def voltage_in(self, voltage: float) -> None:
+        self.potentiometer.voltage_in = voltage
+
+    @property
+    def voltage_out(self) -> float:
+        """
+        Calculates output voltage for given winder position.
+
+        :return: Output voltage (float).
+        """
+        return self.potentiometer.voltage_out(self.value / self.max_value)
+
+    @voltage_out.setter
+    def voltage_out(self, voltage: float) -> None:
+        self.value = self.potentiometer.voltage_out_to_winder_position(voltage) * self.max_value
+
 
 class SpiDigitalWinder(DigitalWinder):
     """ Digital winder with SPI interface """
 
-    def __init__(self, spi: Union[SPI, None] = None,
-                 max_value: int = 128, channel: int = 0,
+    def __init__(self, potentiometer: Potentiometer,
+                 spi: Union[SPI, None] = None,
+                 max_value: int = 128,
                  parameters_locked: bool = False):
-        super().__init__(max_value=max_value, channel=channel, parameters_locked=parameters_locked)
+        super().__init__(potentiometer=potentiometer, max_value=max_value,
+                         parameters_locked=parameters_locked)
         self.__spi = None
         if isinstance(spi, SPI):
             self.__spi = spi

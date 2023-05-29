@@ -52,5 +52,4 @@ setup(
     keywords=['Potentiometer', 'Digital Potentiometer', 'gpio', 'gpiozero', 'SPI', 'Raspberry'],
     packages=['BDPotentiometer'],
 
-    tests_require=['numpy'],
 )

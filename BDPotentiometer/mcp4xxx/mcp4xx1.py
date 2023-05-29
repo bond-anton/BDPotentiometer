@@ -12,10 +12,9 @@ class MCP4xx1(DigitalPotentiometerDevice, MCP4xxx):
                  channels: int = 1,
                  **spi_args) -> None:
         MCP4xxx.__init__(self, **spi_args)
-        winder = MCP4xxxWinder(spi=self._spi, max_value=max_value)
         potentiometer = MCP4xxxPotentiometer(r_ab, rheostat=False)
+        winder = MCP4xxxWinder(potentiometer=potentiometer, spi=self._spi, max_value=max_value)
         DigitalPotentiometerDevice.__init__(self,
-                                            potentiometer=potentiometer,
                                             winder=winder,
                                             channels=channels)
 

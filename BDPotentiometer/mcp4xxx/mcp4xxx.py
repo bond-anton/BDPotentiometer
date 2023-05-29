@@ -77,11 +77,11 @@ class MCP4xxxPotentiometer(Potentiometer):
 class MCP4xxxWinder(SpiDigitalWinder):
     """ Special version of SPIDigitalWinder for MCP4XXX pots """
 
-    def __init__(self, spi: Union[SPI, None] = None,
-                 max_value: int = 128, channel: int = 0):
+    def __init__(self, potentiometer: MCP4xxxPotentiometer, spi: Union[SPI, None] = None,
+                 max_value: int = 128):
         assert max_value in (128, 256)
-        assert channel in (0, 1)
-        super().__init__(spi=spi, max_value=max_value, channel=channel, parameters_locked=True)
+        super().__init__(potentiometer=potentiometer, spi=spi, max_value=max_value,
+                         parameters_locked=True)
 
     def _set_value(self, value: int) -> int:
         if isinstance(self.spi, SPI):

@@ -104,8 +104,6 @@ def build_tuple(value: Union[float, int, tuple, list], num: Union[int, float],
         if len(value) != num:
             raise ValueError(f'A tuple or list of length {num} expected')
         return tuple(float(func(value_i)) for value_i in value)
-    raise ValueError(
-        f'A number or a tuple or list of numbers of of length {num} expected')
 
 
 def adjust_tuple(value: Union[tuple[float], list[float]], num: int,

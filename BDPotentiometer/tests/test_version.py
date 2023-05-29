@@ -1,12 +1,14 @@
+""" Test package version is correctly set """
 import unittest
 
 
 class TestVersion(unittest.TestCase):
+    """
+    Test _version.py has correct version number assigned to global __version__ variable.
+    """
 
-    def setUp(self) -> None:
-        pass
-
-    def test_check_if_integer(self) -> None:
+    def test_check_version_numbering(self) -> None:
+        """ Version must be string with three integers separated by dot """
         from BDPotentiometer._version import __version__ as v
         self.assertTrue(isinstance(v, str))
         v_l = v.split('.')
