@@ -3,6 +3,7 @@ import unittest
 
 from BDPotentiometer._version import __version__ as v
 
+
 class TestVersion(unittest.TestCase):
     """
     Test _version.py has correct version number assigned to global __version__ variable.
