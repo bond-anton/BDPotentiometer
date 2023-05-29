@@ -1,4 +1,7 @@
-from codecs import open
+"""
+Setup script
+"""
+from codecs import open as codecs_open
 from os import path
 import re
 
@@ -6,24 +9,24 @@ from setuptools import setup
 
 
 here = path.abspath(path.dirname(__file__))
-package_name = 'BDPotentiometer'
-version_file = path.join(here, package_name, '_version.py')
-with open(version_file, 'rt') as f:
+PACKAGE_NAME = 'BDPotentiometer'
+version_file = path.join(here, PACKAGE_NAME, '_version.py')
+with codecs_open(version_file, 'rt') as f:
     version_file_line = f.read()
-version_re = r"^__version__ = ['\"]([^'\"]*)['\"]"
-mo = re.search(version_re, version_file_line, re.M)
+VERSION_RE = r"^__version__ = ['\"]([^'\"]*)['\"]"
+mo = re.search(VERSION_RE, version_file_line, re.M)
 if mo:
     version_string = mo.group(1)
 else:
-    raise RuntimeError('Unable to find version string in %s.' % (version_file,))
+    raise RuntimeError(f'Unable to find version string in {version_file}.')
 
 readme_file = path.join(here, 'README.md')
-with open(readme_file, encoding='utf-8') as f:
+with codecs_open(readme_file, encoding='utf-8') as f:
     long_description = f.read()
 
 
 setup(
-    name=package_name,
+    name=PACKAGE_NAME,
     version=version_string,
 
     description='BD Digital Potentiometer',
