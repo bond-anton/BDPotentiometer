@@ -75,6 +75,8 @@ class Potentiometer:
 
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self, r_ab: float, r_w: float = 0, rheostat: bool = False,
                  locked: bool = False) -> None:
         self.__locked: bool = bool(locked)

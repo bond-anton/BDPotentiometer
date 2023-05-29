@@ -15,6 +15,8 @@ class DigitalWinder:
     parameter after object is created, only winder position change is allowed.
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self, potentiometer: Potentiometer, max_value: int = 128,
                  parameters_locked: bool = False) -> None:
         self.__locked: bool = bool(parameters_locked)

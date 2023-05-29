@@ -1,6 +1,7 @@
 """ Test package version is correctly set """
 import unittest
 
+from BDPotentiometer._version import __version__ as v
 
 class TestVersion(unittest.TestCase):
     """
@@ -9,7 +10,6 @@ class TestVersion(unittest.TestCase):
 
     def test_check_version_numbering(self) -> None:
         """ Version must be string with three integers separated by dot """
-        from BDPotentiometer._version import __version__ as v
         self.assertTrue(isinstance(v, str))
         v_l = v.split('.')
         self.assertEqual(len(v_l), 3)
