@@ -3,7 +3,7 @@
 import unittest
 import numpy as np
 
-from BDPotentiometer import Potentiometer, DigitalWinder, SpiDigitalWinder
+from src.BDPotentiometer import Potentiometer, DigitalWinder, SpiDigitalWinder
 
 
 class TestDigitalWinder(unittest.TestCase):

@@ -1,8 +1,34 @@
 [build-system]
-# Minimum requirements for the build system to execute.
-requires = ["setuptools", "wheel", "gpiozero"]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
-[tool.ruff]
-# Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
-select = ["E", "F"]
-ignore = ["E501"]
+[project]
+name = "BDPotentiometer"
+dynamic = ["version"]
+description = "BD Digital Potentiometer"
+authors = [
+  { name = "Anton Bondarenko", email = "bond.anton@gmail.com" },
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.8"
+dependencies = [
+  "gpiozero>=1.6.2",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/bond-anton/BDPotentiometer"
+"Bug Tracker" = "https://github.com/bond-anton/BDPotentiometer/issues"
+
+[project.optional-dependencies]
+dev = ["gpiozero>=1.6.2"]
+test = ["flake8", "pytest", "numpy"]
+lint = ["pylint"]
+
+[tool.setuptools.dynamic]
+version = {attr = "BDPotentiometer.__version__"}

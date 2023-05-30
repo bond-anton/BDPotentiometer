@@ -1,7 +1,7 @@
 """ Test package version is correctly set """
 import unittest
 
-from BDPotentiometer._version import __version__ as v
+from src.BDPotentiometer import __version__ as v
 
 
 class TestVersion(unittest.TestCase):

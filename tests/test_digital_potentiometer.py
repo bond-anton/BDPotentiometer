@@ -2,7 +2,7 @@
 
 import unittest
 
-from BDPotentiometer import Potentiometer, DigitalWinder, DigitalPotentiometerDevice
+from src.BDPotentiometer import Potentiometer, DigitalWinder, DigitalPotentiometerDevice
 
 
 class TestDigitalPotentiometer(unittest.TestCase):

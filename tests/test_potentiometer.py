@@ -3,7 +3,7 @@
 import unittest
 import numpy as np
 
-from BDPotentiometer import Potentiometer
+from src.BDPotentiometer import Potentiometer
 
 
 class TestPotentiometer(unittest.TestCase):
