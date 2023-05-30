@@ -26,7 +26,7 @@ class DigitalWinder:
         self.__locked: bool = bool(parameters_locked)
         self.__potentiometer = potentiometer
         self.__channel: int = 0
-        self.__max_value: int = check_positive(check_integer(max_value))
+        self.__max_value: int = check_integer(check_positive(max_value))
         self.__value: int = 0
         self.read()
 
@@ -54,7 +54,7 @@ class DigitalWinder:
 
     @channel.setter
     def channel(self, channel: int) -> None:
-        self.__channel = check_not_negative(check_integer(channel))
+        self.__channel = check_integer(check_not_negative(channel))
 
     @property
     def min_value(self) -> int:
@@ -76,7 +76,7 @@ class DigitalWinder:
     @max_value.setter
     def max_value(self, max_value: int) -> None:
         if not self.locked:
-            self.__max_value = check_positive(check_integer(max_value))
+            self.__max_value = check_integer(check_positive(max_value))
             self.value = self.__value
 
     def _set_value(self, value: int) -> int:
@@ -86,7 +86,7 @@ class DigitalWinder:
         :param value: Requested value as int.
         :return: Value actually set as int.
         """
-        value = coerce(value, 0, self.max_value)
+        value = int(round(coerce(value, 0, self.max_value)))
         return value
 
     def _read_value(self) -> int:
@@ -115,7 +115,7 @@ class DigitalWinder:
 
     @value.setter
     def value(self, value: int) -> None:
-        value = coerce(check_integer(value), 0, self.max_value)
+        value = check_integer(coerce(value, 0, self.max_value))
         data = self._set_value(value)
         self.__value = data
 
@@ -173,8 +173,11 @@ class DigitalWinder:
 
     @voltage_out.setter
     def voltage_out(self, voltage: float) -> None:
-        self.value = (
-            self.potentiometer.voltage_out_to_winder_position(voltage) * self.max_value
+        self.value = int(
+            round(
+                self.potentiometer.voltage_out_to_winder_position(voltage)
+                * self.max_value
+            )
         )
 
 

@@ -98,7 +98,7 @@ def build_tuple(
         raise ValueError("Argument should be a number or list or tuple of numbers")
     if not isinstance(num, (float, int)):
         raise ValueError("Argument should be a positive number")
-    num = check_positive(check_integer(num))
+    num = check_integer(check_positive(num))
     if func is not None:
         if not callable(func):
             raise ValueError("function must be callable or None")
@@ -115,7 +115,7 @@ def build_tuple(
 
 def adjust_tuple(
     value: Union[tuple[float], list[float]], num: int, default_value: float
-) -> tuple[float]:
+) -> tuple[float, ...]:
     """
     Adjusts tuple or list of floats to a given length `num` and returns a tuple.
     if `num` is less than initial length of the tuple it will be truncated to first `num` elements,
@@ -132,7 +132,7 @@ def adjust_tuple(
         raise ValueError("Argument should be a positive number")
     if not isinstance(default_value, (float, int)):
         raise ValueError("Argument should be a positive number")
-    num = check_positive(check_integer(num))
+    num = check_integer(check_positive(num))
     default_value = float(default_value)
     if len(value) < num:
         return tuple(list(value) + [default_value] * (num - len(value)))

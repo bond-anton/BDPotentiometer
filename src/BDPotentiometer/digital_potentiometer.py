@@ -73,7 +73,7 @@ class DigitalPotentiometerDevice:
     def __init__(self, winder: DigitalWinder, channels: int = 1) -> None:
         self.__channels: dict[int, DigitalWinder] = {}
         self.__labels: dict[int, str] = {0: "0"}
-        for i in range(check_positive(check_integer(channels))):
+        for i in range(check_integer(check_positive(channels))):
             winder = copy.deepcopy(winder)
             winder.channel = i
             winder.potentiometer.r_lim = 0
@@ -93,7 +93,7 @@ class DigitalPotentiometerDevice:
         :param channel: Channel number.
         :param label: Label for the channel (str).
         """
-        channel = check_not_negative(check_integer(channel))
+        channel = check_integer(check_not_negative(channel))
         if channel not in self.__labels:
             raise ValueError(f"Channel {channel} does not exist.")
         if label is None:
@@ -128,7 +128,7 @@ class DigitalPotentiometerDevice:
         """
         if isinstance(channel, str):
             return self.get_channel_number_by_label(channel)
-        channel = check_not_negative(check_integer(channel))
+        channel = check_integer(check_not_negative(channel))
         if channel in self.__channels:
             return channel
         return None
@@ -178,7 +178,7 @@ class DigitalPotentiometerDevice:
         return self.channels[channel_number].value
 
     @property
-    def value(self) -> tuple[int]:
+    def value(self) -> tuple[int, ...]:
         """
         Tuple of current values for all channels.
 
@@ -228,7 +228,7 @@ class DigitalPotentiometerDevice:
         return self.channels[channel_number].value
 
     @property
-    def r_wb(self) -> tuple[float]:
+    def r_wb(self) -> tuple[float, ...]:
         """
         Resistance between B and W terminals for all channels as a tuple of floats.
 
@@ -246,7 +246,7 @@ class DigitalPotentiometerDevice:
             winder.r_wb = resistance[channel]
 
     @property
-    def r_wa(self) -> tuple[float]:
+    def r_wa(self) -> tuple[float, ...]:
         """
         Resistance between A and W terminals for all channels as a tuple of floats.
 
@@ -264,7 +264,7 @@ class DigitalPotentiometerDevice:
             winder.r_wa = resistance[channel]
 
     @property
-    def voltage_in(self) -> tuple[float]:
+    def voltage_in(self) -> tuple[float, ...]:
         """
         Input voltage of the device.
 
@@ -282,7 +282,7 @@ class DigitalPotentiometerDevice:
             winder.voltage_in = voltage[channel]
 
     @property
-    def voltage_out(self) -> tuple[float]:
+    def voltage_out(self) -> tuple[float, ...]:
         """
         Voltage at pot's winder for all available channels as a tuple of floats.
 
