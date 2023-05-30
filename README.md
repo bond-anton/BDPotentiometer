@@ -10,16 +10,13 @@ To install BDPotentiometer run
 ```shell
 pip install BDPotentiometer
 ```
-or
-```shell
-python setup.py install
-```
+
 ## Usage
 
 Just import the correct potentiometer class and start operating your pot. 
 
-Please see the demo directory for the usage examples.
+Please see the demo directory for the usage examples (coming soon...).
 
 ## License
 
-BDPotentiometer is free open source software licensed under Apache license version 2.0
+BDPotentiometer is free open source software licensed under MIT License
