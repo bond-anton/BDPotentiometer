@@ -70,11 +70,9 @@ class DigitalPotentiometerDevice:
                  ─┴─ GND
     """
 
-    def __init__(self,
-                 winder: DigitalWinder,
-                 channels: int = 1) -> None:
+    def __init__(self, winder: DigitalWinder, channels: int = 1) -> None:
         self.__channels: dict[int, DigitalWinder] = {}
-        self.__labels: dict[int, str] = {0: '0'}
+        self.__labels: dict[int, str] = {0: "0"}
         for i in range(check_positive(check_integer(channels))):
             winder = copy.deepcopy(winder)
             winder.channel = i
@@ -85,7 +83,9 @@ class DigitalPotentiometerDevice:
             self.__channels[i] = winder
             self.__labels[i] = str(i)
 
-    def set_channel_label(self, channel: int = 0, label: Union[str, None] = None) -> None:
+    def set_channel_label(
+        self, channel: int = 0, label: Union[str, None] = None
+    ) -> None:
         """
         Assigns string label to a channel.
         Note that label must be unique, otherwise will rise ValueError.
@@ -95,12 +95,14 @@ class DigitalPotentiometerDevice:
         """
         channel = check_not_negative(check_integer(channel))
         if channel not in self.__labels:
-            raise ValueError(f'Channel {channel} does not exist.')
+            raise ValueError(f"Channel {channel} does not exist.")
         if label is None:
             label = str(channel)
         for idx, lbl in self.__labels.items():
             if lbl == label and idx != channel:
-                raise ValueError(f'Label {label} already assigned to another channel {idx}.')
+                raise ValueError(
+                    f"Label {label} already assigned to another channel {idx}."
+                )
         self.__labels[channel] = str(label)
 
     def get_channel_number_by_label(self, label: str) -> Union[int, None]:
@@ -115,7 +117,9 @@ class DigitalPotentiometerDevice:
         except ValueError:
             return None
 
-    def get_channel_number_by_label_or_id(self, channel: Union[int, str]) -> Union[int, None]:
+    def get_channel_number_by_label_or_id(
+        self, channel: Union[int, str]
+    ) -> Union[int, None]:
         """
         Look for channel number by label or number provided.
 
@@ -157,7 +161,7 @@ class DigitalPotentiometerDevice:
         """
         channel_number = self.get_channel_number_by_label_or_id(channel)
         if channel_number is None:
-            raise ValueError(f'Channel {channel} not found.')
+            raise ValueError(f"Channel {channel} not found.")
         self.channels[channel_number].value = value
         return self.channels[channel_number].value
 
@@ -170,7 +174,7 @@ class DigitalPotentiometerDevice:
         """
         channel_number = self.get_channel_number_by_label_or_id(channel)
         if channel_number is None:
-            raise ValueError(f'Channel {channel} not found.')
+            raise ValueError(f"Channel {channel} not found.")
         return self.channels[channel_number].value
 
     @property
@@ -185,9 +189,11 @@ class DigitalPotentiometerDevice:
     @value.setter
     def value(self, value: Union[list[int], tuple[int]]) -> None:
         if not isinstance(value, (list, tuple)):
-            raise ValueError('A tuple or list of values is expected.')
+            raise ValueError("A tuple or list of values is expected.")
         if len(value) != self.channels_num:
-            raise ValueError(f'A tuple or list of length {self.channels_num} is expected.')
+            raise ValueError(
+                f"A tuple or list of length {self.channels_num} is expected."
+            )
         for i in range(self.channels_num):
             self.channels[i].value = value[i]
 
@@ -202,7 +208,7 @@ class DigitalPotentiometerDevice:
         """
         channel_number = self.get_channel_number_by_label_or_id(channel)
         if channel_number is None:
-            raise ValueError(f'Channel {channel} not found.')
+            raise ValueError(f"Channel {channel} not found.")
         self.channels[channel_number].r_wb = resistance
         return self.channels[channel_number].value
 
@@ -217,7 +223,7 @@ class DigitalPotentiometerDevice:
         """
         channel_number = self.get_channel_number_by_label_or_id(channel)
         if channel_number is None:
-            raise ValueError(f'Channel {channel} not found.')
+            raise ValueError(f"Channel {channel} not found.")
         self.channels[channel_number].r_wa = resistance
         return self.channels[channel_number].value
 
@@ -233,7 +239,9 @@ class DigitalPotentiometerDevice:
     @r_wb.setter
     def r_wb(self, resistance: Union[list[float], tuple[float]]) -> None:
         if len(resistance) != self.channels_num:
-            raise ValueError(f'A tuple or list of length {self.channels_num} is expected.')
+            raise ValueError(
+                f"A tuple or list of length {self.channels_num} is expected."
+            )
         for channel, winder in self.channels.items():
             winder.r_wb = resistance[channel]
 
@@ -249,7 +257,9 @@ class DigitalPotentiometerDevice:
     @r_wa.setter
     def r_wa(self, resistance: Union[list[float], tuple[float]]) -> None:
         if len(resistance) != self.channels_num:
-            raise ValueError(f'A tuple or list of length {self.channels_num} is expected.')
+            raise ValueError(
+                f"A tuple or list of length {self.channels_num} is expected."
+            )
         for channel, winder in self.channels.items():
             winder.r_wa = resistance[channel]
 
@@ -265,7 +275,9 @@ class DigitalPotentiometerDevice:
     @voltage_in.setter
     def voltage_in(self, voltage: Union[list[float], tuple[float]]) -> None:
         if len(voltage) != self.channels_num:
-            raise ValueError(f'A tuple or list of length {self.channels_num} is expected.')
+            raise ValueError(
+                f"A tuple or list of length {self.channels_num} is expected."
+            )
         for channel, winder in self.channels.items():
             winder.voltage_in = voltage[channel]
 
@@ -281,7 +293,9 @@ class DigitalPotentiometerDevice:
     @voltage_out.setter
     def voltage_out(self, voltage: Union[list[float], tuple[float]]) -> None:
         if len(voltage) != self.channels_num:
-            raise ValueError(f'A tuple or list of length {self.channels_num} is expected.')
+            raise ValueError(
+                f"A tuple or list of length {self.channels_num} is expected."
+            )
         for channel, winder in self.channels.items():
             winder.voltage_out = voltage[channel]
 
@@ -295,11 +309,13 @@ class DigitalPotentiometerDevice:
         """
         channel_number = self.get_channel_number_by_label_or_id(channel)
         if channel_number is None:
-            raise ValueError(f'Channel {channel} not found.')
+            raise ValueError(f"Channel {channel} not found.")
         self.channels[channel_number].voltage_in = voltage
         return self.channels[channel_number].value
 
-    def set_voltage_out(self, channel: Union[int, str] = 0, voltage: float = 0.0) -> int:
+    def set_voltage_out(
+        self, channel: Union[int, str] = 0, voltage: float = 0.0
+    ) -> int:
         """
         Set voltage at winder for a given channel number.
 
@@ -309,6 +325,6 @@ class DigitalPotentiometerDevice:
         """
         channel_number = self.get_channel_number_by_label_or_id(channel)
         if channel_number is None:
-            raise ValueError(f'Channel {channel} not found.')
+            raise ValueError(f"Channel {channel} not found.")
         self.channels[channel_number].voltage_out = voltage
         return self.channels[channel_number].value

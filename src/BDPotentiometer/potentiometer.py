@@ -77,8 +77,9 @@ class Potentiometer:
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, r_ab: float, r_w: float = 0, rheostat: bool = False,
-                 locked: bool = False) -> None:
+    def __init__(
+        self, r_ab: float, r_w: float = 0, rheostat: bool = False, locked: bool = False
+    ) -> None:
         self.__locked: bool = bool(locked)
         self.__r_ab: float = check_positive(r_ab)
         self.__r_w: float = check_not_negative(r_w)
@@ -137,7 +138,7 @@ class Potentiometer:
 
     @property
     def r_lim(self) -> float:
-        """ R_lim current limiting resistor """
+        """R_lim current limiting resistor"""
         return self.__r_lim
 
     @r_lim.setter
@@ -146,7 +147,7 @@ class Potentiometer:
 
     @property
     def r_load(self) -> float:
-        """ Resistive load R_load value """
+        """Resistive load R_load value"""
         return self.__r_load
 
     @r_load.setter
@@ -248,6 +249,6 @@ class Potentiometer:
         r_l = self.r_w + self.r_load
         quad_b = self.voltage_in / v_bot * r_l - r_lim
         quad_ac = -r_lim * r_l
-        quad_d = quad_b ** 2 - 4 * quad_ac
+        quad_d = quad_b**2 - 4 * quad_ac
         r_wb = (-quad_b + m.sqrt(quad_d)) / 2
         return r_wb / self.r_ab

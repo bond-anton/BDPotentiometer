@@ -13,9 +13,9 @@ class TestVersion(unittest.TestCase):
     """
 
     def test_check_version_numbering(self) -> None:
-        """ Version must be string with three integers separated by dot """
+        """Version must be string with three integers separated by dot"""
         self.assertTrue(isinstance(v, str))
-        v_l = v.split('.')
+        v_l = v.split(".")
         self.assertEqual(len(v_l), 3)
         v_maj = int(v_l[0])
         self.assertTrue(v_maj >= 0)
@@ -25,5 +25,5 @@ class TestVersion(unittest.TestCase):
         self.assertTrue(v_patch >= 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -11,4 +11,6 @@ from .digital_potentiometer import DigitalPotentiometerDevice
 try:
     from .__gpiozero_helpers import fix_gpiozero_dual_cs_spi
 except ModuleNotFoundError:
-    from .__gpiozero_helpers import fix_gpiozero_dual_cs_spi_dummy as fix_gpiozero_dual_cs_spi
+    from .__gpiozero_helpers import (
+        fix_gpiozero_dual_cs_spi_dummy as fix_gpiozero_dual_cs_spi,
+    )

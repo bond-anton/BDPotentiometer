@@ -12,9 +12,9 @@ def check_integer(num: Union[float, int]) -> int:
     """
     if isinstance(num, float):
         if not num.is_integer():
-            raise ValueError('Argument should be positive integer number')
+            raise ValueError("Argument should be positive integer number")
     elif not isinstance(num, int):
-        raise ValueError('Argument should be positive integer number')
+        raise ValueError("Argument should be positive integer number")
     return int(num)
 
 
@@ -26,9 +26,9 @@ def check_not_negative(num: Union[float, int]) -> Union[float, int]:
     :return: `num` if it is not negative or rises ValueError.
     """
     if not isinstance(num, (float, int)):
-        raise ValueError('Argument should be not negative number')
+        raise ValueError("Argument should be not negative number")
     if num < 0:
-        raise ValueError('Argument should be not negative number')
+        raise ValueError("Argument should be not negative number")
     return num
 
 
@@ -40,15 +40,15 @@ def check_positive(num: Union[float, int]) -> Union[float, int]:
     :return: `num` if it is positive or rises ValueError.
     """
     if not isinstance(num, (float, int)):
-        raise ValueError('Argument should be a positive number')
+        raise ValueError("Argument should be a positive number")
     if num <= 0:
-        raise ValueError('Argument should be a positive number')
+        raise ValueError("Argument should be a positive number")
     return num
 
 
-def coerce(value: Union[float, int],
-           min_value: Union[float, int],
-           max_value: Union[float, int]) -> Union[float, int]:
+def coerce(
+    value: Union[float, int], min_value: Union[float, int], max_value: Union[float, int]
+) -> Union[float, int]:
     """
     Coerce `value` to given range between `min_value` and `max_value`.
 
@@ -57,10 +57,12 @@ def coerce(value: Union[float, int],
     :param max_value: Upper coerce range boundary.
     :return: Value coerced to given range.
     """
-    if not (isinstance(value, (float, int))
-            and isinstance(min_value, (float, int))
-            and isinstance(max_value, (float, int))):
-        raise ValueError('Numeric value expected')
+    if not (
+        isinstance(value, (float, int))
+        and isinstance(min_value, (float, int))
+        and isinstance(max_value, (float, int))
+    ):
+        raise ValueError("Numeric value expected")
     if min_value > max_value:
         min_value, max_value = max_value, min_value
     if value < min_value:
@@ -70,8 +72,11 @@ def coerce(value: Union[float, int],
     return value
 
 
-def build_tuple(value: Union[float, int, tuple, list], num: Union[int, float],
-                func: Union[Callable, None] = None) -> tuple:
+def build_tuple(
+    value: Union[float, int, tuple, list],
+    num: Union[int, float],
+    func: Union[Callable, None] = None,
+) -> tuple:
     """
     Builds tuple of floats of given length by applying a callable `func` to value.
     If `value` is an iterable (either list or tuple) its length must be equal to `num`.
@@ -85,16 +90,18 @@ def build_tuple(value: Union[float, int, tuple, list], num: Union[int, float],
     :param func: Callable to be applied to `value` or None for identity function.
     :return: A tuple of floats of length `num` produced by application of `func` to `value`.
     """
+
     def unity(val):
         return val
+
     if not isinstance(value, (float, int, tuple, list)):
-        raise ValueError('Argument should be a number or list or tuple of numbers')
+        raise ValueError("Argument should be a number or list or tuple of numbers")
     if not isinstance(num, (float, int)):
-        raise ValueError('Argument should be a positive number')
+        raise ValueError("Argument should be a positive number")
     num = check_positive(check_integer(num))
     if func is not None:
         if not callable(func):
-            raise ValueError('function must be callable or None')
+            raise ValueError("function must be callable or None")
     else:
         func = unity
 
@@ -102,12 +109,13 @@ def build_tuple(value: Union[float, int, tuple, list], num: Union[int, float],
         return tuple(float(func(value)) for _ in range(num))
     if isinstance(value, (list, tuple)):
         if len(value) != num:
-            raise ValueError(f'A tuple or list of length {num} expected')
+            raise ValueError(f"A tuple or list of length {num} expected")
         return tuple(float(func(value_i)) for value_i in value)
 
 
-def adjust_tuple(value: Union[tuple[float], list[float]], num: int,
-                 default_value: float) -> tuple[float]:
+def adjust_tuple(
+    value: Union[tuple[float], list[float]], num: int, default_value: float
+) -> tuple[float]:
     """
     Adjusts tuple or list of floats to a given length `num` and returns a tuple.
     if `num` is less than initial length of the tuple it will be truncated to first `num` elements,
@@ -119,11 +127,11 @@ def adjust_tuple(value: Union[tuple[float], list[float]], num: int,
     :return: A tuple of floats of length `num`.
     """
     if not isinstance(value, (tuple, list)):
-        raise ValueError('Argument should be a list or a tuple of numbers')
+        raise ValueError("Argument should be a list or a tuple of numbers")
     if not isinstance(num, (float, int)):
-        raise ValueError('Argument should be a positive number')
+        raise ValueError("Argument should be a positive number")
     if not isinstance(default_value, (float, int)):
-        raise ValueError('Argument should be a positive number')
+        raise ValueError("Argument should be a positive number")
     num = check_positive(check_integer(num))
     default_value = float(default_value)
     if len(value) < num:

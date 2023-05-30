@@ -17,8 +17,12 @@ class DigitalWinder:
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, potentiometer: Potentiometer, max_value: int = 128,
-                 parameters_locked: bool = False) -> None:
+    def __init__(
+        self,
+        potentiometer: Potentiometer,
+        max_value: int = 128,
+        parameters_locked: bool = False,
+    ) -> None:
         self.__locked: bool = bool(parameters_locked)
         self.__potentiometer = potentiometer
         self.__channel: int = 0
@@ -45,7 +49,7 @@ class DigitalWinder:
 
     @property
     def channel(self) -> int:
-        """ Winder channel number """
+        """Winder channel number"""
         return self.__channel
 
     @channel.setter
@@ -126,7 +130,9 @@ class DigitalWinder:
 
     @r_wb.setter
     def r_wb(self, resistance: float) -> None:
-        self.value = int(round(self.potentiometer.r_wb_to_position(resistance) * self.max_value))
+        self.value = int(
+            round(self.potentiometer.r_wb_to_position(resistance) * self.max_value)
+        )
 
     @property
     def r_wa(self) -> float:
@@ -139,7 +145,9 @@ class DigitalWinder:
 
     @r_wa.setter
     def r_wa(self, resistance: float) -> None:
-        self.value = int(round(self.potentiometer.r_wa_to_position(resistance) * self.max_value))
+        self.value = int(
+            round(self.potentiometer.r_wa_to_position(resistance) * self.max_value)
+        )
 
     @property
     def voltage_in(self) -> float:
@@ -165,18 +173,26 @@ class DigitalWinder:
 
     @voltage_out.setter
     def voltage_out(self, voltage: float) -> None:
-        self.value = self.potentiometer.voltage_out_to_winder_position(voltage) * self.max_value
+        self.value = (
+            self.potentiometer.voltage_out_to_winder_position(voltage) * self.max_value
+        )
 
 
 class SpiDigitalWinder(DigitalWinder):
-    """ Digital winder with SPI interface """
+    """Digital winder with SPI interface"""
 
-    def __init__(self, potentiometer: Potentiometer,
-                 spi: Union[SPI, None] = None,
-                 max_value: int = 128,
-                 parameters_locked: bool = False):
-        super().__init__(potentiometer=potentiometer, max_value=max_value,
-                         parameters_locked=parameters_locked)
+    def __init__(
+        self,
+        potentiometer: Potentiometer,
+        spi: Union[SPI, None] = None,
+        max_value: int = 128,
+        parameters_locked: bool = False,
+    ):
+        super().__init__(
+            potentiometer=potentiometer,
+            max_value=max_value,
+            parameters_locked=parameters_locked,
+        )
         self.__spi = None
         if isinstance(spi, SPI):
             self.__spi = spi

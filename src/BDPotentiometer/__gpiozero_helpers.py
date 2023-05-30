@@ -15,6 +15,7 @@ def fix_gpiozero_dual_cs_spi() -> None:
 
     :return: None.
     """
+
     class LocalPiHardwareSPIFixed(LocalPiHardwareSPI):
         """Custom conflict checker"""
 
@@ -38,6 +39,7 @@ def fix_gpiozero_dual_cs_spi() -> None:
 
     class LocalPiHardwareSPISharedFixed(LocalPiHardwareSPIShared):
         """Custom Shared SPI hardware class inheriting from fixed Hardware SPI class above"""
+
         def _conflicts_with(self, other):
             # pylint: disable=protected-access
             return not (
@@ -57,6 +59,7 @@ def fix_gpiozero_dual_cs_spi() -> None:
 
     class FixedRPiGPIOFactory(RPiGPIOFactory):
         """Fixed RPiGPIOFactory"""
+
         def _get_spi_class(self, shared, hardware):
             """
             Return a Fixed SPI class if shared hardware SPI port between two devices

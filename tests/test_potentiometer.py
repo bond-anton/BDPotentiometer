@@ -30,7 +30,7 @@ class TestPotentiometer(unittest.TestCase):
         with self.assertRaises(ValueError):
             pot.r_ab = None  # None value
         with self.assertRaises(ValueError):
-            pot.r_ab = '10e3'  # not a number (number in string)
+            pot.r_ab = "10e3"  # not a number (number in string)
         self.assertEqual(pot.r_ab, 50e3)  # check that value has not changed
         # Checking winder resistance
         self.assertEqual(pot.r_w, 75)
@@ -44,7 +44,7 @@ class TestPotentiometer(unittest.TestCase):
         with self.assertRaises(ValueError):
             pot.r_w = None  # None value
         with self.assertRaises(ValueError):
-            pot.r_w = '10'  # Not a number value
+            pot.r_w = "10"  # Not a number value
 
     def test_lock(self):
         """
@@ -123,20 +123,28 @@ class TestPotentiometer(unittest.TestCase):
             np.testing.assert_allclose(pot.r_wa(pos), pot.r_w)
             np.testing.assert_allclose(pot.r_wb(pos), pot.r_w + pot.r_ab)
             # Out of range resistance should coerce to pot.r_ab + pot.r_w
-            np.testing.assert_allclose(pot.r_wa_to_position(pot.r_ab + 2 * pot.r_w),
-                                       pot.r_wa_to_position(pot.r_ab + pot.r_w))
-            np.testing.assert_allclose(pot.r_wb_to_position(pot.r_ab + 2 * pot.r_w),
-                                       pot.r_wb_to_position(pot.r_ab + pot.r_w))
+            np.testing.assert_allclose(
+                pot.r_wa_to_position(pot.r_ab + 2 * pot.r_w),
+                pot.r_wa_to_position(pot.r_ab + pot.r_w),
+            )
+            np.testing.assert_allclose(
+                pot.r_wb_to_position(pot.r_ab + 2 * pot.r_w),
+                pot.r_wb_to_position(pot.r_ab + pot.r_w),
+            )
             # Out of range resistance should coerce to pot.r_w
-            np.testing.assert_allclose(pot.r_wa_to_position(0),
-                                       pot.r_wa_to_position(pot.r_w))
-            np.testing.assert_allclose(pot.r_wb_to_position(0),
-                                       pot.r_wb_to_position(pot.r_w))
+            np.testing.assert_allclose(
+                pot.r_wa_to_position(0), pot.r_wa_to_position(pot.r_w)
+            )
+            np.testing.assert_allclose(
+                pot.r_wb_to_position(0), pot.r_wb_to_position(pot.r_w)
+            )
             # Out of range (negative) resistance should coerce to pot.r_w
-            np.testing.assert_allclose(pot.r_wa_to_position(-1),
-                                       pot.r_wa_to_position(pot.r_w))
-            np.testing.assert_allclose(pot.r_wb_to_position(-1),
-                                       pot.r_wb_to_position(pot.r_w))
+            np.testing.assert_allclose(
+                pot.r_wa_to_position(-1), pot.r_wa_to_position(pot.r_w)
+            )
+            np.testing.assert_allclose(
+                pot.r_wb_to_position(-1), pot.r_wb_to_position(pot.r_w)
+            )
 
     def test_voltage_out(self):
         """
@@ -175,13 +183,18 @@ class TestPotentiometer(unittest.TestCase):
                     pot.r_load = 1e4
                     np.testing.assert_allclose(
                         pot.voltage_out_to_winder_position(pot.voltage_out(pos)),
-                        pos, atol=1e-15, rtol=1e-6)
+                        pos,
+                        atol=1e-15,
+                        rtol=1e-6,
+                    )
             pot.r_lim = 200.0
             pot.r_load = 1e4
             # At zero input voltage winder position is always zero (min. current)
             pot.voltage_in = 0.0
             for pos in np.linspace(0, 1, num=101, endpoint=True):
-                self.assertEqual(pot.voltage_out_to_winder_position(pot.voltage_out(pos)), 0)
+                self.assertEqual(
+                    pot.voltage_out_to_winder_position(pot.voltage_out(pos)), 0
+                )
             # Positive v_in can not result in negative v_out and vice-versa
             pot.voltage_in = 5.0
             for v_out in np.linspace(-5, -1e-5, num=101, endpoint=True):
@@ -191,5 +204,5 @@ class TestPotentiometer(unittest.TestCase):
                 self.assertEqual(pot.voltage_out_to_winder_position(v_out), 0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
