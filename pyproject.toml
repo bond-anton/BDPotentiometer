@@ -16,7 +16,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
   "gpiozero>=1.6.2",
 ]
@@ -32,3 +32,10 @@ lint = ["pylint"]
 
 [tool.setuptools.dynamic]
 version = {attr = "BDPotentiometer.__version__"}
+
+[tool.mypy]
+python_version = "3.9"
+
+[[tool.mypy.overrides]]
+module = ["gpiozero.*"]
+ignore_missing_imports = true
