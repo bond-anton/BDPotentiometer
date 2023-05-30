@@ -2,7 +2,8 @@
 
 # pylint: disable=invalid-name
 
-from ._version import __version__
+__version__ = "0.0.2"
+
 from .potentiometer import Potentiometer
 from .digital_winder import DigitalWinder, SpiDigitalWinder
 from .digital_potentiometer import DigitalPotentiometerDevice
