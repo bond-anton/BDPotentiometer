@@ -26,7 +26,7 @@ dependencies = [
 "Bug Tracker" = "https://github.com/bond-anton/BDPotentiometer/issues"
 
 [project.optional-dependencies]
-dev = ["gpiozero>=1.6.2"]
+dev = ["gpiozero>=1.6.2", "numpy"]
 test = ["flake8", "pytest", "numpy"]
 lint = ["pylint"]
 

@@ -1,7 +1,10 @@
 """ Test package version is correctly set """
 import unittest
 
-from src.BDPotentiometer import __version__ as v
+try:
+    from src.BDPotentiometer import __version__ as v
+except ModuleNotFoundError:
+    from BDPotentiometer import __version__ as v
 
 
 class TestVersion(unittest.TestCase):

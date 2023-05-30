@@ -2,10 +2,16 @@
 
 import unittest
 
-from src.BDPotentiometer.__helpers import (
-    check_integer, check_not_negative, check_positive, coerce,
-    build_tuple, adjust_tuple
-)
+try:
+    from src.BDPotentiometer.__helpers import (
+        check_integer, check_not_negative, check_positive, coerce,
+        build_tuple, adjust_tuple
+    )
+except ModuleNotFoundError:
+    from BDPotentiometer.__helpers import (
+        check_integer, check_not_negative, check_positive, coerce,
+        build_tuple, adjust_tuple
+    )
 
 
 class TestHelpers(unittest.TestCase):

@@ -2,7 +2,10 @@
 
 import unittest
 
-from src.BDPotentiometer import Potentiometer, DigitalWinder, DigitalPotentiometerDevice
+try:
+    from src.BDPotentiometer import Potentiometer, DigitalWinder, DigitalPotentiometerDevice
+except ModuleNotFoundError:
+    from BDPotentiometer import Potentiometer, DigitalWinder, DigitalPotentiometerDevice
 
 
 class TestDigitalPotentiometer(unittest.TestCase):

@@ -3,7 +3,10 @@
 import unittest
 import numpy as np
 
-from src.BDPotentiometer import Potentiometer
+try:
+    from src.BDPotentiometer import Potentiometer
+except ModuleNotFoundError:
+    from BDPotentiometer import Potentiometer
 
 
 class TestPotentiometer(unittest.TestCase):

@@ -3,7 +3,10 @@
 import unittest
 import numpy as np
 
-from src.BDPotentiometer import Potentiometer, DigitalWinder, SpiDigitalWinder
+try:
+    from src.BDPotentiometer import Potentiometer, DigitalWinder, SpiDigitalWinder
+except ModuleNotFoundError:
+    from BDPotentiometer import Potentiometer, DigitalWinder, SpiDigitalWinder
 
 
 class TestDigitalWinder(unittest.TestCase):
