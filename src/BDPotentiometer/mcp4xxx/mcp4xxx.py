@@ -4,10 +4,16 @@ from typing import Union
 from gpiozero import SPI, SPIDevice
 
 from BDPotentiometer import SpiDigitalWinder, Potentiometer
+from . import resistance_list
 
 
 def _coerce_r_ab(r_ab: float) -> float:
-    if r_ab in (5e3, 10e3, 50e3, 100e3):
+    """
+    Coerce resistance to the closest available for MCP4XXX devices.
+    :param r_ab: input resistance (float).
+    :return: resistance coerced to one from `resistance_list` (float).
+    """
+    if r_ab in resistance_list:
         return float(r_ab)
     if r_ab < 7.5e3:
         return 5.0e3
@@ -19,16 +25,28 @@ def _coerce_r_ab(r_ab: float) -> float:
 
 
 def _check_write_response(data: list) -> None:
+    """
+    Checks that the write response is in correct format.
+    :param data: Response data (list).
+    """
     if data is None:
         raise ValueError(f"Wrong response {data}")
 
 
 def _check_read_response(data: list) -> None:
+    """
+    Checks that the read response is in correct format.
+    :param data: Response data (list).
+    """
     if data is None:
         raise ValueError(f"Wrong response {data}")
 
 
 def _check_status_response(data: list) -> None:
+    """
+    Checks that the status request response is in correct format.
+    :param data: Response data (list).
+    """
     reserved = (0b1, 0b11100000)
     if not (
         data[0] & reserved[0] == reserved[0] and data[1] & reserved[1] == reserved[1]
@@ -37,12 +55,21 @@ def _check_status_response(data: list) -> None:
 
 
 def _check_tcon_response(data: list) -> None:
+    """
+    Checks that the TCON response is in correct format.
+    :param data: Response data (list).
+    """
     reserved = (0b1,)
     if not data[0] & reserved[0] == reserved[0]:
         raise ValueError(f"Wrong response {data}")
 
 
 def _parse_tcon_response(data: int) -> dict[str, bool]:
+    """
+    Parses TCON response data.
+    :param data: raw TCON response data (int).
+    ":return: Parsed TCON state (dict).
+    """
     result = {
         "shdn": not (data & 0b1000 == 0b1000),
         "A": data & 0b0100 == 0b0100,
@@ -53,6 +80,11 @@ def _parse_tcon_response(data: int) -> dict[str, bool]:
 
 
 def _tcon_to_cmd(tcon: dict[str, bool]) -> int:
+    """
+    Convert TCON dict to TCON cmd ready for sending to device.
+    :param tcon: TCON requested state (dict).
+    :return: TCON cmd (int).
+    """
     shdn = 0 if tcon["shdn"] else 0b1000
     terminal_a = 0b0100 if tcon["A"] else 0
     terminal_w = 0b0010 if tcon["W"] else 0

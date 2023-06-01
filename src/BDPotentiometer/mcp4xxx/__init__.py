@@ -20,3 +20,5 @@ from .mcp4xx2 import (
     MCP4252,
     MCP4262,
 )
+
+resistance_list: tuple[float, ...] = (5e3, 10e3, 50e3, 100e3)
