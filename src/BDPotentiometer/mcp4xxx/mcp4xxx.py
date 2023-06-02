@@ -4,7 +4,9 @@ from typing import Union
 from gpiozero import SPI, SPIDevice
 
 from BDPotentiometer import SpiDigitalWinder, Potentiometer
-from . import resistance_list
+
+
+resistance_list: tuple[float, ...] = (5e3, 10e3, 50e3, 100e3)
 
 
 def _coerce_r_ab(r_ab: float) -> float:

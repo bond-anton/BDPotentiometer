@@ -1,5 +1,7 @@
 """ MCP4xxx series Digital potentiometers and rheostats """
 
+from .mcp4xxx import resistance_list
+
 from .mcp4xx1 import (
     MCP4131,
     MCP4141,
@@ -20,5 +22,3 @@ from .mcp4xx2 import (
     MCP4252,
     MCP4262,
 )
-
-resistance_list: tuple[float, ...] = (5e3, 10e3, 50e3, 100e3)
