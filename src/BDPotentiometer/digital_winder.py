@@ -185,8 +185,8 @@ class DigitalWinder:
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            setattr(result, k, deepcopy(v, memo))
+        for key, value in self.__dict__.items():
+            setattr(result, key, deepcopy(value, memo))
         return result
 
 
@@ -227,8 +227,8 @@ class SpiDigitalWinder(DigitalWinder):
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            if '_spi' in k:
-                setattr(result, k, v)
-            setattr(result, k, deepcopy(v, memo))
+        for key, value in self.__dict__.items():
+            if '_spi' in key:
+                setattr(result, key, value)
+            setattr(result, key, deepcopy(value, memo))
         return result
