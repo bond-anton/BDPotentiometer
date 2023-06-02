@@ -191,14 +191,14 @@ class SpiDigitalWinder(DigitalWinder):
         max_value: int = 128,
         parameters_locked: bool = False,
     ):
+        self.__spi = None
+        if isinstance(spi, SPI):
+            self.__spi = spi
         super().__init__(
             potentiometer=potentiometer,
             max_value=max_value,
             parameters_locked=parameters_locked,
         )
-        self.__spi = None
-        if isinstance(spi, SPI):
-            self.__spi = spi
 
     @property
     def spi(self) -> Union[SPI, None]:
