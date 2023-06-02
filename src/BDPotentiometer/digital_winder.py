@@ -1,5 +1,6 @@
 """ Module contains basic digital winder class implementation """
 
+from copy import deepcopy
 from typing import Union
 from gpiozero import SPI
 
@@ -180,6 +181,14 @@ class DigitalWinder:
             )
         )
 
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v, memo))
+        return result
+
 
 class SpiDigitalWinder(DigitalWinder):
     """Digital winder with SPI interface"""
@@ -213,3 +222,13 @@ class SpiDigitalWinder(DigitalWinder):
         if isinstance(spi, SPI):
             self.__spi = spi
         self.__spi = None
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if '_spi' in k:
+                setattr(result, k, v)
+            setattr(result, k, deepcopy(v, memo))
+        return result
