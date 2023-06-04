@@ -4,6 +4,7 @@ import unittest
 
 try:
     from src.BDPotentiometer.__helpers import (
+        check_number,
         check_integer,
         check_not_negative,
         check_positive,
@@ -13,6 +14,7 @@ try:
     )
 except ModuleNotFoundError:
     from BDPotentiometer.__helpers import (
+        check_number,
         check_integer,
         check_not_negative,
         check_positive,
@@ -24,6 +26,27 @@ except ModuleNotFoundError:
 
 class TestHelpers(unittest.TestCase):
     """Test case for helpers functions"""
+
+    def test_check_number(self):
+        """
+        Testing check_number function
+        """
+        input_value = 1
+        output_value = check_number(input_value)
+        self.assertEqual(output_value, input_value)
+        self.assertIsInstance(output_value, int)
+        input_value = 0
+        self.assertEqual(check_number(input_value), input_value)
+        input_value = 100.3
+        output_value = check_number(input_value)
+        self.assertEqual(output_value, input_value)
+        self.assertIsInstance(output_value, float)
+        with self.assertRaises(ValueError):
+            input_value = "a"
+            check_integer(input_value)
+        with self.assertRaises(ValueError):
+            input_value = [1]
+            check_integer(input_value)
 
     def test_check_integer(self):
         """
@@ -96,8 +119,10 @@ class TestHelpers(unittest.TestCase):
         """
         Testing coerce function
         """
-        left = 0
-        right = 100
+        left = -0.1
+        right = 100.3
+        input_value = 50.1
+        self.assertEqual(coerce(input_value, right, left), input_value)
         input_value = 101
         self.assertEqual(coerce(input_value, left, right), right)
         self.assertEqual(coerce(input_value, right, left), right)

@@ -9,21 +9,21 @@ from BDPotentiometer import SpiDigitalWinder, Potentiometer
 resistance_list: tuple[float, ...] = (5e3, 10e3, 50e3, 100e3)
 
 
+def _coerce_max_value(max_value: int) -> int:
+    if max_value not in (128, 256):
+        raise ValueError("Max value must be equal to 128 or 256.")
+    return max_value
+
+
 def _coerce_r_ab(r_ab: float) -> float:
     """
     Coerce resistance to the closest available for MCP4XXX devices.
     :param r_ab: input resistance (float).
     :return: resistance coerced to one from `resistance_list` (float).
     """
-    if r_ab in resistance_list:
-        return float(r_ab)
-    if r_ab < 7.5e3:
-        return 5.0e3
-    if r_ab < 30.0e3:
-        return 10.0e3
-    if r_ab < 75.0e3:
-        return 50.0e3
-    return 100.0e3
+    if r_ab not in resistance_list:
+        raise ValueError(f"r_ab must be in {resistance_list}")
+    return float(r_ab)
 
 
 def _check_write_response(data: list) -> None:
@@ -119,7 +119,7 @@ class MCP4xxxWinder(SpiDigitalWinder):
         spi: Union[SPI, None] = None,
         max_value: int = 128,
     ):
-        assert max_value in (128, 256)
+        max_value = _coerce_max_value(max_value)
         super().__init__(
             potentiometer=potentiometer,
             spi=spi,

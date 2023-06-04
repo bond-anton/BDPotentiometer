@@ -98,6 +98,8 @@ class TestPotentiometer(unittest.TestCase):
         self.assertEqual(pot.voltage_in, 5.0)
         pot.voltage_in = -5.0  # Negative value
         self.assertEqual(pot.voltage_in, -5.0)
+        with self.assertRaises(ValueError):
+            pot.voltage_in = "5.1"
 
     def test_rwa_rwb(self):
         """

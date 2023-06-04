@@ -2,7 +2,7 @@
 
 import math as m
 
-from .__helpers import coerce, check_positive, check_not_negative
+from .__helpers import coerce, check_number, check_positive, check_not_negative
 
 
 class Potentiometer:
@@ -165,7 +165,7 @@ class Potentiometer:
 
     @voltage_in.setter
     def voltage_in(self, voltage: float) -> None:
-        self.__voltage_in = voltage
+        self.__voltage_in = check_number(voltage)
 
     def r_wa(self, winder_position: float) -> float:
         """

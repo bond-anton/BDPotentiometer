@@ -121,6 +121,20 @@ class DigitalWinder:
         self.__value = data
 
     @property
+    def value_relative(self) -> float:
+        """
+        Relative winder position value in the range 0..1.
+        :return: Relative winder position (float)
+        """
+        return self.value / self.max_value
+
+    @value_relative.setter
+    def value_relative(self, value: float) -> None:
+        value = coerce(value, 0, 1)
+        value_int = int(round(value * self.max_value))
+        self.value = value_int
+
+    @property
     def r_wb(self) -> float:
         """
         Calculates resistance between terminals B and W.
@@ -149,6 +163,28 @@ class DigitalWinder:
         self.value = int(
             round(self.potentiometer.r_wa_to_position(resistance) * self.max_value)
         )
+
+    @property
+    def r_lim(self) -> float:
+        """
+        Potentiometer current limiting resistor.
+        """
+        return self.potentiometer.r_lim
+
+    @r_lim.setter
+    def r_lim(self, r_lim: float) -> None:
+        self.potentiometer.r_lim = r_lim
+
+    @property
+    def r_load(self) -> float:
+        """
+        Potentiometer load resistor.
+        """
+        return self.potentiometer.r_load
+
+    @r_load.setter
+    def r_load(self, r_load: float) -> None:
+        self.potentiometer.r_load = r_load
 
     @property
     def voltage_in(self) -> float:

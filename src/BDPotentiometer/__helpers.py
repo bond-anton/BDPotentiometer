@@ -3,6 +3,17 @@
 from typing import Union, Callable
 
 
+def check_number(num: Union[float, int]) -> Union[float, int]:
+    """
+    Checks if argument is an instance of float or int class.
+    :param num: variable to check.
+    :return: Unchanged `num` or raises ValueError.
+    """
+    if not isinstance(num, (float, int)):
+        raise ValueError(f"Expected integer or float number, got {type(num)}")
+    return num
+
+
 def check_integer(num: Union[float, int]) -> int:
     """
     Checks if `num` is an integer and converts it to int, otherwise raises ValueError.
@@ -12,9 +23,9 @@ def check_integer(num: Union[float, int]) -> int:
     """
     if isinstance(num, float):
         if not num.is_integer():
-            raise ValueError("Argument should be positive integer number")
+            raise ValueError("Argument should be integer number")
     elif not isinstance(num, int):
-        raise ValueError("Argument should be positive integer number")
+        raise ValueError("Argument should be integer number")
     return int(num)
 
 
@@ -25,8 +36,7 @@ def check_not_negative(num: Union[float, int]) -> Union[float, int]:
     :param num: Either float or int number.
     :return: `num` if it is not negative or rises ValueError.
     """
-    if not isinstance(num, (float, int)):
-        raise ValueError("Argument should be not negative number")
+    num = check_number(num)
     if num < 0:
         raise ValueError("Argument should be not negative number")
     return num
@@ -39,8 +49,7 @@ def check_positive(num: Union[float, int]) -> Union[float, int]:
     :param num: Either float or int number.
     :return: `num` if it is positive or rises ValueError.
     """
-    if not isinstance(num, (float, int)):
-        raise ValueError("Argument should be a positive number")
+    num = check_number(num)
     if num <= 0:
         raise ValueError("Argument should be a positive number")
     return num
@@ -57,12 +66,9 @@ def coerce(
     :param max_value: Upper coerce range boundary.
     :return: Value coerced to given range.
     """
-    if not (
-        isinstance(value, (float, int))
-        and isinstance(min_value, (float, int))
-        and isinstance(max_value, (float, int))
-    ):
-        raise ValueError("Numeric value expected")
+    value = check_number(value)
+    min_value = check_number(min_value)
+    max_value = check_number(max_value)
     if min_value > max_value:
         min_value, max_value = max_value, min_value
     if value < min_value:
@@ -76,7 +82,7 @@ def build_tuple(
     value: Union[float, int, tuple, list],
     num: Union[int, float],
     func: Union[Callable, None] = None,
-) -> tuple:
+) -> tuple[float, ...]:
     """
     Builds tuple of floats of given length by applying a callable `func` to value.
     If `value` is an iterable (either list or tuple) its length must be equal to `num`.
@@ -91,19 +97,17 @@ def build_tuple(
     :return: A tuple of floats of length `num` produced by application of `func` to `value`.
     """
 
-    def unity(val):
+    def identity(val: float) -> float:
         return val
 
     if not isinstance(value, (float, int, tuple, list)):
         raise ValueError("Argument should be a number or list or tuple of numbers")
-    if not isinstance(num, (float, int)):
-        raise ValueError("Argument should be a positive number")
     num = check_integer(check_positive(num))
     if func is not None:
         if not callable(func):
             raise ValueError("function must be callable or None")
     else:
-        func = unity
+        func = identity
 
     if isinstance(value, (float, int)):
         return tuple(float(func(value)) for _ in range(num))
@@ -128,12 +132,8 @@ def adjust_tuple(
     """
     if not isinstance(value, (tuple, list)):
         raise ValueError("Argument should be a list or a tuple of numbers")
-    if not isinstance(num, (float, int)):
-        raise ValueError("Argument should be a positive number")
-    if not isinstance(default_value, (float, int)):
-        raise ValueError("Argument should be a positive number")
     num = check_integer(check_positive(num))
-    default_value = float(default_value)
+    default_value = float(check_number(default_value))
     if len(value) < num:
         return tuple(list(value) + [default_value] * (num - len(value)))
     if len(value) > num:

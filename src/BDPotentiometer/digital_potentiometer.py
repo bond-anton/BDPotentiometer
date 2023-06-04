@@ -70,6 +70,8 @@ class DigitalPotentiometerDevice:
                  ─┴─ GND
     """
 
+    # pylint: disable=too-many-public-methods
+
     def __init__(self, winder: DigitalWinder, channels: int = 1) -> None:
         self.__channels: dict[int, DigitalWinder] = {}
         self.__labels: dict[int, str] = {0: "0"}
@@ -117,7 +119,7 @@ class DigitalPotentiometerDevice:
         except ValueError:
             return None
 
-    def get_channel_number_by_label_or_id(
+    def _get_channel_number_by_label_or_id(
         self, channel: Union[int, str]
     ) -> Union[int, None]:
         """
@@ -151,7 +153,7 @@ class DigitalPotentiometerDevice:
         """
         return len(self.__channels)
 
-    def set(self, channel: Union[int, str] = 0, value: int = 0) -> int:
+    def set_value(self, channel: Union[int, str] = 0, value: int = 0) -> int:
         """
         Method to set the value for a given channel.
 
@@ -159,20 +161,20 @@ class DigitalPotentiometerDevice:
         :param value: Winder position value requested (int).
         :return: Winder position value actually set (int).
         """
-        channel_number = self.get_channel_number_by_label_or_id(channel)
+        channel_number = self._get_channel_number_by_label_or_id(channel)
         if channel_number is None:
             raise ValueError(f"Channel {channel} not found.")
         self.channels[channel_number].value = value
         return self.channels[channel_number].value
 
-    def read(self, channel: Union[int, str] = 0) -> int:
+    def get_value(self, channel: Union[int, str] = 0) -> int:
         """
         Read value of given channel.
 
         :param channel: Channel number or label (int | str).
         :return: Winder position value (int).
         """
-        channel_number = self.get_channel_number_by_label_or_id(channel)
+        channel_number = self._get_channel_number_by_label_or_id(channel)
         if channel_number is None:
             raise ValueError(f"Channel {channel} not found.")
         return self.channels[channel_number].value
@@ -187,7 +189,7 @@ class DigitalPotentiometerDevice:
         return tuple(winder.value for _, winder in self.channels.items())
 
     @value.setter
-    def value(self, value: Union[list[int], tuple[int]]) -> None:
+    def value(self, value: Union[list[int], tuple[int, ...]]) -> None:
         if not isinstance(value, (list, tuple)):
             raise ValueError("A tuple or list of values is expected.")
         if len(value) != self.channels_num:
@@ -206,26 +208,23 @@ class DigitalPotentiometerDevice:
         :param resistance: Requested resistance as float.
         :return: Winder position value as int.
         """
-        channel_number = self.get_channel_number_by_label_or_id(channel)
+        channel_number = self._get_channel_number_by_label_or_id(channel)
         if channel_number is None:
             raise ValueError(f"Channel {channel} not found.")
         self.channels[channel_number].r_wb = resistance
         return self.channels[channel_number].value
 
-    def set_r_wa(self, channel: Union[int, str] = 0, resistance: float = 0) -> int:
+    def get_r_wb(self, channel: Union[int, str] = 0) -> float:
         """
-        Set the resistance for given channel between A and W terminals
-        as close as possible to requested value.
+        Get the resistance for given channel between B and W terminals.
 
         :param channel: Channel number or label (int | str)
-        :param resistance: Requested resistance as float.
-        :return: Winder position value as int.
+        :return: B-W resistance value as float.
         """
-        channel_number = self.get_channel_number_by_label_or_id(channel)
+        channel_number = self._get_channel_number_by_label_or_id(channel)
         if channel_number is None:
             raise ValueError(f"Channel {channel} not found.")
-        self.channels[channel_number].r_wa = resistance
-        return self.channels[channel_number].value
+        return self.channels[channel_number].r_wb
 
     @property
     def r_wb(self) -> tuple[float, ...]:
@@ -237,13 +236,40 @@ class DigitalPotentiometerDevice:
         return tuple(winder.r_wb for _, winder in self.channels.items())
 
     @r_wb.setter
-    def r_wb(self, resistance: Union[list[float], tuple[float]]) -> None:
+    def r_wb(self, resistance: Union[list[float], tuple[float, ...]]) -> None:
         if len(resistance) != self.channels_num:
             raise ValueError(
                 f"A tuple or list of length {self.channels_num} is expected."
             )
         for channel, winder in self.channels.items():
             winder.r_wb = resistance[channel]
+
+    def set_r_wa(self, channel: Union[int, str] = 0, resistance: float = 0) -> int:
+        """
+        Set the resistance for given channel between A and W terminals
+        as close as possible to requested value.
+
+        :param channel: Channel number or label (int | str)
+        :param resistance: Requested resistance as float.
+        :return: Winder position value as int.
+        """
+        channel_number = self._get_channel_number_by_label_or_id(channel)
+        if channel_number is None:
+            raise ValueError(f"Channel {channel} not found.")
+        self.channels[channel_number].r_wa = resistance
+        return self.channels[channel_number].value
+
+    def get_r_wa(self, channel: Union[int, str] = 0) -> float:
+        """
+        Get the resistance for given channel between A and W terminals.
+
+        :param channel: Channel number or label (int | str)
+        :return: A-W resistance value as float.
+        """
+        channel_number = self._get_channel_number_by_label_or_id(channel)
+        if channel_number is None:
+            raise ValueError(f"Channel {channel} not found.")
+        return self.channels[channel_number].r_wa
 
     @property
     def r_wa(self) -> tuple[float, ...]:
@@ -255,13 +281,133 @@ class DigitalPotentiometerDevice:
         return tuple(winder.r_wa for _, winder in self.channels.items())
 
     @r_wa.setter
-    def r_wa(self, resistance: Union[list[float], tuple[float]]) -> None:
+    def r_wa(self, resistance: Union[list[float], tuple[float, ...]]) -> None:
         if len(resistance) != self.channels_num:
             raise ValueError(
                 f"A tuple or list of length {self.channels_num} is expected."
             )
         for channel, winder in self.channels.items():
             winder.r_wa = resistance[channel]
+
+    def set_r_lim(self, channel: Union[int, str] = 0, resistance: float = 0) -> None:
+        """
+        Set the current limiting resistor value for given channel.
+
+        :param channel: Channel number or label (int | str)
+        :param resistance: Requested resistance as float.
+        """
+        channel_number = self._get_channel_number_by_label_or_id(channel)
+        if channel_number is None:
+            raise ValueError(f"Channel {channel} not found.")
+        self.channels[channel_number].r_lim = resistance
+
+    def get_r_lim(self, channel: Union[int, str] = 0) -> float:
+        """
+        Get the current limiting resistor value for given channel.
+
+        :param channel: Channel number or label (int | str)
+        :return: Current limiting resistor value as float.
+        """
+        channel_number = self._get_channel_number_by_label_or_id(channel)
+        if channel_number is None:
+            raise ValueError(f"Channel {channel} not found.")
+        return self.channels[channel_number].r_lim
+
+    @property
+    def r_lim(self) -> tuple[float, ...]:
+        """
+        Potentiometer current limiting resistors for all channels.
+        """
+        return tuple(winder.r_lim for _, winder in self.channels.items())
+
+    @r_lim.setter
+    def r_lim(
+        self, resistance: Union[int, float, list[float], tuple[float, ...]]
+    ) -> None:
+        if isinstance(resistance, (int, float)):
+            resistance = [float(resistance)] * self.channels_num
+        if (
+            not isinstance(resistance, (list, tuple))
+            or len(resistance) != self.channels_num
+        ):
+            raise ValueError(
+                f"A tuple or list of length {self.channels_num} is expected."
+            )
+        for channel, winder in self.channels.items():
+            winder.r_lim = resistance[channel]
+
+    def set_r_load(self, channel: Union[int, str] = 0, resistance: float = 0) -> None:
+        """
+        Set the load resistor value for given channel.
+
+        :param channel: Channel number or label (int | str)
+        :param resistance: Requested resistance as float.
+        """
+        channel_number = self._get_channel_number_by_label_or_id(channel)
+        if channel_number is None:
+            raise ValueError(f"Channel {channel} not found.")
+        self.channels[channel_number].r_load = resistance
+
+    def get_r_load(self, channel: Union[int, str] = 0) -> float:
+        """
+        Get the load resistor value for given channel.
+
+        :param channel: Channel number or label (int | str)
+        :return: Load resistor value as float.
+        """
+        channel_number = self._get_channel_number_by_label_or_id(channel)
+        if channel_number is None:
+            raise ValueError(f"Channel {channel} not found.")
+        return self.channels[channel_number].r_load
+
+    @property
+    def r_load(self) -> tuple[float, ...]:
+        """
+        Potentiometer load resistors for all channels.
+        """
+        return tuple(winder.r_load for _, winder in self.channels.items())
+
+    @r_load.setter
+    def r_load(
+        self, resistance: Union[int, float, list[float], tuple[float, ...]]
+    ) -> None:
+        if isinstance(resistance, (int, float)):
+            resistance = [float(resistance)] * self.channels_num
+        if (
+            not isinstance(resistance, (list, tuple))
+            or len(resistance) != self.channels_num
+        ):
+            raise ValueError(
+                f"A tuple or list of length {self.channels_num} is expected."
+            )
+        for channel, winder in self.channels.items():
+            winder.r_load = resistance[channel]
+
+    def set_voltage_in(self, channel: Union[int, str] = 0, voltage: float = 0.0) -> int:
+        """
+        Set input voltage for a given channel number.
+
+        :param channel: Channel number (int).
+        :param voltage: Voltage (float).
+        :return: Winder position value (int).
+        """
+        channel_number = self._get_channel_number_by_label_or_id(channel)
+        if channel_number is None:
+            raise ValueError(f"Channel {channel} not found.")
+        self.channels[channel_number].voltage_in = voltage
+        return self.channels[channel_number].value
+
+    def get_voltage_in(self, channel: Union[int, str] = 0) -> float:
+        """
+        Get input voltage for a given channel number.
+
+        :param channel: Channel number (int).
+        :return: Input voltage (float).
+        """
+        channel_number = self._get_channel_number_by_label_or_id(channel)
+        if channel_number is None:
+            raise ValueError(f"Channel {channel} not found.")
+        return self.channels[channel_number].voltage_in
 
     @property
     def voltage_in(self) -> tuple[float, ...]:
@@ -281,6 +427,34 @@ class DigitalPotentiometerDevice:
         for channel, winder in self.channels.items():
             winder.voltage_in = voltage[channel]
 
+    def set_voltage_out(
+        self, channel: Union[int, str] = 0, voltage: float = 0.0
+    ) -> int:
+        """
+        Set voltage at winder for a given channel number.
+
+        :param channel: Channel number (int).
+        :param voltage: Voltage requested (float).
+        :return: Winder position value (int).
+        """
+        channel_number = self._get_channel_number_by_label_or_id(channel)
+        if channel_number is None:
+            raise ValueError(f"Channel {channel} not found.")
+        self.channels[channel_number].voltage_out = voltage
+        return self.channels[channel_number].value
+
+    def get_voltage_out(self, channel: Union[int, str] = 0) -> float:
+        """
+        Get voltage at winder for a given channel number.
+
+        :param channel: Channel number (int).
+        :return:Voltage (float).
+        """
+        channel_number = self._get_channel_number_by_label_or_id(channel)
+        if channel_number is None:
+            raise ValueError(f"Channel {channel} not found.")
+        return self.channels[channel_number].voltage_out
+
     @property
     def voltage_out(self) -> tuple[float, ...]:
         """
@@ -298,33 +472,3 @@ class DigitalPotentiometerDevice:
             )
         for channel, winder in self.channels.items():
             winder.voltage_out = voltage[channel]
-
-    def set_voltage_in(self, channel: Union[int, str] = 0, voltage: float = 0.0) -> int:
-        """
-        Set input voltage for a given channel number.
-
-        :param channel: Channel number (int).
-        :param voltage: Voltage (float).
-        :return: Winder position value (int).
-        """
-        channel_number = self.get_channel_number_by_label_or_id(channel)
-        if channel_number is None:
-            raise ValueError(f"Channel {channel} not found.")
-        self.channels[channel_number].voltage_in = voltage
-        return self.channels[channel_number].value
-
-    def set_voltage_out(
-        self, channel: Union[int, str] = 0, voltage: float = 0.0
-    ) -> int:
-        """
-        Set voltage at winder for a given channel number.
-
-        :param channel: Channel number (int).
-        :param voltage: Voltage requested (float).
-        :return: Winder position value (int).
-        """
-        channel_number = self.get_channel_number_by_label_or_id(channel)
-        if channel_number is None:
-            raise ValueError(f"Channel {channel} not found.")
-        self.channels[channel_number].voltage_out = voltage
-        return self.channels[channel_number].value

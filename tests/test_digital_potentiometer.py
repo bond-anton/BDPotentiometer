@@ -48,67 +48,64 @@ class TestDigitalPotentiometer(unittest.TestCase):
             )
             self.assertEqual(
                 channel_number,
-                digital_pot.get_channel_number_by_label_or_id(str(channel_number)),
+                digital_pot._get_channel_number_by_label_or_id(str(channel_number)),
             )
             self.assertEqual(
                 channel_number,
-                digital_pot.get_channel_number_by_label_or_id(channel_number),
+                digital_pot._get_channel_number_by_label_or_id(channel_number),
             )
 
     def test_channel_labels(self):
         """
         Test channels labeling system
         """
-        pot = Potentiometer(r_ab=10e3, r_w=75, rheostat=False, locked=False)
-        digital_winder = DigitalWinder(
-            potentiometer=pot, max_value=128, parameters_locked=False
-        )
-        digital_pot = DigitalPotentiometerDevice(winder=digital_winder, channels=2)
-        digital_pot.set_channel_label(0, "CH A")
-        digital_pot.set_channel_label(1, "CH B")
-        self.assertEqual(0, digital_pot.get_channel_number_by_label("CH A"))
-        self.assertEqual(1, digital_pot.get_channel_number_by_label("CH B"))
-        self.assertEqual(0, digital_pot.get_channel_number_by_label_or_id(0))
-        self.assertEqual(1, digital_pot.get_channel_number_by_label_or_id(1))
-        self.assertEqual(1, digital_pot.get_channel_number_by_label_or_id("CH B"))
-        self.assertIsNone(digital_pot.get_channel_number_by_label("CH C"))
-        self.assertIsNone(digital_pot.get_channel_number_by_label_or_id("CH C"))
-        self.assertIsNone(digital_pot.get_channel_number_by_label_or_id(3))
+        self.digital_pot.set_channel_label(0, "CH A")
+        self.digital_pot.set_channel_label(1, "CH B")
+        self.assertEqual(0, self.digital_pot.get_channel_number_by_label("CH A"))
+        self.assertEqual(1, self.digital_pot.get_channel_number_by_label("CH B"))
+        self.assertEqual(0, self.digital_pot._get_channel_number_by_label_or_id(0))
+        self.assertEqual(1, self.digital_pot._get_channel_number_by_label_or_id(1))
+        self.assertEqual(1, self.digital_pot._get_channel_number_by_label_or_id("CH B"))
+        self.assertIsNone(self.digital_pot.get_channel_number_by_label("CH C"))
+        self.assertIsNone(self.digital_pot._get_channel_number_by_label_or_id("CH C"))
+        self.assertIsNone(self.digital_pot._get_channel_number_by_label_or_id(3))
         with self.assertRaises(ValueError):
-            digital_pot.get_channel_number_by_label_or_id(1.1)
+            self.digital_pot._get_channel_number_by_label_or_id(1.1)
         with self.assertRaises(ValueError):
-            digital_pot.get_channel_number_by_label_or_id(-1)
-        digital_pot.set_channel_label(0, None)
-        self.assertEqual(0, digital_pot.get_channel_number_by_label("0"))
-        digital_pot.set_channel_label(0, "CH A")
+            self.digital_pot._get_channel_number_by_label_or_id(-1)
+        self.digital_pot.set_channel_label(0, None)
+        self.assertEqual(0, self.digital_pot.get_channel_number_by_label("0"))
+        self.digital_pot.set_channel_label(0, "CH A")
         with self.assertRaises(ValueError):
-            digital_pot.set_channel_label(1, "CH A")
+            self.digital_pot.set_channel_label(1, "CH A")
         with self.assertRaises(ValueError):
-            digital_pot.set_channel_label(2, "CH A")
+            self.digital_pot.set_channel_label(2, "CH A")
         with self.assertRaises(ValueError):
-            digital_pot.set_channel_label(1.1, "CH C")
+            self.digital_pot.set_channel_label(1.1, "CH C")
         with self.assertRaises(ValueError):
-            digital_pot.set_channel_label(-1, "CH C")
+            self.digital_pot.set_channel_label(-1, "CH C")
 
-    def test_set_and_read(self):
+    def test_value_set_and_get(self):
         """
         Test `set` and `read` functions, value property
         """
-        self.digital_pot.set(0, 10)
+        self.digital_pot.set_value(0, 10)
         self.assertEqual(self.digital_pot.value[0], 10)
-        self.digital_pot.set("CH A", 20)
+        self.assertEqual(self.digital_pot.get_value(0), 10)
+        self.digital_pot.set_value("CH A", 20)
         self.assertEqual(self.digital_pot.value[0], 20)
+        self.assertEqual(self.digital_pot.get_value("CH A"), 20)
         with self.assertRaises(ValueError):
-            self.digital_pot.set("CH C", 20)
+            self.digital_pot.set_value("CH C", 20)
         with self.assertRaises(ValueError):
-            self.digital_pot.set(2, 20)
+            self.digital_pot.set_value(2, 20)
 
-        self.assertEqual(self.digital_pot.read(0), 20)
-        self.assertEqual(self.digital_pot.read("CH A"), 20)
+        self.assertEqual(self.digital_pot.get_value(0), 20)
+        self.assertEqual(self.digital_pot.get_value("CH A"), 20)
         with self.assertRaises(ValueError):
-            self.digital_pot.read("CH C")
+            self.digital_pot.get_value("CH C")
         with self.assertRaises(ValueError):
-            self.digital_pot.read(2)
+            self.digital_pot.get_value(2)
 
         self.digital_pot.value = (10, 20)
         self.assertEqual(self.digital_pot.value, (10, 20))
@@ -123,12 +120,16 @@ class TestDigitalPotentiometer(unittest.TestCase):
         self.digital_pot.set_r_wa("CH A", self.pot.r_ab / 2)
         pos = self.digital_pot.value[0] / self.digital_pot.channels[0].max_value
         self.assertEqual(self.digital_pot.r_wa[0], self.pot.r_wa(pos))
+        self.assertEqual(self.digital_pot.get_r_wa(0), self.pot.r_wa(pos))
+        self.assertEqual(self.digital_pot.get_r_wa("CH A"), self.pot.r_wa(pos))
         with self.assertRaises(ValueError):
             self.digital_pot.set_r_wa(2, self.pot.r_ab / 2)
         self.digital_pot.set_r_wb(1, self.pot.r_ab / 3)
         self.digital_pot.set_r_wb("CH B", self.pot.r_ab / 3)
         pos = self.digital_pot.value[1] / self.digital_pot.channels[1].max_value
         self.assertEqual(self.digital_pot.r_wb[1], self.pot.r_wb(pos))
+        self.assertEqual(self.digital_pot.get_r_wb(1), self.pot.r_wb(pos))
+        self.assertEqual(self.digital_pot.get_r_wb("CH B"), self.pot.r_wb(pos))
         with self.assertRaises(ValueError):
             self.digital_pot.set_r_wb(2, self.pot.r_ab / 3)
 
@@ -153,6 +154,11 @@ class TestDigitalPotentiometer(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.digital_pot.r_wb = 0
 
+        with self.assertRaises(ValueError):
+            self.digital_pot.get_r_wa("CH ZZZ")
+        with self.assertRaises(ValueError):
+            self.digital_pot.get_r_wb("CH ZZZ")
+
     def test_voltage_in(self):
         """
         Test voltage_in setters and getters
@@ -160,6 +166,10 @@ class TestDigitalPotentiometer(unittest.TestCase):
         self.assertEqual(self.digital_pot.voltage_in, (0, 0))
         self.digital_pot.voltage_in = (-5, 5)
         self.assertEqual(self.digital_pot.voltage_in, (-5, 5))
+        self.assertEqual(self.digital_pot.get_voltage_in("CH A"), -5)
+        self.assertEqual(self.digital_pot.get_voltage_in("CH B"), 5)
+        with self.assertRaises(ValueError):
+            self.digital_pot.get_voltage_in("CH XXX")
         with self.assertRaises(ValueError):
             self.digital_pot.voltage_in = (-5, 5, 0)
         with self.assertRaises(TypeError):
@@ -184,6 +194,16 @@ class TestDigitalPotentiometer(unittest.TestCase):
                 self.digital_pot.channels[1].voltage_out,
             ),
         )
+        self.assertEqual(
+            self.digital_pot.get_voltage_out("CH A"),
+            self.digital_pot.channels[0].voltage_out,
+        )
+        self.assertEqual(
+            self.digital_pot.get_voltage_out("CH B"),
+            self.digital_pot.channels[1].voltage_out,
+        )
+        with self.assertRaises(ValueError):
+            self.digital_pot.get_voltage_out("CH XXX")
         with self.assertRaises(ValueError):
             self.digital_pot.voltage_out = (-5, 5, 0)
         with self.assertRaises(TypeError):
@@ -205,6 +225,50 @@ class TestDigitalPotentiometer(unittest.TestCase):
         self.assertTrue(
             abs(self.digital_pot.channels[0].voltage_out - 1) < min_r_step * 5
         )
+
+    def test_r_lim(self):
+        self.digital_pot.r_lim = 200
+        self.assertEqual(self.digital_pot.r_lim, (200, 200))
+        self.digital_pot.r_lim = (100, 200)
+        self.assertEqual(self.digital_pot.r_lim, (100, 200))
+        self.assertEqual(self.digital_pot.get_r_lim("CH A"), 100)
+        self.assertEqual(self.digital_pot.get_r_lim("CH B"), 200)
+        self.digital_pot.set_r_lim("CH B", 300)
+        self.assertEqual(self.digital_pot.get_r_lim("CH B"), 300)
+        with self.assertRaises(ValueError):
+            self.digital_pot.r_lim = (100, 200, 300)
+        with self.assertRaises(ValueError):
+            self.digital_pot.r_lim = ("A", 200)
+        with self.assertRaises(ValueError):
+            self.digital_pot.r_lim = "A"
+        with self.assertRaises(ValueError):
+            self.digital_pot.set_r_lim("CH XXX", 300)
+        with self.assertRaises(ValueError):
+            self.digital_pot.get_r_lim("CH XXX")
+        with self.assertRaises(ValueError):
+            self.digital_pot.set_r_lim("CH B", -300)
+
+    def test_r_load(self):
+        self.digital_pot.r_load = 1e6
+        self.assertEqual(self.digital_pot.r_load, (1e6, 1e6))
+        self.digital_pot.r_load = (1e6, 2e6)
+        self.assertEqual(self.digital_pot.r_load, (1e6, 2e6))
+        self.assertEqual(self.digital_pot.get_r_load("CH A"), 1e6)
+        self.assertEqual(self.digital_pot.get_r_load("CH B"), 2e6)
+        self.digital_pot.set_r_load("CH B", 3e6)
+        self.assertEqual(self.digital_pot.get_r_load("CH B"), 3e6)
+        with self.assertRaises(ValueError):
+            self.digital_pot.r_load = (1e6, 2e6, 3e6)
+        with self.assertRaises(ValueError):
+            self.digital_pot.r_load = ("A", 2e6)
+        with self.assertRaises(ValueError):
+            self.digital_pot.r_load = "A"
+        with self.assertRaises(ValueError):
+            self.digital_pot.set_r_load("CH XXX", 3e6)
+        with self.assertRaises(ValueError):
+            self.digital_pot.get_r_load("CH XXX")
+        with self.assertRaises(ValueError):
+            self.digital_pot.set_r_load("CH B", -3e6)
 
 
 if __name__ == "__main__":
