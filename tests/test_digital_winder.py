@@ -39,6 +39,9 @@ class TestDigitalWinder(unittest.TestCase):
         self.assertEqual(self.digital_winder_locked.locked, True)
 
     def test_channel_numbering(self):
+        """
+        Testing channel numbering.
+        """
         self.assertEqual(self.digital_winder.channel, 0)
         self.digital_winder.channel = 3
         self.assertEqual(self.digital_winder.channel, 3)
@@ -49,11 +52,17 @@ class TestDigitalWinder(unittest.TestCase):
         self.assertEqual(self.digital_winder.channel, 3)
 
     def test_min_value(self):
+        """
+        Testing min_value property.
+        """
         self.assertEqual(self.digital_winder.min_value, 0)
         with self.assertRaises(AttributeError):
             self.digital_winder.min_value = 1
 
     def test_max_value(self):
+        """
+        Testing max_value property.
+        """
         self.assertEqual(self.digital_winder.max_value, 128)
         self.digital_winder.max_value = 1
         self.assertEqual(self.digital_winder.max_value, 1)
@@ -67,6 +76,9 @@ class TestDigitalWinder(unittest.TestCase):
             self.digital_winder.max_value = 128.5
 
     def test_value_get_set(self):
+        """
+        Testing value property and corresponding get_ and set_ methods.
+        """
         self.assertEqual(self.digital_winder.value, 0)
         self.digital_winder.value = 10
         self.assertEqual(self.digital_winder.value, 10)
@@ -80,6 +92,9 @@ class TestDigitalWinder(unittest.TestCase):
         self.assertEqual(self.digital_winder.value, self.digital_winder.max_value)
 
     def test_value_relative(self):
+        """
+        Test relative value calculation.
+        """
         self.digital_winder.value_relative = 0
         self.assertEqual(self.digital_winder.value_relative, 0)
         self.assertEqual(self.digital_winder.value, 0)
@@ -101,6 +116,9 @@ class TestDigitalWinder(unittest.TestCase):
             self.digital_winder.value_relative = "0.5"
 
     def test_voltage_in(self):
+        """
+        Test input voltage property and methods.
+        """
         self.assertEqual(self.digital_winder.voltage_in, 0)
         self.digital_winder.voltage_in = 5
         self.assertEqual(self.digital_winder.voltage_in, 5)
@@ -184,8 +202,8 @@ class TestDigitalWinder(unittest.TestCase):
         self.digital_winder.voltage_in = 5
         dw_copy = deepcopy(self.digital_winder)
         self.assertIsInstance(dw_copy, DigitalWinder)
-        self.assertNotEquals(dw_copy, self.digital_winder)
-        self.assertNotEquals(dw_copy.potentiometer, self.digital_winder.potentiometer)
+        self.assertNotEqual(dw_copy, self.digital_winder)
+        self.assertNotEqual(dw_copy.potentiometer, self.digital_winder.potentiometer)
         self.assertEqual(dw_copy.min_value, self.digital_winder.min_value)
         self.assertEqual(dw_copy.max_value, self.digital_winder.max_value)
         self.assertEqual(
@@ -226,8 +244,8 @@ class TestDigitalWinder(unittest.TestCase):
         self.spi_digital_winder.voltage_in = 5
         dw_copy = deepcopy(self.spi_digital_winder)
         self.assertIsInstance(dw_copy, SpiDigitalWinder)
-        self.assertNotEquals(dw_copy, self.spi_digital_winder)
-        self.assertNotEquals(
+        self.assertNotEqual(dw_copy, self.spi_digital_winder)
+        self.assertNotEqual(
             dw_copy.potentiometer, self.spi_digital_winder.potentiometer
         )
         self.assertEqual(dw_copy.min_value, self.spi_digital_winder.min_value)

@@ -71,6 +71,7 @@ class DigitalPotentiometerDevice:
     """
 
     # pylint: disable=too-many-public-methods
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self, winder: DigitalWinder, channels: int = 1) -> None:
         self.__channels: dict[int, DigitalWinder] = {}

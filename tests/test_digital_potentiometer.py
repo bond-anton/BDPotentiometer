@@ -1,5 +1,7 @@
 """ Tests for DigitalPotentiometerDevice class. """
 
+# pylint: disable=protected-access
+
 import unittest
 
 try:
@@ -227,6 +229,9 @@ class TestDigitalPotentiometer(unittest.TestCase):
         )
 
     def test_r_lim(self):
+        """
+        Test r_lim property and corresponding get_ and set_ methods.
+        """
         self.digital_pot.r_lim = 200
         self.assertEqual(self.digital_pot.r_lim, (200, 200))
         self.digital_pot.r_lim = (100, 200)
@@ -249,6 +254,9 @@ class TestDigitalPotentiometer(unittest.TestCase):
             self.digital_pot.set_r_lim("CH B", -300)
 
     def test_r_load(self):
+        """
+        Testing r_load property and corresponding get_ and set_ methods.
+        """
         self.digital_pot.r_load = 1e6
         self.assertEqual(self.digital_pot.r_load, (1e6, 1e6))
         self.digital_pot.r_load = (1e6, 2e6)
