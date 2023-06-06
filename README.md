@@ -6,16 +6,24 @@ Module to operate Digital Potentiometer over SPI bus. Extends gpiozero SPIDev cl
 
 ## Installation
 
-To install BDPotentiometer run
+To install BDPotentiometer use pip
 ```shell
-pip install BDPotentiometer
+$ pip install BDPotentiometer
 ```
 
 ## Usage
 
-Just import the correct potentiometer class and start operating your pot. 
+Just import the correct potentiometer class, for example MCP4231, and start operating your pot.
 
-Please see the demo directory for the usage examples (coming soon...).
+```python
+from BDPotentiometer.mcp4xxx import MCP4231
+
+
+my_pot = MCP4231(r_ab=10e3, device=0)
+my_pot.channels[0].value = 43
+```
+
+Please see the examples directory for more usage examples.
 
 ## License
 

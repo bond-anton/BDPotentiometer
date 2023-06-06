@@ -32,7 +32,7 @@ class TestPotentiometer(unittest.TestCase):
         with self.assertRaises(ValueError):
             pot.r_ab = "10e3"  # not a number (number in string)
         self.assertEqual(pot.r_ab, 50e3)  # check that value has not changed
-        # Checking winder resistance
+        # Checking wiper resistance
         self.assertEqual(pot.r_w, 75)
         pot.r_w = 50  # Check value change
         self.assertEqual(pot.r_w, 50)
@@ -116,11 +116,11 @@ class TestPotentiometer(unittest.TestCase):
                 np.testing.assert_allclose(r_wb, pot.r_w + pos * pot.r_ab)
                 np.testing.assert_allclose(pot.r_wb_to_position(r_wb), pos)
                 np.testing.assert_allclose(r_wa + r_wb, 2 * pot.r_w + pot.r_ab)
-            # Out of range winder position should coerce to 0
+            # Out of range wiper position should coerce to 0
             pos = -0.1
             np.testing.assert_allclose(pot.r_wa(pos), pot.r_w + pot.r_ab)
             np.testing.assert_allclose(pot.r_wb(pos), pot.r_w)
-            # Out of range winder position should coerce to 1
+            # Out of range wiper position should coerce to 1
             pos = 1.1
             np.testing.assert_allclose(pot.r_wa(pos), pot.r_w)
             np.testing.assert_allclose(pot.r_wb(pos), pot.r_w + pot.r_ab)
@@ -184,26 +184,26 @@ class TestPotentiometer(unittest.TestCase):
                     pot.r_lim = 200.0
                     pot.r_load = 1e4
                     np.testing.assert_allclose(
-                        pot.voltage_out_to_winder_position(pot.voltage_out(pos)),
+                        pot.voltage_out_to_wiper_position(pot.voltage_out(pos)),
                         pos,
                         atol=1e-15,
                         rtol=1e-6,
                     )
             pot.r_lim = 200.0
             pot.r_load = 1e4
-            # At zero input voltage winder position is always zero (min. current)
+            # At zero input voltage wiper position is always zero (min. current)
             pot.voltage_in = 0.0
             for pos in np.linspace(0, 1, num=101, endpoint=True):
                 self.assertEqual(
-                    pot.voltage_out_to_winder_position(pot.voltage_out(pos)), 0
+                    pot.voltage_out_to_wiper_position(pot.voltage_out(pos)), 0
                 )
             # Positive v_in can not result in negative v_out and vice-versa
             pot.voltage_in = 5.0
             for v_out in np.linspace(-5, -1e-5, num=101, endpoint=True):
-                self.assertEqual(pot.voltage_out_to_winder_position(v_out), 0)
+                self.assertEqual(pot.voltage_out_to_wiper_position(v_out), 0)
             pot.voltage_in = -5.0
             for v_out in np.linspace(1e-5, 5, num=101, endpoint=True):
-                self.assertEqual(pot.voltage_out_to_winder_position(v_out), 0)
+                self.assertEqual(pot.voltage_out_to_wiper_position(v_out), 0)
 
 
 if __name__ == "__main__":

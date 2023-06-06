@@ -7,11 +7,11 @@ import unittest
 try:
     from src.BDPotentiometer import (
         Potentiometer,
-        DigitalWinder,
+        DigitalWiper,
         DigitalPotentiometerDevice,
     )
 except ModuleNotFoundError:
-    from BDPotentiometer import Potentiometer, DigitalWinder, DigitalPotentiometerDevice
+    from BDPotentiometer import Potentiometer, DigitalWiper, DigitalPotentiometerDevice
 
 
 class TestDigitalPotentiometer(unittest.TestCase):
@@ -21,10 +21,10 @@ class TestDigitalPotentiometer(unittest.TestCase):
 
     def setUp(self) -> None:
         self.pot = Potentiometer(r_ab=10e3, r_w=75, rheostat=False, locked=False)
-        digital_winder = DigitalWinder(
+        digital_wiper = DigitalWiper(
             potentiometer=self.pot, max_value=128, parameters_locked=False
         )
-        self.digital_pot = DigitalPotentiometerDevice(winder=digital_winder, channels=2)
+        self.digital_pot = DigitalPotentiometerDevice(wiper=digital_wiper, channels=2)
         self.digital_pot.set_channel_label(0, "CH A")
         self.digital_pot.set_channel_label(1, "CH B")
 
@@ -33,17 +33,17 @@ class TestDigitalPotentiometer(unittest.TestCase):
         Testing basic parameters.
         """
         pot = Potentiometer(r_ab=10e3, r_w=75, rheostat=False, locked=False)
-        digital_winder = DigitalWinder(
+        digital_wiper = DigitalWiper(
             potentiometer=pot, max_value=128, parameters_locked=False
         )
-        digital_pot = DigitalPotentiometerDevice(winder=digital_winder, channels=3)
+        digital_pot = DigitalPotentiometerDevice(wiper=digital_wiper, channels=3)
         self.assertEqual(digital_pot.channels_num, 3)
         channels = digital_pot.channels
-        for channel_number, winder in channels.items():
-            self.assertEqual(winder.potentiometer.r_ab, pot.r_ab)
-            self.assertEqual(winder.potentiometer.r_w, pot.r_w)
-            self.assertEqual(winder.potentiometer.r_lim, pot.r_lim)
-            self.assertEqual(winder.max_value, digital_winder.max_value)
+        for channel_number, wiper in channels.items():
+            self.assertEqual(wiper.potentiometer.r_ab, pot.r_ab)
+            self.assertEqual(wiper.potentiometer.r_w, pot.r_w)
+            self.assertEqual(wiper.potentiometer.r_lim, pot.r_lim)
+            self.assertEqual(wiper.max_value, digital_wiper.max_value)
             self.assertEqual(
                 channel_number,
                 digital_pot.get_channel_number_by_label(str(channel_number)),

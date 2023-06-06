@@ -1,4 +1,4 @@
-""" Module contains basic digital winder class implementation """
+""" Module contains basic digital wiper class implementation """
 
 from copy import deepcopy
 from typing import Union
@@ -8,12 +8,12 @@ from .potentiometer import Potentiometer
 from .__helpers import check_integer, check_positive, check_not_negative, coerce
 
 
-class DigitalWinder:
+class DigitalWiper:
     """
-    Generic digital winder class.
-    Digital winder change position by discrete movement between 0 and `max_value`.
+    Generic digital wiper class.
+    Digital wiper change position by discrete movement between 0 and `max_value`.
     Property `parameters_locked` is used to disable change of `max_value`
-    parameter after object is created, only winder position change is allowed.
+    parameter after object is created, only wiper position change is allowed.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -34,7 +34,7 @@ class DigitalWinder:
     @property
     def locked(self) -> bool:
         """
-        Check if parameters of the winder are locked.
+        Check if parameters of the wiper are locked.
 
         :return: True if locked and False otherwise
         """
@@ -50,7 +50,7 @@ class DigitalWinder:
 
     @property
     def channel(self) -> int:
-        """Winder channel number"""
+        """Wiper channel number"""
         return self.__channel
 
     @channel.setter
@@ -60,7 +60,7 @@ class DigitalWinder:
     @property
     def min_value(self) -> int:
         """
-        Returns minimal winder position, which is always zero.
+        Returns minimal wiper position, which is always zero.
         :return: Always return 0.
         """
         return 0
@@ -68,9 +68,9 @@ class DigitalWinder:
     @property
     def max_value(self) -> int:
         """
-        Returns device max winder position value.
+        Returns device max wiper position value.
 
-        :return: Max winder position value as int.
+        :return: Max wiper position value as int.
         """
         return self.__max_value
 
@@ -82,7 +82,7 @@ class DigitalWinder:
 
     def _set_value(self, value: int) -> int:
         """
-        Set given winder position to `value`.
+        Set given wiper position to `value`.
 
         :param value: Requested value as int.
         :return: Value actually set as int.
@@ -92,24 +92,24 @@ class DigitalWinder:
 
     def _read_value(self) -> int:
         """
-        Read value of winder position.
+        Read value of wiper position.
 
-        :return: Winder position value (int).
+        :return: Wiper position value (int).
         """
         return self.__value
 
     def read(self) -> None:
         """
-        Read winder position into value property.
+        Read wiper position into value property.
         """
         self.__value = self._read_value()
 
     @property
     def value(self) -> int:
         """
-        Current winder position.
+        Current wiper position.
 
-        :return: Winder position value (int).
+        :return: Wiper position value (int).
         """
         self.read()
         return self.__value
@@ -123,8 +123,8 @@ class DigitalWinder:
     @property
     def value_relative(self) -> float:
         """
-        Relative winder position value in the range 0..1.
-        :return: Relative winder position (float)
+        Relative wiper position value in the range 0..1.
+        :return: Relative wiper position (float)
         """
         return self.value / self.max_value
 
@@ -202,7 +202,7 @@ class DigitalWinder:
     @property
     def voltage_out(self) -> float:
         """
-        Calculates output voltage for given winder position.
+        Calculates output voltage for given wiper position.
 
         :return: Output voltage (float).
         """
@@ -212,7 +212,7 @@ class DigitalWinder:
     def voltage_out(self, voltage: float) -> None:
         self.value = int(
             round(
-                self.potentiometer.voltage_out_to_winder_position(voltage)
+                self.potentiometer.voltage_out_to_wiper_position(voltage)
                 * self.max_value
             )
         )
@@ -226,8 +226,8 @@ class DigitalWinder:
         return result
 
 
-class SpiDigitalWinder(DigitalWinder):
-    """Digital winder with SPI interface"""
+class SpiDigitalWiper(DigitalWiper):
+    """Digital wiper with SPI interface"""
 
     def __init__(
         self,

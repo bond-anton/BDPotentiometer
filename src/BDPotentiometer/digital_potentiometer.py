@@ -4,7 +4,7 @@ import copy
 from typing import Union
 
 from .__helpers import check_not_negative, check_positive, check_integer
-from .digital_winder import DigitalWinder
+from .digital_wiper import DigitalWiper
 
 
 class DigitalPotentiometerDevice:
@@ -18,9 +18,9 @@ class DigitalPotentiometerDevice:
                 o W
 
     Total resistance of the potentiometer is `r_ab`. All terminals are available for connection.
-    W is a programmable winder terminal with output resistance `r_w`.
-    Winder position can be set between 0 and `max_value`. Parameter `default_value` sets initial
-    winder position. Use None for pots with non-volatile memory.
+    W is a programmable wiper terminal with output resistance `r_w`.
+    Wiper position can be set between 0 and `max_value`. Parameter `default_value` sets initial
+    wiper position. Use None for pots with non-volatile memory.
 
     For easy operation as voltage source following topology is assumed.
 
@@ -73,17 +73,17 @@ class DigitalPotentiometerDevice:
     # pylint: disable=too-many-public-methods
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, winder: DigitalWinder, channels: int = 1) -> None:
-        self.__channels: dict[int, DigitalWinder] = {}
+    def __init__(self, wiper: DigitalWiper, channels: int = 1) -> None:
+        self.__channels: dict[int, DigitalWiper] = {}
         self.__labels: dict[int, str] = {0: "0"}
         for i in range(check_integer(check_positive(channels))):
-            winder = copy.deepcopy(winder)
-            winder.channel = i
-            winder.potentiometer.r_lim = 0
-            winder.potentiometer.r_load = 0
-            winder.potentiometer.voltage_in = 0
-            winder.read()
-            self.__channels[i] = winder
+            wiper = copy.deepcopy(wiper)
+            wiper.channel = i
+            wiper.potentiometer.r_lim = 0
+            wiper.potentiometer.r_load = 0
+            wiper.potentiometer.voltage_in = 0
+            wiper.read()
+            self.__channels[i] = wiper
             self.__labels[i] = str(i)
 
     def set_channel_label(
@@ -137,11 +137,11 @@ class DigitalPotentiometerDevice:
         return None
 
     @property
-    def channels(self) -> dict[int, DigitalWinder]:
+    def channels(self) -> dict[int, DigitalWiper]:
         """
         Available channels of the device.
 
-        :return: dict of DigitalWinder objects
+        :return: dict of DigitalWiper objects
         """
         return self.__channels
 
@@ -159,8 +159,8 @@ class DigitalPotentiometerDevice:
         Method to set the value for a given channel.
 
         :param channel: Channel number or label (int | str).
-        :param value: Winder position value requested (int).
-        :return: Winder position value actually set (int).
+        :param value: Wiper position value requested (int).
+        :return: Wiper position value actually set (int).
         """
         channel_number = self._get_channel_number_by_label_or_id(channel)
         if channel_number is None:
@@ -173,7 +173,7 @@ class DigitalPotentiometerDevice:
         Read value of given channel.
 
         :param channel: Channel number or label (int | str).
-        :return: Winder position value (int).
+        :return: Wiper position value (int).
         """
         channel_number = self._get_channel_number_by_label_or_id(channel)
         if channel_number is None:
@@ -187,7 +187,7 @@ class DigitalPotentiometerDevice:
 
         :return: Tuple of int values for all channels.
         """
-        return tuple(winder.value for _, winder in self.channels.items())
+        return tuple(wiper.value for _, wiper in self.channels.items())
 
     @value.setter
     def value(self, value: Union[list[int], tuple[int, ...]]) -> None:
@@ -207,7 +207,7 @@ class DigitalPotentiometerDevice:
 
         :param channel: Channel number or label (int | str)
         :param resistance: Requested resistance as float.
-        :return: Winder position value as int.
+        :return: Wiper position value as int.
         """
         channel_number = self._get_channel_number_by_label_or_id(channel)
         if channel_number is None:
@@ -234,7 +234,7 @@ class DigitalPotentiometerDevice:
 
         :return: B-W resistance for all channels as a tuple of floats.
         """
-        return tuple(winder.r_wb for _, winder in self.channels.items())
+        return tuple(wiper.r_wb for _, wiper in self.channels.items())
 
     @r_wb.setter
     def r_wb(self, resistance: Union[list[float], tuple[float, ...]]) -> None:
@@ -242,8 +242,8 @@ class DigitalPotentiometerDevice:
             raise ValueError(
                 f"A tuple or list of length {self.channels_num} is expected."
             )
-        for channel, winder in self.channels.items():
-            winder.r_wb = resistance[channel]
+        for channel, wiper in self.channels.items():
+            wiper.r_wb = resistance[channel]
 
     def set_r_wa(self, channel: Union[int, str] = 0, resistance: float = 0) -> int:
         """
@@ -252,7 +252,7 @@ class DigitalPotentiometerDevice:
 
         :param channel: Channel number or label (int | str)
         :param resistance: Requested resistance as float.
-        :return: Winder position value as int.
+        :return: Wiper position value as int.
         """
         channel_number = self._get_channel_number_by_label_or_id(channel)
         if channel_number is None:
@@ -279,7 +279,7 @@ class DigitalPotentiometerDevice:
 
         :return: A-W resistance for all channels as a tuple of floats.
         """
-        return tuple(winder.r_wa for _, winder in self.channels.items())
+        return tuple(wiper.r_wa for _, wiper in self.channels.items())
 
     @r_wa.setter
     def r_wa(self, resistance: Union[list[float], tuple[float, ...]]) -> None:
@@ -287,8 +287,8 @@ class DigitalPotentiometerDevice:
             raise ValueError(
                 f"A tuple or list of length {self.channels_num} is expected."
             )
-        for channel, winder in self.channels.items():
-            winder.r_wa = resistance[channel]
+        for channel, wiper in self.channels.items():
+            wiper.r_wa = resistance[channel]
 
     def set_r_lim(self, channel: Union[int, str] = 0, resistance: float = 0) -> None:
         """
@@ -319,7 +319,7 @@ class DigitalPotentiometerDevice:
         """
         Potentiometer current limiting resistors for all channels.
         """
-        return tuple(winder.r_lim for _, winder in self.channels.items())
+        return tuple(wiper.r_lim for _, wiper in self.channels.items())
 
     @r_lim.setter
     def r_lim(
@@ -334,8 +334,8 @@ class DigitalPotentiometerDevice:
             raise ValueError(
                 f"A tuple or list of length {self.channels_num} is expected."
             )
-        for channel, winder in self.channels.items():
-            winder.r_lim = resistance[channel]
+        for channel, wiper in self.channels.items():
+            wiper.r_lim = resistance[channel]
 
     def set_r_load(self, channel: Union[int, str] = 0, resistance: float = 0) -> None:
         """
@@ -366,7 +366,7 @@ class DigitalPotentiometerDevice:
         """
         Potentiometer load resistors for all channels.
         """
-        return tuple(winder.r_load for _, winder in self.channels.items())
+        return tuple(wiper.r_load for _, wiper in self.channels.items())
 
     @r_load.setter
     def r_load(
@@ -381,8 +381,8 @@ class DigitalPotentiometerDevice:
             raise ValueError(
                 f"A tuple or list of length {self.channels_num} is expected."
             )
-        for channel, winder in self.channels.items():
-            winder.r_load = resistance[channel]
+        for channel, wiper in self.channels.items():
+            wiper.r_load = resistance[channel]
 
     def set_voltage_in(self, channel: Union[int, str] = 0, voltage: float = 0.0) -> int:
         """
@@ -390,7 +390,7 @@ class DigitalPotentiometerDevice:
 
         :param channel: Channel number (int).
         :param voltage: Voltage (float).
-        :return: Winder position value (int).
+        :return: Wiper position value (int).
         """
         channel_number = self._get_channel_number_by_label_or_id(channel)
         if channel_number is None:
@@ -417,7 +417,7 @@ class DigitalPotentiometerDevice:
 
         :return: voltage_in tuple of floats.
         """
-        return tuple(winder.voltage_in for _, winder in self.channels.items())
+        return tuple(wiper.voltage_in for _, wiper in self.channels.items())
 
     @voltage_in.setter
     def voltage_in(self, voltage: Union[list[float], tuple[float]]) -> None:
@@ -425,18 +425,18 @@ class DigitalPotentiometerDevice:
             raise ValueError(
                 f"A tuple or list of length {self.channels_num} is expected."
             )
-        for channel, winder in self.channels.items():
-            winder.voltage_in = voltage[channel]
+        for channel, wiper in self.channels.items():
+            wiper.voltage_in = voltage[channel]
 
     def set_voltage_out(
         self, channel: Union[int, str] = 0, voltage: float = 0.0
     ) -> int:
         """
-        Set voltage at winder for a given channel number.
+        Set voltage at wiper for a given channel number.
 
         :param channel: Channel number (int).
         :param voltage: Voltage requested (float).
-        :return: Winder position value (int).
+        :return: Wiper position value (int).
         """
         channel_number = self._get_channel_number_by_label_or_id(channel)
         if channel_number is None:
@@ -446,7 +446,7 @@ class DigitalPotentiometerDevice:
 
     def get_voltage_out(self, channel: Union[int, str] = 0) -> float:
         """
-        Get voltage at winder for a given channel number.
+        Get voltage at wiper for a given channel number.
 
         :param channel: Channel number (int).
         :return:Voltage (float).
@@ -459,11 +459,11 @@ class DigitalPotentiometerDevice:
     @property
     def voltage_out(self) -> tuple[float, ...]:
         """
-        Voltage at pot's winder for all available channels as a tuple of floats.
+        Voltage at pot's wiper for all available channels as a tuple of floats.
 
         :return: A tuple of voltages as floats.
         """
-        return tuple(winder.voltage_out for _, winder in self.channels.items())
+        return tuple(wiper.voltage_out for _, wiper in self.channels.items())
 
     @voltage_out.setter
     def voltage_out(self, voltage: Union[list[float], tuple[float]]) -> None:
@@ -471,5 +471,5 @@ class DigitalPotentiometerDevice:
             raise ValueError(
                 f"A tuple or list of length {self.channels_num} is expected."
             )
-        for channel, winder in self.channels.items():
-            winder.voltage_out = voltage[channel]
+        for channel, wiper in self.channels.items():
+            wiper.voltage_out = voltage[channel]

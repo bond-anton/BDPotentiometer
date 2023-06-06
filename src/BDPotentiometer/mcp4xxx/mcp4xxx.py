@@ -3,7 +3,7 @@
 from typing import Union
 from gpiozero import SPI, SPIDevice
 
-from BDPotentiometer import SpiDigitalWinder, Potentiometer
+from BDPotentiometer import SpiDigitalWiper, Potentiometer
 
 
 resistance_list: tuple[float, ...] = (5e3, 10e3, 50e3, 100e3)
@@ -110,8 +110,8 @@ class MCP4xxxPotentiometer(Potentiometer):
         super().__init__(r_ab=r_ab, r_w=75, rheostat=rheostat, locked=True)
 
 
-class MCP4xxxWinder(SpiDigitalWinder):
-    """Special version of SPIDigitalWinder for MCP4XXX pots"""
+class MCP4xxxWiper(SpiDigitalWiper):
+    """Special version of SPIDigitalWiper for MCP4XXX pots"""
 
     def __init__(
         self,

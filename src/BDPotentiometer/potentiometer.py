@@ -14,12 +14,12 @@ class Potentiometer:
           └──────▲──────┘
            1 <── │ ──> 0
                  o W
-    Total resistance is `r_ab`, winder resistance is `r_w`
+    Total resistance is `r_ab`, wiper resistance is `r_w`
     If device is `locked` parameters `r_ab` and `r_w` are read-only.
 
-    Winder moves from B to A changing position from 0 to 1.
+    Wiper moves from B to A changing position from 0 to 1.
     Resistance between terminals WA and WB can be calculated using `r_wa` and `r_wb` functions.
-    Reverse functions `r_wa_to_position` and `r_wb_to_position` for calculation of winder position
+    Reverse functions `r_wa_to_position` and `r_wb_to_position` for calculation of wiper position
     given r_wa or r_wb are also available.
 
     Parameter `rheostat` turns potentiometer to rheostat with terminal A floating not connected,
@@ -70,8 +70,8 @@ class Potentiometer:
     Input voltage (V_in) is set using property `voltage_in`.
     Output voltage (V_out) can be calculated using method `voltage_out`.
 
-    Winder position given required V_out can be calculated
-    using function `voltage_out_to_winder_position`.
+    Wiper position given required V_out can be calculated
+    using function `voltage_out_to_wiper_position`.
 
     """
 
@@ -106,9 +106,9 @@ class Potentiometer:
     @property
     def r_w(self) -> float:
         """
-        Winder terminal resistance.
+        Wiper terminal resistance.
 
-        :return: winder resistance as float.
+        :return: Wiper resistance as float.
         """
         return self.__r_w
 
@@ -167,72 +167,72 @@ class Potentiometer:
     def voltage_in(self, voltage: float) -> None:
         self.__voltage_in = check_number(voltage)
 
-    def r_wa(self, winder_position: float) -> float:
+    def r_wa(self, wiper_position: float) -> float:
         """
-        Calculates resistance between terminals A and W given the winder position
+        Calculates resistance between terminals A and W given the wiper position
         as a fraction of its movement in the range from 0 (terminal B) to 1 (terminal A).
 
-        :param winder_position: Winder position in the range [0: 1]
+        :param wiper_position: Wiper position in the range [0: 1]
         :return: Resistance between terminals A and W (float).
         """
-        winder_position = coerce(winder_position, 0, 1)
-        return self.r_w + (1 - winder_position) * self.r_ab
+        wiper_position = coerce(wiper_position, 0, 1)
+        return self.r_w + (1 - wiper_position) * self.r_ab
 
-    def r_wb(self, winder_position: float) -> float:
+    def r_wb(self, wiper_position: float) -> float:
         """
-        Calculates resistance between terminals B and W given the winder position
+        Calculates resistance between terminals B and W given the wiper position
         as a fraction of its movement in the range from 0 (terminal B) to 1 (terminal A).
 
-        :param winder_position: Winder position in the range [0: 1]
+        :param wiper_position: Wiper position in the range [0: 1]
         :return: Resistance between terminals B and W (float).
         """
-        winder_position = coerce(winder_position, 0, 1)
-        return self.r_w + winder_position * self.r_ab
+        wiper_position = coerce(wiper_position, 0, 1)
+        return self.r_w + wiper_position * self.r_ab
 
     def r_wa_to_position(self, r_wa: float) -> float:
         """
-        Calculate winder position as a fraction of its movement in the range from 0 (terminal B)
+        Calculate wiper position as a fraction of its movement in the range from 0 (terminal B)
         to 1 (terminal A) given the resistance between terminals A and W.
 
         :param r_wa: Resistance between terminals A and W (float)
-        :return: Winder position in the range [0: 1] (float).
+        :return: Wiper position in the range [0: 1] (float).
         """
         r_wa = coerce(r_wa, self.r_w, self.r_w + self.r_ab)
         return 1 - (r_wa - self.r_w) / self.r_ab
 
     def r_wb_to_position(self, r_wb: float) -> float:
         """
-        Calculate winder position as a fraction of its movement in the range from 0 (terminal B)
+        Calculate wiper position as a fraction of its movement in the range from 0 (terminal B)
         to 1 (terminal A) given the resistance between terminals B and W.
 
         :param r_wb: Resistance between terminals B and W (float)
-        :return: Winder position in the range [0: 1] (float).
+        :return: Wiper position in the range [0: 1] (float).
         """
         r_wb = coerce(r_wb, self.r_w, self.r_w + self.r_ab)
         return (r_wb - self.r_w) / self.r_ab
 
-    def voltage_out(self, winder_position: float) -> float:
+    def voltage_out(self, wiper_position: float) -> float:
         """
-        Calculates output voltage for given winder position.
+        Calculates output voltage for given wiper position.
 
-        :param winder_position: Winder position as float number between 0 and 1.
+        :param wiper_position: Wiper position as float number between 0 and 1.
         :return: Voltage (float).
         """
         if self.rheostat:
-            r_total = self.r_load + self.r_lim + self.r_wb(winder_position)
+            r_total = self.r_load + self.r_lim + self.r_wb(wiper_position)
             return self.voltage_in * self.r_load / r_total
-        r_wb = self.r_ab * winder_position
-        r_wa = self.r_ab * (1 - winder_position)
+        r_wb = self.r_ab * wiper_position
+        r_wa = self.r_ab * (1 - wiper_position)
         r_bot = r_wb * (self.r_w + self.r_load) / (r_wb + self.r_w + self.r_load)
         v_bot = self.voltage_in * r_bot / (r_bot + self.r_lim + r_wa)
         return v_bot / (self.r_load + self.r_w) * self.r_load
 
-    def voltage_out_to_winder_position(self, voltage_out: float) -> float:
+    def voltage_out_to_wiper_position(self, voltage_out: float) -> float:
         """
-        Calculates winder position given output voltage.
+        Calculates wiper position given output voltage.
 
         :param voltage_out: Output voltage (float).
-        :return: Winder position as float number between 0 and 1.
+        :return: Wiper position as float number between 0 and 1.
         """
         if voltage_out == 0 or self.r_load == 0 or self.voltage_in == 0:
             return 0
