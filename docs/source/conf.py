@@ -1,5 +1,7 @@
 # Configuration file for the Sphinx documentation builder.
 
+# pylint: skip-file
+
 # -- Project information
 
 project = "BDPotentiometer"
