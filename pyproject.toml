@@ -24,6 +24,7 @@ dependencies = [
 [project.urls]
 "Homepage" = "https://github.com/bond-anton/BDPotentiometer"
 "Bug Tracker" = "https://github.com/bond-anton/BDPotentiometer/issues"
+"Documentation" = "https://bdpotentiometer.readthedocs.io"
 
 [project.optional-dependencies]
 dev = ["gpiozero>=1.6.2", "numpy"]
