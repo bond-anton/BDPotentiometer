@@ -3,6 +3,7 @@
 # pylint: disable=protected-access
 
 import unittest
+import numpy as np
 
 try:
     from src.BDPotentiometer import (
@@ -115,6 +116,11 @@ class TestDigitalPotentiometer(unittest.TestCase):
             self.digital_pot.value = 10
         with self.assertRaises(ValueError):
             self.digital_pot.value = (10, 20, 30)
+        values = np.arange(129)
+        for value in values:
+            self.digital_pot.set_value(0, value)
+            self.digital_pot.set_value(1, value)
+            self.assertEqual(self.digital_pot.value, (value, value))
 
     def test_rwa_rwb(self):
         """Test r_wa and r_wb control"""

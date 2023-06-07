@@ -1,31 +1,33 @@
 """This module contains internal helper functions and not supposed to be used outside."""
 
+from numbers import Real, Integral
 from typing import Union, Callable
 
 
-def check_number(num: Union[float, int]) -> Union[float, int]:
+def check_number(num: Union[float, int, Real]) -> Union[float, int]:
     """
-    Checks if argument is an instance of float or int class.
+    Checks if argument is a real number.
     :param num: variable to check.
-    :return: Unchanged `num` or raises ValueError.
+    :return: Unchanged `num` as float or int or raises ValueError if num is not a real number.
     """
-    if not isinstance(num, (float, int)):
+    if not isinstance(num, Real):
         raise ValueError(f"Expected integer or float number, got {type(num)}")
-    return num
+    if isinstance(num, Integral):
+        return int(num)
+    return float(num)
 
 
-def check_integer(num: Union[float, int]) -> int:
+def check_integer(num: Union[float, int, Real]) -> int:
     """
     Checks if `num` is an integer and converts it to int, otherwise raises ValueError.
 
     :param num: Number (either int or float) to be checked.
     :return: int representation of `num` or rises ValueError.
     """
+    num = check_number(num)
     if isinstance(num, float):
         if not num.is_integer():
             raise ValueError("Argument should be integer number")
-    elif not isinstance(num, int):
-        raise ValueError("Argument should be integer number")
     return int(num)
 
 

@@ -1,6 +1,7 @@
 """ Testing helpers functions. """
 
 import unittest
+import numpy as np
 
 try:
     from src.BDPotentiometer.__helpers import (
@@ -47,6 +48,12 @@ class TestHelpers(unittest.TestCase):
         with self.assertRaises(ValueError):
             input_value = [1]
             check_integer(input_value)
+        input_value = np.array([3])
+        output_value = check_number(input_value[0])
+        self.assertEqual(output_value, input_value)
+        input_value = np.array([np.pi])
+        output_value = check_number(input_value[0])
+        self.assertEqual(output_value, input_value)
 
     def test_check_integer(self):
         """
