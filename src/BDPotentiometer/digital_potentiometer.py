@@ -384,19 +384,19 @@ class DigitalPotentiometerDevice:
         for channel, wiper in self.channels.items():
             wiper.r_load = resistance[channel]
 
-    def set_voltage_in(self, channel: Union[int, str] = 0, voltage: float = 0.0) -> int:
+    def set_voltage_in(
+        self, channel: Union[int, str] = 0, voltage: float = 0.0
+    ) -> None:
         """
         Set input voltage for a given channel number.
 
         :param channel: Channel number (int).
         :param voltage: Voltage (float).
-        :return: Wiper position value (int).
         """
         channel_number = self._get_channel_number_by_label_or_id(channel)
         if channel_number is None:
             raise ValueError(f"Channel {channel} not found.")
         self.channels[channel_number].voltage_in = voltage
-        return self.channels[channel_number].value
 
     def get_voltage_in(self, channel: Union[int, str] = 0) -> float:
         """
