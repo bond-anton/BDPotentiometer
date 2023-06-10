@@ -47,7 +47,7 @@ class TestDigitalWiper(unittest.TestCase):
         self.assertEqual(self.digital_wiper.channel, 3)
         with self.assertRaises(ValueError):
             self.digital_wiper.channel = -3
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             self.digital_wiper.channel = "A"
         self.assertEqual(self.digital_wiper.channel, 3)
 
@@ -112,7 +112,7 @@ class TestDigitalWiper(unittest.TestCase):
             self.assertEqual(self.digital_wiper.value, value_int)
             self.assertEqual(self.digital_wiper.value_relative, value_rel_coerced)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             self.digital_wiper.value_relative = "0.5"
 
     def test_voltage_in(self):
@@ -124,7 +124,7 @@ class TestDigitalWiper(unittest.TestCase):
         self.assertEqual(self.digital_wiper.voltage_in, 5)
         self.digital_wiper.voltage_in = -5.1
         self.assertEqual(self.digital_wiper.voltage_in, -5.1)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             self.digital_wiper.voltage_in = "5.1"
 
     def test_rwa_rwb(self):
@@ -161,7 +161,7 @@ class TestDigitalWiper(unittest.TestCase):
         self.assertEqual(self.digital_wiper.r_lim, 200.5)
         with self.assertRaises(ValueError):
             self.digital_wiper.r_lim = -200
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             self.digital_wiper.r_lim = "200"
 
     def test_r_load(self):
@@ -174,7 +174,7 @@ class TestDigitalWiper(unittest.TestCase):
         self.assertEqual(self.digital_wiper.r_load, 2.5e3)
         with self.assertRaises(ValueError):
             self.digital_wiper.r_load = -200
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             self.digital_wiper.r_load = "200"
 
     def test_voltage_out(self):

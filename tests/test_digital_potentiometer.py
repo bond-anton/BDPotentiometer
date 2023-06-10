@@ -248,7 +248,7 @@ class TestDigitalPotentiometer(unittest.TestCase):
         self.assertEqual(self.digital_pot.get_r_lim("CH B"), 300)
         with self.assertRaises(ValueError):
             self.digital_pot.r_lim = (100, 200, 300)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             self.digital_pot.r_lim = ("A", 200)
         with self.assertRaises(ValueError):
             self.digital_pot.r_lim = "A"
@@ -273,7 +273,7 @@ class TestDigitalPotentiometer(unittest.TestCase):
         self.assertEqual(self.digital_pot.get_r_load("CH B"), 3e6)
         with self.assertRaises(ValueError):
             self.digital_pot.r_load = (1e6, 2e6, 3e6)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             self.digital_pot.r_load = ("A", 2e6)
         with self.assertRaises(ValueError):
             self.digital_pot.r_load = "A"

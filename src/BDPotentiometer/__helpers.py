@@ -1,19 +1,29 @@
 """This module contains internal helper functions and not supposed to be used outside."""
 
 from numbers import Real, Integral
+from math import isnan
 from typing import Union, Callable
 
 
 def check_number(num: Union[float, int, Real]) -> Union[float, int]:
     """
     Checks if argument is a real number.
+    check_number does not allow argument to be `+inf` or `-inf`, or `NaN`.
+    Special float numbers `+0.0` and `-0.0` will be converted to just 0.0
+
     :param num: variable to check.
     :return: Unchanged `num` as float or int or raises ValueError if num is not a real number.
     """
     if not isinstance(num, Real):
-        raise ValueError(f"Expected integer or float number, got {type(num)}")
+        raise TypeError(f"Expected integer or float number, got {type(num)}")
     if isinstance(num, Integral):
         return int(num)
+    if num in [float('inf'), float('-inf')]:
+        raise ValueError(f"Expected integer or float number, got {num}")
+    if isnan(num):
+        raise ValueError(f"Expected integer or float number, not NaN")
+    if num == 0:
+        return 0.0
     return float(num)
 
 
@@ -74,14 +84,18 @@ def coerce(
     if min_value > max_value:
         min_value, max_value = max_value, min_value
     if value < min_value:
+        if isinstance(value, float):
+            return float(min_value)
         return min_value
     if value > max_value:
+        if isinstance(value, float):
+            return float(max_value)
         return max_value
     return value
 
 
 def build_tuple(
-    value: Union[float, int, tuple, list],
+    value: Union[float, int, tuple[float,...], list[float,...]],
     num: Union[int, float],
     func: Union[Callable, None] = None,
 ) -> tuple[float, ...]:
@@ -103,24 +117,27 @@ def build_tuple(
         return val
 
     if not isinstance(value, (float, int, tuple, list)):
-        raise ValueError("Argument should be a number or list or tuple of numbers")
+        raise TypeError("Argument should be a number or list or tuple of numbers")
     num = check_integer(check_positive(num))
     if func is not None:
         if not callable(func):
-            raise ValueError("function must be callable or None")
+            raise TypeError("function must be callable or None")
     else:
         func = identity
 
-    if isinstance(value, (float, int)):
-        return tuple(float(func(value)) for _ in range(num))
     if isinstance(value, (list, tuple)):
         if len(value) != num:
             raise ValueError(f"A tuple or list of length {num} expected")
-        return tuple(float(func(value_i)) for value_i in value)
+        return tuple(float(func(check_number(value_i))) for value_i in value)
+    value = check_number(value)
+    return tuple(float(func(value)) for _ in range(num))
+
 
 
 def adjust_tuple(
-    value: Union[tuple[float], list[float]], num: int, default_value: float
+        value: Union[tuple[float,...], list[float,...]],
+        num: int,
+        default_value: float
 ) -> tuple[float, ...]:
     """
     Adjusts tuple or list of floats to a given length `num` and returns a tuple.
@@ -133,11 +150,14 @@ def adjust_tuple(
     :return: A tuple of floats of length `num`.
     """
     if not isinstance(value, (tuple, list)):
-        raise ValueError("Argument should be a list or a tuple of numbers")
+        raise TypeError("Argument should be a list or a tuple of numbers")
     num = check_integer(check_positive(num))
     default_value = float(check_number(default_value))
     if len(value) < num:
-        return tuple(list(value) + [default_value] * (num - len(value)))
+        return tuple(
+            [float(check_number(value_i)) for value_i in value]
+            + [default_value] * (num - len(value))
+        )
     if len(value) > num:
-        return tuple(value)[:num]
-    return tuple(value)
+        return tuple(float(check_number(value[i])) for i in range(num))
+    return tuple(float(check_number(value_i)) for value_i in value)

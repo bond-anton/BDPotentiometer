@@ -27,9 +27,9 @@ class TestPotentiometer(unittest.TestCase):
             pot.r_ab = 0  # Zero resistance pot
         with self.assertRaises(ValueError):
             pot.r_ab = -10e3  # Negative resistance
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             pot.r_ab = None  # None value
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             pot.r_ab = "10e3"  # not a number (number in string)
         self.assertEqual(pot.r_ab, 50e3)  # check that value has not changed
         # Checking wiper resistance
@@ -41,9 +41,9 @@ class TestPotentiometer(unittest.TestCase):
         # Check wrong values assignment raises ValueError
         with self.assertRaises(ValueError):
             pot.r_w = -10  # Negative number
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             pot.r_w = None  # None value
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             pot.r_w = "10"  # Not a number value
 
     def test_lock(self):
@@ -98,7 +98,7 @@ class TestPotentiometer(unittest.TestCase):
         self.assertEqual(pot.voltage_in, 5.0)
         pot.voltage_in = -5.0  # Negative value
         self.assertEqual(pot.voltage_in, -5.0)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             pot.voltage_in = "5.1"
 
     def test_rwa_rwb(self):
