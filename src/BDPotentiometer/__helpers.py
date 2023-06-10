@@ -18,10 +18,10 @@ def check_number(num: Union[float, int, Real]) -> Union[float, int]:
         raise TypeError(f"Expected integer or float number, got {type(num)}")
     if isinstance(num, Integral):
         return int(num)
-    if num in [float('inf'), float('-inf')]:
+    if num in [float("inf"), float("-inf")]:
         raise ValueError(f"Expected integer or float number, got {num}")
     if isnan(num):
-        raise ValueError(f"Expected integer or float number, not NaN")
+        raise ValueError("Expected integer or float number, not NaN")
     if num == 0:
         return 0.0
     return float(num)
@@ -95,7 +95,7 @@ def coerce(
 
 
 def build_tuple(
-    value: Union[float, int, tuple[float,...], list[float,...]],
+    value: Union[float, int, tuple[float, ...], list[float, ...]],
     num: Union[int, float],
     func: Union[Callable, None] = None,
 ) -> tuple[float, ...]:
@@ -133,11 +133,8 @@ def build_tuple(
     return tuple(float(func(value)) for _ in range(num))
 
 
-
 def adjust_tuple(
-        value: Union[tuple[float,...], list[float,...]],
-        num: int,
-        default_value: float
+    value: Union[tuple[float, ...], list[float, ...]], num: int, default_value: float
 ) -> tuple[float, ...]:
     """
     Adjusts tuple or list of floats to a given length `num` and returns a tuple.
