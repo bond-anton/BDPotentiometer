@@ -81,8 +81,8 @@ class Potentiometer:
         self, r_ab: float, r_w: float = 0, rheostat: bool = False, locked: bool = False
     ) -> None:
         self.__locked: bool = bool(locked)
-        self.__r_ab: float = check_positive(r_ab)
-        self.__r_w: float = check_not_negative(r_w)
+        self.__r_ab: float = float(check_positive(r_ab))
+        self.__r_w: float = float(check_not_negative(r_w))
         self.__rheostat: bool = bool(rheostat)
 
         self.__r_lim: float = 0
@@ -101,7 +101,7 @@ class Potentiometer:
     @r_ab.setter
     def r_ab(self, resistance: float) -> None:
         if not self.locked:
-            self.__r_ab = check_positive(resistance)
+            self.__r_ab = float(check_positive(resistance))
 
     @property
     def r_w(self) -> float:
@@ -143,7 +143,7 @@ class Potentiometer:
 
     @r_lim.setter
     def r_lim(self, r_lim: float) -> None:
-        self.__r_lim = check_not_negative(r_lim)
+        self.__r_lim = float(check_not_negative(r_lim))
 
     @property
     def r_load(self) -> float:
@@ -152,7 +152,7 @@ class Potentiometer:
 
     @r_load.setter
     def r_load(self, r_load: float) -> None:
-        self.__r_load = check_not_negative(r_load)
+        self.__r_load = float(check_not_negative(r_load))
 
     @property
     def voltage_in(self) -> float:
@@ -165,7 +165,7 @@ class Potentiometer:
 
     @voltage_in.setter
     def voltage_in(self, voltage: float) -> None:
-        self.__voltage_in = check_number(voltage)
+        self.__voltage_in = float(check_number(voltage))
 
     def r_wa(self, wiper_position: float) -> float:
         """
