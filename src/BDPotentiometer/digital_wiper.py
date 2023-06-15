@@ -5,7 +5,7 @@ from typing import Union
 from gpiozero import SPI
 
 from .potentiometer import Potentiometer
-from .__helpers import check_integer, check_positive, check_not_negative, coerce
+from .__helpers import check_integer, check_positive, check_not_negative, clamp
 
 
 class DigitalWiper:
@@ -24,21 +24,26 @@ class DigitalWiper:
         max_value: int = 128,
         parameters_locked: bool = False,
     ) -> None:
-        self.__locked: bool = bool(parameters_locked)
-        self.__potentiometer = potentiometer
+        self.__parameters_locked: bool = bool(parameters_locked)
+        if isinstance(potentiometer, Potentiometer):
+            self.__potentiometer: Potentiometer = potentiometer
+        else:
+            raise TypeError(
+                f"Expected an instance of Potentiometer class, got {type(potentiometer)}"
+            )
         self.__channel: int = 0
         self.__max_value: int = check_integer(check_positive(max_value))
         self.__value: int = 0
         self.read()
 
     @property
-    def locked(self) -> bool:
+    def parameters_locked(self) -> bool:
         """
         Check if parameters of the wiper are locked.
 
         :return: True if locked and False otherwise
         """
-        return self.__locked
+        return self.__parameters_locked
 
     @property
     def potentiometer(self) -> Potentiometer:
@@ -76,8 +81,9 @@ class DigitalWiper:
 
     @max_value.setter
     def max_value(self, max_value: int) -> None:
-        if not self.locked:
-            self.__max_value = check_integer(check_positive(max_value))
+        new_value = check_integer(check_positive(max_value))
+        if not self.parameters_locked:
+            self.__max_value = new_value
             self.value = self.__value
 
     def _set_value(self, value: int) -> int:
@@ -87,7 +93,7 @@ class DigitalWiper:
         :param value: Requested value as int.
         :return: Value actually set as int.
         """
-        value = int(round(coerce(value, 0, self.max_value)))
+        value = int(round(clamp(value, 0, self.max_value)))
         return value
 
     def _read_value(self) -> int:
@@ -116,7 +122,7 @@ class DigitalWiper:
 
     @value.setter
     def value(self, value: int) -> None:
-        value = check_integer(coerce(value, 0, self.max_value))
+        value = check_integer(clamp(value, 0, self.max_value))
         data = self._set_value(value)
         self.__value = data
 
@@ -130,7 +136,7 @@ class DigitalWiper:
 
     @value_relative.setter
     def value_relative(self, value: float) -> None:
-        value = coerce(value, 0, 1)
+        value = clamp(value, 0, 1)
         value_int = int(round(value * self.max_value))
         self.value = value_int
 

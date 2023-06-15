@@ -23,7 +23,9 @@ class TestPotentiometerVoltageIn(unittest.TestCase):
         For unlocked potentiometer and rheostat result is the same.
         """
         for rheostat in [True, False]:
-            self.pot = Potentiometer(r_ab=10e3, r_w=75, rheostat=rheostat, locked=False)
+            self.pot = Potentiometer(
+                r_ab=10e3, r_w=75, rheostat=rheostat, parameters_locked=False
+            )
             self.assertEqual(self.pot.voltage_in, 0.0)  # Zero is default input voltage
             for voltage in [
                 -5,

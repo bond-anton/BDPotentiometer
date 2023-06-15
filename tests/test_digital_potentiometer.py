@@ -21,7 +21,9 @@ class TestDigitalPotentiometer(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.pot = Potentiometer(r_ab=10e3, r_w=75, rheostat=False, locked=False)
+        self.pot = Potentiometer(
+            r_ab=10e3, r_w=75, rheostat=False, parameters_locked=False
+        )
         digital_wiper = DigitalWiper(
             potentiometer=self.pot, max_value=128, parameters_locked=False
         )
@@ -33,7 +35,7 @@ class TestDigitalPotentiometer(unittest.TestCase):
         """
         Testing basic parameters.
         """
-        pot = Potentiometer(r_ab=10e3, r_w=75, rheostat=False, locked=False)
+        pot = Potentiometer(r_ab=10e3, r_w=75, rheostat=False, parameters_locked=False)
         digital_wiper = DigitalWiper(
             potentiometer=pot, max_value=128, parameters_locked=False
         )

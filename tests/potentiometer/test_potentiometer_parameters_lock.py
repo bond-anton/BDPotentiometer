@@ -23,14 +23,14 @@ class TestPotentiometerLocked(unittest.TestCase):
         """
         for rheostat in [True, False]:
             self.pot_locked = Potentiometer(
-                r_ab=10e3, r_w=75, rheostat=rheostat, locked=True
+                r_ab=10e3, r_w=75, rheostat=rheostat, parameters_locked=True
             )
             # Assert the device is locked and that property is read-only.
-            self.assertTrue(self.pot_locked.locked)
+            self.assertTrue(self.pot_locked.parameters_locked)
             with self.assertRaises(AttributeError):
-                self.pot_locked.locked = False
+                self.pot_locked.parameters_locked = False
             with self.assertRaises(AttributeError):
-                self.pot_locked.locked = True
+                self.pot_locked.parameters_locked = True
             # Try to change `r_ab`, check that the value was not changed.
             initial_value = self.pot_locked.r_ab
             new_value = 2 * initial_value
@@ -61,13 +61,15 @@ class TestPotentiometerLocked(unittest.TestCase):
         Changing of any property is allowed.
         """
         for rheostat in [True, False]:
-            self.pot = Potentiometer(r_ab=10e3, r_w=75, rheostat=rheostat, locked=False)
+            self.pot = Potentiometer(
+                r_ab=10e3, r_w=75, rheostat=rheostat, parameters_locked=False
+            )
             # Assert the device is not locked and that property is read-only.
-            self.assertFalse(self.pot.locked)
+            self.assertFalse(self.pot.parameters_locked)
             with self.assertRaises(AttributeError):
-                self.pot.locked = True
+                self.pot.parameters_locked = True
             with self.assertRaises(AttributeError):
-                self.pot.locked = False
+                self.pot.parameters_locked = False
             # Try to change `r_ab`, check that the value was changed.
             initial_value = self.pot.r_ab
             new_value = 2 * initial_value

@@ -21,7 +21,9 @@ class TestPotentiometerRwaRwb(unittest.TestCase):
         """
         for rheostat in (False, True):
             for locked in (False, True):
-                pot = Potentiometer(r_ab=10e3, r_w=75, rheostat=rheostat, locked=locked)
+                pot = Potentiometer(
+                    r_ab=10e3, r_w=75, rheostat=rheostat, parameters_locked=locked
+                )
                 for pos in np.linspace(0, 1.0, num=101, endpoint=True):
                     r_wa = pot.r_wa(pos)
                     r_wb = pot.r_wb(pos)

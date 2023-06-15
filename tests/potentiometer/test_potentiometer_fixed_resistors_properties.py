@@ -23,7 +23,9 @@ class TestPotentiometerFixedResistors(unittest.TestCase):
         For unlocked potentiometer and rheostat result is the same.
         """
         for rheostat in [True, False]:
-            self.pot = Potentiometer(r_ab=10e3, r_w=75, rheostat=rheostat, locked=False)
+            self.pot = Potentiometer(
+                r_ab=10e3, r_w=75, rheostat=rheostat, parameters_locked=False
+            )
             self.assertEqual(self.pot.r_ab, 10e3)
             # Normal values
             for r_ab in [1, 1e3, 10e3, np.float64(1.1e3), np.float32(1.1e3)]:
@@ -45,7 +47,9 @@ class TestPotentiometerFixedResistors(unittest.TestCase):
         For unlocked potentiometer and rheostat result is the same.
         """
         for rheostat in [True, False]:
-            self.pot = Potentiometer(r_ab=10e3, r_w=75, rheostat=rheostat, locked=False)
+            self.pot = Potentiometer(
+                r_ab=10e3, r_w=75, rheostat=rheostat, parameters_locked=False
+            )
             self.assertEqual(self.pot.r_w, 75)
             # Normal values
             for r_w in [0, 0.0, 1, 1e3, 10e3, np.float64(1.1e3), np.float32(1.1e3)]:
@@ -67,7 +71,9 @@ class TestPotentiometerFixedResistors(unittest.TestCase):
         For unlocked potentiometer and rheostat result is the same.
         """
         for rheostat in [True, False]:
-            self.pot = Potentiometer(r_ab=10e3, r_w=75, rheostat=rheostat, locked=False)
+            self.pot = Potentiometer(
+                r_ab=10e3, r_w=75, rheostat=rheostat, parameters_locked=False
+            )
             self.assertEqual(self.pot.r_lim, 0)
             # Normal values
             for r_lim in [0, 0.0, 1, 1e3, 10e3, np.float64(1.1e3), np.float32(1.1e3)]:
@@ -89,7 +95,9 @@ class TestPotentiometerFixedResistors(unittest.TestCase):
         For unlocked potentiometer and rheostat result is the same.
         """
         for rheostat in [True, False]:
-            self.pot = Potentiometer(r_ab=10e3, r_w=75, rheostat=rheostat, locked=False)
+            self.pot = Potentiometer(
+                r_ab=10e3, r_w=75, rheostat=rheostat, parameters_locked=False
+            )
             self.assertEqual(self.pot.r_load, 0)
             # Normal values
             for r_load in [0, 0.0, 1, 1e3, 10e3, np.float64(1.1e3), np.float32(1.1e3)]:

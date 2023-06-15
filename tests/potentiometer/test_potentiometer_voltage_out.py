@@ -20,7 +20,9 @@ class TestPotentiometerVoltageOut(unittest.TestCase):
         potentiometer and rheostat configurations.
         """
         for rheostat in (False, True):
-            pot = Potentiometer(r_ab=10e3, r_w=75, rheostat=rheostat, locked=False)
+            pot = Potentiometer(
+                r_ab=10e3, r_w=75, rheostat=rheostat, parameters_locked=False
+            )
             pot.r_lim = 0.0
             pot.r_load = 1e6
             # Zero input voltage should result in zero output voltage

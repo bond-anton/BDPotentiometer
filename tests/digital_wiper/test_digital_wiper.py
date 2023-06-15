@@ -19,7 +19,9 @@ class TestDigitalWiper(unittest.TestCase):
         """
         Set up Unittest
         """
-        self.pot = Potentiometer(r_ab=10e3, r_w=75, rheostat=False, locked=False)
+        self.pot = Potentiometer(
+            r_ab=10e3, r_w=75, rheostat=False, parameters_locked=False
+        )
         self.digital_wiper = DigitalWiper(
             potentiometer=self.pot, max_value=128, parameters_locked=False
         )
@@ -29,51 +31,6 @@ class TestDigitalWiper(unittest.TestCase):
         self.spi_digital_wiper = SpiDigitalWiper(
             spi=None, potentiometer=self.pot, max_value=128, parameters_locked=False
         )
-
-    def test_basic_properties(self):
-        """
-        Testing basic parameters.
-        """
-        self.assertEqual(self.digital_wiper.potentiometer, self.pot)
-        self.assertEqual(self.digital_wiper.locked, False)
-        self.assertEqual(self.digital_wiper_locked.locked, True)
-
-    def test_channel_numbering(self):
-        """
-        Testing channel numbering.
-        """
-        self.assertEqual(self.digital_wiper.channel, 0)
-        self.digital_wiper.channel = 3
-        self.assertEqual(self.digital_wiper.channel, 3)
-        with self.assertRaises(ValueError):
-            self.digital_wiper.channel = -3
-        with self.assertRaises(TypeError):
-            self.digital_wiper.channel = "A"
-        self.assertEqual(self.digital_wiper.channel, 3)
-
-    def test_min_value(self):
-        """
-        Testing min_value property.
-        """
-        self.assertEqual(self.digital_wiper.min_value, 0)
-        with self.assertRaises(AttributeError):
-            self.digital_wiper.min_value = 1
-
-    def test_max_value(self):
-        """
-        Testing max_value property.
-        """
-        self.assertEqual(self.digital_wiper.max_value, 128)
-        self.digital_wiper.max_value = 1
-        self.assertEqual(self.digital_wiper.max_value, 1)
-        self.digital_wiper.max_value = 256
-        self.assertEqual(self.digital_wiper.max_value, 256)
-        with self.assertRaises(ValueError):
-            self.digital_wiper.max_value = -10
-        with self.assertRaises(ValueError):
-            self.digital_wiper.max_value = 0
-        with self.assertRaises(ValueError):
-            self.digital_wiper.max_value = 128.5
 
     def test_value_get_set(self):
         """

@@ -2,7 +2,7 @@
 
 import math as m
 
-from .__helpers import coerce, check_number, check_positive, check_not_negative
+from .__helpers import clamp, check_number, check_positive, check_not_negative
 
 
 class Potentiometer:
@@ -78,9 +78,13 @@ class Potentiometer:
     # pylint: disable=too-many-instance-attributes
 
     def __init__(
-        self, r_ab: float, r_w: float = 0, rheostat: bool = False, locked: bool = False
+        self,
+        r_ab: float,
+        r_w: float = 0,
+        rheostat: bool = False,
+        parameters_locked: bool = False,
     ) -> None:
-        self.__locked: bool = bool(locked)
+        self.__parameters_locked: bool = bool(parameters_locked)
         self.__r_ab: float = float(check_positive(r_ab))
         self.__r_w: float = float(check_not_negative(r_w))
         self.__rheostat: bool = bool(rheostat)
@@ -100,7 +104,7 @@ class Potentiometer:
 
     @r_ab.setter
     def r_ab(self, resistance: float) -> None:
-        if not self.locked:
+        if not self.parameters_locked:
             self.__r_ab = float(check_positive(resistance))
 
     @property
@@ -114,17 +118,17 @@ class Potentiometer:
 
     @r_w.setter
     def r_w(self, r_w: float) -> None:
-        if not self.locked:
+        if not self.parameters_locked:
             self.__r_w = float(check_not_negative(r_w))
 
     @property
-    def locked(self) -> bool:
+    def parameters_locked(self) -> bool:
         """
         Check if parameters of the potentiometer are locked.
 
         :return: True if locked and False otherwise
         """
-        return self.__locked
+        return self.__parameters_locked
 
     @property
     def rheostat(self) -> bool:
@@ -175,7 +179,7 @@ class Potentiometer:
         :param wiper_position: Wiper position in the range [0: 1]
         :return: Resistance between terminals A and W (float).
         """
-        wiper_position = coerce(wiper_position, 0, 1)
+        wiper_position = clamp(wiper_position, 0, 1)
         return self.r_w + (1 - wiper_position) * self.r_ab
 
     def r_wb(self, wiper_position: float) -> float:
@@ -186,7 +190,7 @@ class Potentiometer:
         :param wiper_position: Wiper position in the range [0: 1]
         :return: Resistance between terminals B and W (float).
         """
-        wiper_position = coerce(wiper_position, 0, 1)
+        wiper_position = clamp(wiper_position, 0, 1)
         return self.r_w + wiper_position * self.r_ab
 
     def r_wa_to_position(self, r_wa: float) -> float:
@@ -197,7 +201,7 @@ class Potentiometer:
         :param r_wa: Resistance between terminals A and W (float)
         :return: Wiper position in the range [0: 1] (float).
         """
-        r_wa = coerce(r_wa, self.r_w, self.r_w + self.r_ab)
+        r_wa = clamp(r_wa, self.r_w, self.r_w + self.r_ab)
         return 1 - (r_wa - self.r_w) / self.r_ab
 
     def r_wb_to_position(self, r_wb: float) -> float:
@@ -208,7 +212,7 @@ class Potentiometer:
         :param r_wb: Resistance between terminals B and W (float)
         :return: Wiper position in the range [0: 1] (float).
         """
-        r_wb = coerce(r_wb, self.r_w, self.r_w + self.r_ab)
+        r_wb = clamp(r_wb, self.r_w, self.r_w + self.r_ab)
         return (r_wb - self.r_w) / self.r_ab
 
     def voltage_out(self, wiper_position: float) -> float:

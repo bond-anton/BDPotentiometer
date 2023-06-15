@@ -107,7 +107,7 @@ class MCP4xxxPotentiometer(Potentiometer):
 
     def __init__(self, r_ab: float, rheostat: bool = False) -> None:
         r_ab = _coerce_r_ab(r_ab)
-        super().__init__(r_ab=r_ab, r_w=75, rheostat=rheostat, locked=True)
+        super().__init__(r_ab=r_ab, r_w=75, rheostat=rheostat, parameters_locked=True)
 
 
 class MCP4xxxWiper(SpiDigitalWiper):

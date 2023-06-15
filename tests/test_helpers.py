@@ -9,7 +9,7 @@ try:
         check_integer,
         check_not_negative,
         check_positive,
-        coerce,
+        clamp,
         build_tuple,
         adjust_tuple,
     )
@@ -19,7 +19,7 @@ except ModuleNotFoundError:
         check_integer,
         check_not_negative,
         check_positive,
-        coerce,
+        clamp,
         build_tuple,
         adjust_tuple,
     )
@@ -221,8 +221,8 @@ class TestHelpers(unittest.TestCase):
             101.0,
         ]:
             for output_value in [
-                coerce(input_value, left, right),
-                coerce(input_value, right, left),
+                clamp(input_value, left, right),
+                clamp(input_value, right, left),
             ]:
                 if min(left, right) <= input_value <= max(left, right):
                     self.assertEqual(output_value, input_value)
@@ -238,8 +238,8 @@ class TestHelpers(unittest.TestCase):
         right = 100  # int
         for input_value in [-1, -1.0, 0.0, 0, 100.0, 100, 101, 101.0]:
             for output_value in [
-                coerce(input_value, left, right),
-                coerce(input_value, right, left),
+                clamp(input_value, left, right),
+                clamp(input_value, right, left),
             ]:
                 if min(left, right) <= input_value <= max(left, right):
                     self.assertEqual(output_value, input_value)
@@ -258,13 +258,13 @@ class TestHelpers(unittest.TestCase):
         # Check TypeError is raised for wrong argument type.
         for input_value in ["-17.3", "a", [0.0], [1.0, 17.2], (np.pi,), (2, 2.3), None]:
             with self.assertRaises(TypeError):
-                coerce(input_value, -10.0, 10)
+                clamp(input_value, -10.0, 10)
         for left in ["-17.3", "a", [0.0], [1.0, 17.2], (np.pi,), (2, 2.3), None]:
             with self.assertRaises(TypeError):
-                coerce(10, left, 10.0)
+                clamp(10, left, 10.0)
         for right in ["-17.3", "a", [0.0], [1.0, 17.2], (np.pi,), (2, 2.3), None]:
             with self.assertRaises(TypeError):
-                coerce(10, -10, right)
+                clamp(10, -10, right)
 
     def test_build_tuple(self):
         """

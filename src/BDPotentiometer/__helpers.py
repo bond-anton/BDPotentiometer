@@ -67,11 +67,11 @@ def check_positive(num: Union[float, int]) -> Union[float, int]:
     return num
 
 
-def coerce(
+def clamp(
     value: Union[float, int], min_value: Union[float, int], max_value: Union[float, int]
 ) -> Union[float, int]:
     """
-    Coerce `value` to given range between `min_value` and `max_value`.
+    Clamp `value` to given range between `min_value` and `max_value`.
 
     :param value: Either float or int number to be coerced.
     :param min_value: Lower coerce range boundary.
