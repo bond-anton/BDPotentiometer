@@ -73,6 +73,28 @@ class TestPotentiometerVoltageOut(unittest.TestCase):
             for v_out in np.linspace(1e-5, 5, num=101, endpoint=True):
                 self.assertEqual(pot.voltage_out_to_wiper_position(v_out), 0)
 
+    def test_voltage_out_wrong_type(self):
+        """
+        Testing TypeError is raised on wrong type voltage out input for both
+        potentiometer and rheostat configurations.
+        """
+        for rheostat in (False, True):
+            pot = Potentiometer(
+                r_ab=10e3, r_w=75, rheostat=rheostat, parameters_locked=False
+            )
+            pot.r_lim = 0.0
+            pot.r_load = 1e6
+            # Zero input voltage should result in zero output voltage
+            pot.voltage_in = 5.0
+            # Wrong type
+            for v_out in [None, "100.2"]:
+                with self.assertRaises(TypeError):
+                    pot.voltage_out_to_wiper_position(v_out)
+            # Wrong type
+            for pos in [None, "0.2"]:
+                with self.assertRaises(TypeError):
+                    pot.voltage_out(pos)
+
 
 if __name__ == "__main__":
     unittest.main()

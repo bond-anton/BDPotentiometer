@@ -122,7 +122,7 @@ class DigitalWiper:
 
     @value.setter
     def value(self, value: int) -> None:
-        value = check_integer(clamp(value, 0, self.max_value))
+        value = clamp(check_integer(value), 0, self.max_value)
         data = self._set_value(value)
         self.__value = data
 
@@ -147,7 +147,7 @@ class DigitalWiper:
 
         :return: Resistance between terminals B and W (float).
         """
-        return self.potentiometer.r_wb(self.value / self.max_value)
+        return self.potentiometer.r_wb(self.value_relative)
 
     @r_wb.setter
     def r_wb(self, resistance: float) -> None:
@@ -162,7 +162,7 @@ class DigitalWiper:
 
         :return: Resistance between terminals A and W (float).
         """
-        return self.potentiometer.r_wa(self.value / self.max_value)
+        return self.potentiometer.r_wa(self.value_relative)
 
     @r_wa.setter
     def r_wa(self, resistance: float) -> None:

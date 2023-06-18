@@ -47,6 +47,7 @@ class TestDigitalWiperMinMaxValue(unittest.TestCase):
                 # Correct values
                 for max_value_new in [1, 10, 128, 1024, 128.0]:
                     digital_wiper.max_value = max_value_new
+                    # Check that parameters_locked locks the max_value
                     if not digital_wiper.parameters_locked:
                         self.assertEqual(digital_wiper.max_value, max_value_new)
                     else:

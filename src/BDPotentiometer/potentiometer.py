@@ -222,6 +222,7 @@ class Potentiometer:
         :param wiper_position: Wiper position as float number between 0 and 1.
         :return: Voltage (float).
         """
+        wiper_position = clamp(wiper_position, 0, 1)
         if self.rheostat:
             r_total = self.r_load + self.r_lim + self.r_wb(wiper_position)
             return self.voltage_in * self.r_load / r_total
@@ -238,6 +239,7 @@ class Potentiometer:
         :param voltage_out: Output voltage (float).
         :return: Wiper position as float number between 0 and 1.
         """
+        voltage_out = check_number(voltage_out)
         if voltage_out == 0 or self.r_load == 0 or self.voltage_in == 0:
             return 0
         if (self.voltage_in / voltage_out) / abs(self.voltage_in / voltage_out) < 0:
