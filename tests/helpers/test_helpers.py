@@ -5,8 +5,6 @@ import numpy as np
 
 try:
     from src.BDPotentiometer.__helpers import (
-        check_number,
-        check_integer,
         check_not_negative,
         check_positive,
         clamp,
@@ -15,8 +13,6 @@ try:
     )
 except ModuleNotFoundError:
     from BDPotentiometer.__helpers import (
-        check_number,
-        check_integer,
         check_not_negative,
         check_positive,
         clamp,
@@ -27,97 +23,6 @@ except ModuleNotFoundError:
 
 class TestHelpers(unittest.TestCase):
     """Test case for helpers functions"""
-
-    def test_check_number(self):
-        """
-        Testing check_number function.
-        Function checks if argument is a real number (not complex).
-        return int or float depending on argument type or raises ValueError
-        if argument is not a real number.
-        check_number does not allow argument to be +-inf, or NaN.
-        Special numbers `+0` and `-0` must be converted to just 0
-        """
-        # Check integer arguments.
-        for input_value in [-17, -1, -0, 0, 1, 17]:
-            output_value = check_number(input_value)
-            self.assertEqual(output_value, input_value)
-            self.assertIsInstance(output_value, int)
-        # Check float arguments.
-        for input_value in [-17.3, -2.0, -1.1, 0.0, 1.0, 17.2]:
-            output_value = check_number(input_value)
-            self.assertEqual(output_value, input_value)
-            self.assertIsInstance(output_value, float)
-        # Check numpy integer types.
-        for input_value in [-17, -1, 0, 1, 17]:
-            for numpy_type in [np.int32, np.int64, np.int8]:
-                np_input_value = numpy_type(input_value)
-                output_value = check_number(np_input_value)
-                self.assertEqual(output_value, input_value)
-                self.assertIsInstance(output_value, int)
-        # Check numpy float types.
-        for input_value in [-17.3, -2.0, -1.1, 0.0, 1.0, 17.2, np.pi]:
-            for numpy_type in [np.float32, np.float64]:
-                np_input_value = numpy_type(input_value)
-                output_value = check_number(np_input_value)
-                np.testing.assert_allclose(output_value, input_value)
-                self.assertIsInstance(output_value, float)
-        # Check +0 and -0 float numbers are converted to 0.0.
-        for input_value in [float("+0.0"), float("-0.0")]:
-            output_value = check_number(input_value)
-            self.assertEqual(output_value, 0.0)
-            self.assertIsInstance(output_value, float)
-        # Check ValueError is raised for special float +-inf, NaN.
-        for input_value in [float("+inf"), float("-inf"), float("nan")]:
-            with self.assertRaises(ValueError):
-                check_number(input_value)
-        # Check TypeError is raised for wrong argument type.
-        for input_value in ["-17.3", "a", [0.0], [1.0, 17.2], (np.pi,), (2, 2.3), None]:
-            with self.assertRaises(TypeError):
-                check_number(input_value)
-
-    def test_check_integer(self):
-        """
-        Testing check_integer function.
-        """
-        # Check integers.
-        for input_value in [-100, -3, -0, 0, 2, 100]:
-            output_value = check_integer(input_value)
-            self.assertEqual(output_value, input_value)
-            self.assertIsInstance(output_value, int)
-        # Check floats.
-        for input_value in [-100.0, -3.0, float("-0.0"), 0.0, 2.0, 100.0]:
-            output_value = check_integer(input_value)
-            self.assertEqual(output_value, input_value)
-            self.assertIsInstance(output_value, int)
-        # Check numpy integer types.
-        for input_value in [-17, -1, 0, 1, 17]:
-            for numpy_type in [np.int32, np.int64, np.int8]:
-                np_input_value = numpy_type(input_value)
-                output_value = check_integer(np_input_value)
-                self.assertEqual(output_value, input_value)
-                self.assertIsInstance(output_value, int)
-        # Check numpy float types.
-        for input_value in [-17.0, -2.0, -1.0, 0.0, 1.0, 137.0]:
-            for numpy_type in [np.float32, np.float64]:
-                np_input_value = numpy_type(input_value)
-                output_value = check_integer(np_input_value)
-                np.testing.assert_allclose(output_value, input_value)
-                self.assertIsInstance(output_value, int)
-        # Check ValueError is raised for not integer argument values, including special floats.
-        for input_value in [
-            -17.1,
-            -2.2,
-            np.pi,
-            float("inf"),
-            float("-inf"),
-            float("nan"),
-        ]:
-            with self.assertRaises(ValueError):
-                check_integer(input_value)
-        # Check TypeError is raised for wrong argument type.
-        for input_value in ["-17.3", "a", [0.0], [1.0, 17.2], (np.pi,), (2, 2.3), None]:
-            with self.assertRaises(TypeError):
-                check_integer(input_value)
 
     def test_non_negative(self):
         """
@@ -201,9 +106,9 @@ class TestHelpers(unittest.TestCase):
             with self.assertRaises(TypeError):
                 check_positive(input_value)
 
-    def test_coerce(self):
+    def test_clamp(self):
         """
-        Testing coerce function normal operation.
+        Testing clamp function normal operation.
         """
         # Check non-zero width range.
         left = -0.1  # float
@@ -230,7 +135,7 @@ class TestHelpers(unittest.TestCase):
                     self.assertEqual(output_value, min(left, right))
                 elif input_value > max(left, right):
                     self.assertEqual(output_value, max(left, right))
-                # If input is a float number coerce must return float
+                # If input is a float number clamp must return float
                 if isinstance(input_value, float):
                     self.assertIsInstance(output_value, float)
         # Check zero width range.
@@ -247,13 +152,13 @@ class TestHelpers(unittest.TestCase):
                     self.assertEqual(output_value, min(left, right))
                 if input_value > max(left, right):
                     self.assertEqual(output_value, max(left, right))
-                # If input is a float number coerce must return float
+                # If input is a float number clamp must return float
                 if isinstance(input_value, float):
                     self.assertIsInstance(output_value, float)
 
-    def test_coerce_errors(self):
+    def test_clamp_errors(self):
         """
-        Testing coerce function errors.
+        Testing clamp function errors.
         """
         # Check TypeError is raised for wrong argument type.
         for input_value in ["-17.3", "a", [0.0], [1.0, 17.2], (np.pi,), (2, 2.3), None]:
@@ -273,7 +178,7 @@ class TestHelpers(unittest.TestCase):
         # Check normal operation: build tuple from single number.
         for input_value in [-1.1, -1, -1.0, 0, 0.0, 1.0, 1, 1.1]:
             for num in [1, 2, 3, 20, 3.0]:
-                for func in [check_number, lambda x: 2 * x, None]:
+                for func in [lambda x: 2 * x, None]:
                     output_value = build_tuple(input_value, num, func=func)
                     self.assertEqual(len(output_value), num)
                     for item in output_value:
@@ -286,7 +191,7 @@ class TestHelpers(unittest.TestCase):
                         )  # build_tuple returns tuple of floats
         # Check normal operation: apply func to given list or tuple.
         for input_value in [[-1.1, -1, 3], (-1.0, 0, 0.0, 1.0, 1, 1.1)]:
-            for func in [check_number, lambda x: 2 * x, None]:
+            for func in [lambda x: 2 * x, None]:
                 output_value = build_tuple(input_value, len(input_value), func=func)
                 self.assertEqual(len(output_value), len(input_value))
                 for item_out, item_in in zip(output_value, input_value):
