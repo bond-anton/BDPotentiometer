@@ -66,6 +66,7 @@ class DigitalWiper:
 
     @property
     def invert(self) -> bool:
+        """Wiper inversion"""
         return self.__invert
 
     @invert.setter
@@ -259,6 +260,7 @@ class DigitalWiper:
 class SpiDigitalWiper(DigitalWiper):
     """Digital wiper with SPI interface"""
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         potentiometer: Potentiometer,
