@@ -132,6 +132,7 @@ class MCP4xxxWiper(SpiDigitalWiper):
     def _set_value(self, value: int) -> int:
         if isinstance(self.spi, SPI):
             value = self._check_value(value)
+            print("V: ", value)
             data = self.spi.transfer([_W_CMD | _CH[self.channel], value])
             _check_write_response(data)
             return value
