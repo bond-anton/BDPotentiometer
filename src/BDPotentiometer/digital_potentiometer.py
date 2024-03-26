@@ -244,7 +244,6 @@ class DigitalPotentiometerDevice:
         for channel, wiper in self.channels.items():
             wiper.invert = invert[channel]
 
-
     def set_r_wb(self, channel: Union[int, str] = 0, resistance: float = 0) -> int:
         """
         Set the resistance for given channel between B and W terminals

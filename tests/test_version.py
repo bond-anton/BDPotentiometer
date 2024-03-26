@@ -1,4 +1,5 @@
 """ Test package version is correctly set """
+
 import unittest
 
 try:

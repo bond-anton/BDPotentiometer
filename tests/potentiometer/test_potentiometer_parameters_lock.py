@@ -1,4 +1,5 @@
 """ Test access to Potentiometer locked/unlocked properties. """
+
 import unittest
 
 try:
