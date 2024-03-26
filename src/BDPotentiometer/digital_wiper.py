@@ -96,7 +96,7 @@ class DigitalWiper:
             self.__max_value = new_value
             self.value = self.__value
 
-    def _set_value(self, value: int) -> int:
+    def _check_value(self, value: int) -> int:
         """
         Set given wiper position to `value`.
 
@@ -106,6 +106,16 @@ class DigitalWiper:
         value = int(round(clamp(value, 0, self.max_value)))
         if self.invert:
             return self.max_value - value
+        return value
+
+    def _set_value(self, value: int) -> int:
+        """
+        Set given wiper position to `value`.
+
+        :param value: Requested value as int.
+        :return: Value actually set as int.
+        """
+        value = self._check_value(value)
         return value
 
     def _read_value(self) -> int:
@@ -254,6 +264,7 @@ class SpiDigitalWiper(DigitalWiper):
         potentiometer: Potentiometer,
         spi: Union[SPI, None] = None,
         max_value: int = 128,
+        invert: bool = False,
         parameters_locked: bool = False,
     ):
         self.__spi = None
@@ -262,6 +273,7 @@ class SpiDigitalWiper(DigitalWiper):
         super().__init__(
             potentiometer=potentiometer,
             max_value=max_value,
+            invert=invert,
             parameters_locked=parameters_locked,
         )
 

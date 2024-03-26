@@ -118,17 +118,20 @@ class MCP4xxxWiper(SpiDigitalWiper):
         potentiometer: MCP4xxxPotentiometer,
         spi: Union[SPI, None] = None,
         max_value: int = 128,
+        invert: bool = False,
     ):
         max_value = _coerce_max_value(max_value)
         super().__init__(
             potentiometer=potentiometer,
             spi=spi,
             max_value=max_value,
+            invert=invert,
             parameters_locked=True,
         )
 
     def _set_value(self, value: int) -> int:
         if isinstance(self.spi, SPI):
+            value = self._check_value(value)
             data = self.spi.transfer([_W_CMD | _CH[self.channel], value])
             _check_write_response(data)
             return value
