@@ -200,6 +200,51 @@ class DigitalPotentiometerDevice:
         for i in range(self.channels_num):
             self.channels[i].value = value[i]
 
+    def set_invert(self, channel: Union[int, str] = 0, invert: bool = False) -> int:
+        """
+        Set the invert property for a given channel.
+
+        :param channel: Channel number or label (int | str)
+        :param invert: bool.
+        :return: Wiper position value as int.
+        """
+        channel_number = self._get_channel_number_by_label_or_id(channel)
+        if channel_number is None:
+            raise ValueError(f"Channel {channel} not found.")
+        self.channels[channel_number].invert = invert
+        return self.channels[channel_number].value
+
+    def get_invert(self, channel: Union[int, str] = 0) -> bool:
+        """
+        Get the invert property value for a given channel.
+
+        :param channel: Channel number or label (int | str)
+        :return: invert property value as bool.
+        """
+        channel_number = self._get_channel_number_by_label_or_id(channel)
+        if channel_number is None:
+            raise ValueError(f"Channel {channel} not found.")
+        return self.channels[channel_number].invert
+
+    @property
+    def invert(self) -> tuple[bool, ...]:
+        """
+        Tuple of the invert property of channels.
+
+        :return: Invert property values for all channels as a tuple of booleans.
+        """
+        return tuple(wiper.invert for _, wiper in self.channels.items())
+
+    @invert.setter
+    def invert(self, invert: Union[list[bool], tuple[bool, ...]]) -> None:
+        if len(invert) != self.channels_num:
+            raise ValueError(
+                f"A tuple or list of length {self.channels_num} is expected."
+            )
+        for channel, wiper in self.channels.items():
+            wiper.invert = invert[channel]
+
+
     def set_r_wb(self, channel: Union[int, str] = 0, resistance: float = 0) -> int:
         """
         Set the resistance for given channel between B and W terminals

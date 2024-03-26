@@ -68,7 +68,7 @@ class MCP4251(MCP4xx1):
 
 
 class MCP4261(MCP4xx1):
-    """8-bit, dual channel pot with volatile wiper"""
+    """8-bit, dual channel pot with non-volatile wiper"""
 
     def __init__(self, r_ab: float = 10e3, **spi_args) -> None:
         super().__init__(r_ab=r_ab, max_value=256, channels=2, **spi_args)

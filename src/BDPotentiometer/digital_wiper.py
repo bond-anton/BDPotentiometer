@@ -22,6 +22,7 @@ class DigitalWiper:
         self,
         potentiometer: Potentiometer,
         max_value: int = 128,
+        invert: bool = False,
         parameters_locked: bool = False,
     ) -> None:
         self.__parameters_locked: bool = bool(parameters_locked)
@@ -32,6 +33,7 @@ class DigitalWiper:
                 f"Expected an instance of Potentiometer class, got {type(potentiometer)}"
             )
         self.__channel: int = 0
+        self.__invert: bool = bool(invert)
         self.__max_value: int = check_integer(check_positive(max_value))
         self.__value: int = 0
         self.read()
@@ -61,6 +63,14 @@ class DigitalWiper:
     @channel.setter
     def channel(self, channel: int) -> None:
         self.__channel = check_integer(check_not_negative(channel))
+
+    @property
+    def invert(self) -> bool:
+        return self.__invert
+
+    @invert.setter
+    def invert(self, invert: bool) -> None:
+        self.__invert = bool(invert)
 
     @property
     def min_value(self) -> int:
@@ -94,6 +104,8 @@ class DigitalWiper:
         :return: Value actually set as int.
         """
         value = int(round(clamp(value, 0, self.max_value)))
+        if self.invert:
+            return self.max_value - value
         return value
 
     def _read_value(self) -> int:
@@ -118,6 +130,8 @@ class DigitalWiper:
         :return: Wiper position value (int).
         """
         self.read()
+        if self.invert:
+            return self.max_value - self.__value
         return self.__value
 
     @value.setter
