@@ -95,7 +95,7 @@ def clamp(
 
 
 def build_tuple(
-    value: Union[float, int, tuple[float, ...], list[float, ...]],
+    value: Union[float, int, tuple[float], list[float]],
     num: Union[int, float],
     func: Union[Callable, None] = None,
 ) -> tuple[float, ...]:
@@ -134,7 +134,7 @@ def build_tuple(
 
 
 def adjust_tuple(
-    value: Union[tuple[float, ...], list[float, ...]], num: int, default_value: float
+    value: Union[tuple[float], list[float]], num: int, default_value: float
 ) -> tuple[float, ...]:
     """
     Adjusts tuple or list of floats to a given length `num` and returns a tuple.

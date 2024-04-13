@@ -147,7 +147,7 @@ class DigitalWiper:
 
     @value.setter
     def value(self, value: int) -> None:
-        value = clamp(check_integer(value), 0, self.max_value)
+        value = int(clamp(check_integer(value), 0, self.max_value))
         data = self._set_value(value)
         self.__value = data
 
