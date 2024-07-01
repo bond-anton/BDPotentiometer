@@ -3,7 +3,8 @@
 from typing import Union
 from gpiozero import SPI, SPIDevice
 
-from BDPotentiometer import SpiDigitalWiper, Potentiometer
+from .. import SpiDigitalWiper, Potentiometer
+from ..__helpers import clamp
 
 
 resistance_list: tuple[float, ...] = (5e3, 10e3, 50e3, 100e3)
@@ -105,9 +106,9 @@ _SHDN = 0b10
 class MCP4xxxPotentiometer(Potentiometer):
     """Potentiometer to use with MCP4XXX"""
 
-    def __init__(self, r_ab: float, rheostat: bool = False) -> None:
+    def __init__(self, r_ab: float, wiper_position: float = 0.5, **kwargs) -> None:
         r_ab = _coerce_r_ab(r_ab)
-        super().__init__(r_ab=r_ab, r_w=75, rheostat=rheostat, parameters_locked=True)
+        super().__init__(r_ab=r_ab, wiper_position=wiper_position, r_w=75, **kwargs)
 
 
 class MCP4xxxWiper(SpiDigitalWiper):
@@ -119,6 +120,7 @@ class MCP4xxxWiper(SpiDigitalWiper):
         spi: Union[SPI, None] = None,
         max_value: int = 128,
         invert: bool = False,
+        **kwargs,
     ):
         max_value = _coerce_max_value(max_value)
         super().__init__(
@@ -126,14 +128,17 @@ class MCP4xxxWiper(SpiDigitalWiper):
             spi=spi,
             max_value=max_value,
             invert=invert,
-            parameters_locked=True,
+            **kwargs,
         )
 
     def _set_value(self, value: int) -> int:
         if isinstance(self.spi, SPI):
-            value = self._check_value(value)
+            value = int(round(clamp(value, 0, self.max_value)))
+            value = self.max_value - value if self.invert else value
+            self.logger.debug("Setting value to %d", value)
             data = self.spi.transfer([_W_CMD | _CH[self.channel], value])
             _check_write_response(data)
+            self.potentiometer.wiper_position = value / self.max_value
             return value
         raise ConnectionError("SPI interface not set")
 

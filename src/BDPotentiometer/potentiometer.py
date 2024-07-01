@@ -1,59 +1,66 @@
 """ Basic potentiometer device implementation """
 
 import math as m
-
 from .__helpers import clamp, check_number, check_positive, check_not_negative
+from .__logger import get_logger
 
 
 class Potentiometer:
+
+    # pylint: disable=too-many-instance-attributes
+
     """
-    Represents a general potentiometer with 3 terminals A, B, and W.
+    Represents a generic potentiometer with 3 terminals A, B, and W.
 
     A     ┌─────────────┐     B
      o────┤Potentiometer├─────o
           └──────▲──────┘
            1 <── │ ──> 0
                  o W
-    Total resistance is `r_ab`, wiper resistance is `r_w`
-    If device is `locked` parameters `r_ab` and `r_w` are read-only.
+    The total resistance of the potentiometer is `r_ab`, the resistance of the wiper is `r_w`,
+    the resistance of the A and B terminals is `r_a` and `r_b`, respectively.
 
-    Wiper moves from B to A changing position from 0 to 1.
-    Resistance between terminals WA and WB can be calculated using `r_wa` and `r_wb` functions.
-    Reverse functions `r_wa_to_position` and `r_wb_to_position` for calculation of wiper position
-    given r_wa or r_wb are also available.
+    The wiper can move between B and A, changing its position from 0 (terminal B) to 1 (terminal A).
+    To calculate the resistance between terminals WA and WB use `r_wa` and `r_wb` methods.
+    The inverse functions `r_wa_to_position` and `r_wb_to_position` are also available
+    to calculate the wiper position given a known r_wa or r_wb.
 
-    Parameter `rheostat` turns potentiometer to rheostat with terminal A floating not connected,
-    and two terminals B and W available
+    The figure below shows the equivalent wiring diagram for a potentiometer.
+             A   ┌─────────┐  ┌─────────┐  ┌─────────┐   B
+      (V_A)  o───┤   R_A   ├──┤   POT   ├──┤   R_B   ├───o  (V_B)
+                 └─────────┘  └────▲────┘  └─────────┘
+                             1 <── │ ──> 0
+                                ┌─────┐
+                                │     │
+                                │ R_W │
+                                │     │
+                                └─────┘
+                                   │
+                                   o W (V_W)
+                                   │
+                                 ┌───┐
+                                 │ L │
+                        R_load   │ o │
+                                 │ a │
+                                 │ d │
+                                 └───┘
+                                   │
+                                   o L (V_L)
 
-    A     ┌─────────────┐     B
-     x────┤   Rheostat  ├─────o
-          └──────▲──────┘
-           1 <── │ ──> 0
-                 o W
+    The voltage at the A and B terminals of the potentiometer can be controlled
+    using the parameters `v_a` and `v_b`.
+    To obtain the voltage at the terminal W use method `v_w`.
+    The resistance of the load can be set using the property `r_load`.
+    The potential at the another end of the load resistor is set using the `v_l` property.
 
-    Potentiometer can be connected like shown bin the sketch below
-                 ┌────────┐ A     ┌──────────┐     B
-      (V_in) o───┤ R_lim  ├──o────┤   POT    ├─────o────┐
-                 └────────┘       └─────▲────┘          │
-                                  1 <── │ ──> 0         │
-                                        o W (V_out)    ─┴─ GND
-                                        │
-                                      ┌───┐
-                                      │ L │
-                             R_load   │ o │
-                                      │ a │
-                                      │ d │
-                                      └───┘
-                                        │
-                                       ─┴─ GND
+    If we set the resistance `r_a` to a very high value, the potentiometer will turn
+    into a rheostat with a floating A terminal.
 
-    Rheostat possible connection circuit is shown below.
-
-      A     ┌──────────┐     B   ┌────────┐
-       x────┤ Rheostat ├─────o───┤ R_lim  ├──o (V_in)
-            └─────▲────┘         └────────┘
+      A     ┌──────────┐        ┌────────┐  B
+       x────┤ Rheostat ├────────┤  R_B   ├──o (V_B)
+            └─────▲────┘        └────────┘
             1 <── │ ──> 0
-                  o W (V_out)
+                  o W (V_W)
                   │
                 ┌───┐
                 │ L │
@@ -62,36 +69,44 @@ class Potentiometer:
                 │ d │
                 └───┘
                   │
-                 ─┴─ GND
+                 ─┴─ GND (V_L = 0)
 
-    R_lim is current limiting resistor, and R_load is resistive load.
-    Parameters `r_lim` and `r_load` can be set using properties with same name.
-    Default value for R_lim and R_load is zero.
-    Input voltage (V_in) is set using property `voltage_in`.
-    Output voltage (V_out) can be calculated using method `voltage_out`.
+    From the other hand, if the `r_b` and `v_b` are set to zero we can get a simple voltage source.
+             A   ┌───────┐       ┌─────────┐     B
+      (V_in) o───┤  R_A  ├───────┤   POT   ├─────o────┐
+                 └───────┘       └────▲────┘          │
+                                1 <── │ ──> 0         │
+                                      o W (V_out)    ─┴─ GND (V_B = 0)
+                                      │
+                                    ┌───┐
+                                    │ L │
+                           R_load   │ o │
+                                    │ a │
+                                    │ d │
+                                    └───┘
+                                      │
+                                     ─┴─ GND (V_L = 0)
 
-    Wiper position given required V_out can be calculated
-    using function `voltage_out_to_wiper_position`.
+
+    To get the position of the wiper given a required V_W use `v_w_to_wiper_position` method.
 
     """
 
-    # pylint: disable=too-many-instance-attributes
-
     def __init__(
-        self,
-        r_ab: float,
-        r_w: float = 0,
-        rheostat: bool = False,
-        parameters_locked: bool = False,
+        self, r_ab: float = 1.0e5, wiper_position: float = 0.5, **kwargs
     ) -> None:
-        self.__parameters_locked: bool = bool(parameters_locked)
-        self.__r_ab: float = float(check_positive(r_ab))
-        self.__r_w: float = float(check_not_negative(r_w))
-        self.__rheostat: bool = bool(rheostat)
-
-        self.__r_lim: float = 0
-        self.__r_load: float = 0
-        self.__voltage_in: float = 0
+        self._r_ab: float = check_positive(r_ab)
+        self._r_w: float = check_not_negative(kwargs.get("r_w", 0.0))
+        self._r_a: float = check_not_negative(kwargs.get("r_a", 0.0))
+        self._r_b: float = check_not_negative(kwargs.get("r_b", 0.0))
+        self._v_a: float = check_number(kwargs.get("v_a", 0.0))
+        self._v_b: float = check_number(kwargs.get("v_b", 0.0))
+        self._v_load: float = check_number(kwargs.get("v_load", 0.0))
+        self._r_load: float = check_not_negative(kwargs.get("r_load", 1.0e10))
+        self._wiper_position: float = float(clamp(wiper_position, 0, 1))
+        self.logger = get_logger(
+            kwargs.get("label", "Potentiometer"), kwargs.get("log_level", None)
+        )
 
     @property
     def r_ab(self) -> float:
@@ -100,12 +115,12 @@ class Potentiometer:
 
         :return: Total resistance as float.
         """
-        return self.__r_ab
+        return self._r_ab
 
     @r_ab.setter
     def r_ab(self, resistance: float) -> None:
-        if not self.parameters_locked:
-            self.__r_ab = float(check_positive(resistance))
+        self._r_ab = float(check_positive(resistance))
+        self.logger.debug("R(AB) set to %2.2g Ohm", self._r_ab)
 
     @property
     def r_w(self) -> float:
@@ -114,147 +129,211 @@ class Potentiometer:
 
         :return: Wiper resistance as float.
         """
-        return self.__r_w
+        return self._r_w
 
     @r_w.setter
-    def r_w(self, r_w: float) -> None:
-        if not self.parameters_locked:
-            self.__r_w = float(check_not_negative(r_w))
+    def r_w(self, resistance: float) -> None:
+        self._r_w = float(check_not_negative(resistance))
+        self.logger.debug("R(W) set to %2.2g Ohm", self._r_w)
 
     @property
-    def parameters_locked(self) -> bool:
-        """
-        Check if parameters of the potentiometer are locked.
+    def r_a(self) -> float:
+        """Resistance of terminal A"""
+        return self._r_a
 
-        :return: True if locked and False otherwise
-        """
-        return self.__parameters_locked
-
-    @property
-    def rheostat(self) -> bool:
-        """
-        Check if device is configured as a rheostat (terminal A is floating and not available
-        for connection).
-
-        :return: True if device is a rheostat, otherwise False.
-        """
-        return self.__rheostat
+    @r_a.setter
+    def r_a(self, resistance: float) -> None:
+        self._r_a = float(check_not_negative(resistance))
+        self.logger.debug("R(A) set to %2.2g Ohm", self._r_a)
 
     @property
-    def r_lim(self) -> float:
-        """R_lim current limiting resistor"""
-        return self.__r_lim
+    def r_b(self) -> float:
+        """Resistance of terminal B"""
+        return self._r_b
 
-    @r_lim.setter
-    def r_lim(self, r_lim: float) -> None:
-        self.__r_lim = float(check_not_negative(r_lim))
+    @r_b.setter
+    def r_b(self, resistance: float) -> None:
+        self._r_b = float(check_not_negative(resistance))
+        self.logger.debug("R(B) set to %2.2g Ohm", self._r_b)
 
     @property
     def r_load(self) -> float:
         """Resistive load R_load value"""
-        return self.__r_load
+        return self._r_load
 
     @r_load.setter
     def r_load(self, r_load: float) -> None:
-        self.__r_load = float(check_not_negative(r_load))
+        self._r_load = float(check_not_negative(r_load))
+        self.logger.debug("R(Load) set to %2.2g Ohm", self._r_load)
 
     @property
-    def voltage_in(self) -> float:
+    def v_a(self) -> float:
         """
-        Input voltage of the device.
+        Voltage at terminal A.
 
-        :return: voltage_in (float).
+        :return: v_a (float).
         """
-        return self.__voltage_in
+        return self._v_a
 
-    @voltage_in.setter
-    def voltage_in(self, voltage: float) -> None:
-        self.__voltage_in = float(check_number(voltage))
+    @v_a.setter
+    def v_a(self, voltage: float) -> None:
+        self._v_a = float(check_number(voltage))
+        self.logger.debug("V(A) set to %2.2g V", self._v_a)
 
-    def r_wa(self, wiper_position: float) -> float:
+    @property
+    def v_b(self) -> float:
         """
-        Calculates resistance between terminals A and W given the wiper position
-        as a fraction of its movement in the range from 0 (terminal B) to 1 (terminal A).
+        Voltage at terminal B.
 
-        :param wiper_position: Wiper position in the range [0: 1]
-        :return: Resistance between terminals A and W (float).
+        :return: v_b (float).
         """
-        wiper_position = clamp(wiper_position, 0, 1)
-        return self.r_w + (1 - wiper_position) * self.r_ab
+        return self._v_b
 
-    def r_wb(self, wiper_position: float) -> float:
+    @v_b.setter
+    def v_b(self, voltage: float) -> None:
+        self._v_b = float(check_number(voltage))
+        self.logger.debug("V(B) set to %2.2g V", self._v_b)
+
+    @property
+    def v_load(self) -> float:
         """
-        Calculates resistance between terminals B and W given the wiper position
-        as a fraction of its movement in the range from 0 (terminal B) to 1 (terminal A).
+        Voltage at load resistance.
 
-        :param wiper_position: Wiper position in the range [0: 1]
-        :return: Resistance between terminals B and W (float).
+        :return: v_load (float).
         """
-        wiper_position = clamp(wiper_position, 0, 1)
-        return self.r_w + wiper_position * self.r_ab
+        return self._v_load
 
-    def r_wa_to_position(self, r_wa: float) -> float:
+    @v_load.setter
+    def v_load(self, voltage: float) -> None:
+        self._v_load = float(check_number(voltage))
+        self.logger.debug("V(Load) set to %2.2g V", self._v_load)
+
+    @property
+    def wiper_position(self) -> float:
+        """
+        Wiper position in the range from 0 (B) to 1 (A)
+        :return: wiper_position (float)
+        """
+        return self._wiper_position
+
+    @wiper_position.setter
+    def wiper_position(self, position: float) -> None:
+        self._wiper_position = float(clamp(position, 0, 1))
+        self.logger.debug("Wiper position set to %2.2f", self._wiper_position)
+
+    @property
+    def r_wa(self) -> float:
+        """
+        The resistance between terminals A and W for the current wiper position.
+        """
+        return self.r_w + self.r_a + (1 - self.wiper_position) * self.r_ab
+
+    @r_wa.setter
+    def r_wa(self, resistance: float) -> None:
         """
         Calculate wiper position as a fraction of its movement in the range from 0 (terminal B)
         to 1 (terminal A) given the resistance between terminals A and W.
 
-        :param r_wa: Resistance between terminals A and W (float)
+        :param resistance: Resistance between terminals A and W (float)
         :return: Wiper position in the range [0: 1] (float).
         """
-        r_wa = clamp(r_wa, self.r_w, self.r_w + self.r_ab)
-        return 1 - (r_wa - self.r_w) / self.r_ab
+        resistance = clamp(
+            resistance, self.r_w + self.r_a, self.r_w + self.r_a + self.r_ab
+        )
+        self.logger.debug("Setting R(WA) to %2.2g Ohm", resistance)
+        self.wiper_position = 1 - (resistance - self.r_w - self.r_a) / self.r_ab
 
-    def r_wb_to_position(self, r_wb: float) -> float:
+    @property
+    def r_wb(self) -> float:
+        """
+        The resistance between terminals B and W for the current wiper position.
+        """
+        return self.r_w + self.r_b + self.wiper_position * self.r_ab
+
+    @r_wb.setter
+    def r_wb(self, resistance: float) -> None:
         """
         Calculate wiper position as a fraction of its movement in the range from 0 (terminal B)
         to 1 (terminal A) given the resistance between terminals B and W.
 
-        :param r_wb: Resistance between terminals B and W (float)
+        :param resistance: Resistance between terminals B and W (float)
         :return: Wiper position in the range [0: 1] (float).
         """
-        r_wb = clamp(r_wb, self.r_w, self.r_w + self.r_ab)
-        return (r_wb - self.r_w) / self.r_ab
+        resistance = clamp(resistance, self.r_w, self.r_w + self.r_ab)
+        self.logger.debug("Setting R(WB) to %2.2g Ohm", resistance)
+        self.wiper_position = (resistance - self.r_w - self.r_b) / self.r_ab
 
-    def voltage_out(self, wiper_position: float) -> float:
+    @property
+    def v_w(self) -> float:
         """
-        Calculates output voltage for given wiper position.
+        The voltage at the terminal W for the current wiper position.
+        """
+        if self.r_load + self.r_w == 0:
+            return self.v_load
+        r_left = self.r_a + self.r_ab * (1 - self.wiper_position)
+        r_right = self.r_b + self.r_ab * self.wiper_position
+        r_bot = self.r_w + self.r_load
+        v_bot = (
+            self.v_a * r_bot * r_right
+            + self.v_b * r_bot * r_left
+            + self.v_load * r_left * r_right
+        ) / (r_bot * r_right + r_bot * r_left + r_left * r_right)
 
-        :param wiper_position: Wiper position as float number between 0 and 1.
-        :return: Voltage (float).
-        """
-        wiper_position = clamp(wiper_position, 0, 1)
-        if self.rheostat:
-            r_total = self.r_load + self.r_lim + self.r_wb(wiper_position)
-            return self.voltage_in * self.r_load / r_total
-        r_wb = self.r_ab * wiper_position
-        r_wa = self.r_ab * (1 - wiper_position)
-        r_bot = r_wb * (self.r_w + self.r_load) / (r_wb + self.r_w + self.r_load)
-        v_bot = self.voltage_in * r_bot / (r_bot + self.r_lim + r_wa)
         return v_bot / (self.r_load + self.r_w) * self.r_load
 
-    def voltage_out_to_wiper_position(self, voltage_out: float) -> float:
+    @v_w.setter
+    def v_w(self, voltage: float) -> None:
         """
-        Calculates wiper position given output voltage.
+        Calculates wiper position given the voltage at the terminal W.
 
-        :param voltage_out: Output voltage (float).
-        :return: Wiper position as float number between 0 and 1.
+        :param voltage: Voltage at the terminal W (float).
         """
-        voltage_out = check_number(voltage_out)
-        if voltage_out == 0 or self.r_load == 0 or self.voltage_in == 0:
-            return 0
-        if (self.voltage_in / voltage_out) / abs(self.voltage_in / voltage_out) < 0:
-            return 0
-
-        if self.rheostat:
-            r_total = self.voltage_in * self.r_load / voltage_out
-            r_wb = r_total - self.r_load - self.r_lim
-            return self.r_wb_to_position(r_wb)
-
-        v_bot = voltage_out * (self.r_w + self.r_load) / self.r_load
-        r_lim = self.r_ab + self.r_lim
-        r_l = self.r_w + self.r_load
-        quad_b = self.voltage_in / v_bot * r_l - r_lim
-        quad_ac = -r_lim * r_l
-        quad_d = quad_b**2 - 4 * quad_ac
-        r_wb = (-quad_b + m.sqrt(quad_d)) / 2
-        return r_wb / self.r_ab
+        # pylint: disable=too-many-branches
+        if not isinstance(voltage, (float, int)):
+            raise TypeError(f"Float value expected, got {voltage} ({type(voltage)}).")
+        self.logger.debug("Setting V(W) to %2.2g V", voltage)
+        if self.r_load != 0:
+            if voltage - self.v_load == 0:
+                if self.v_b - self.v_a == 0:
+                    self.wiper_position = 0.5
+                else:
+                    r_bw = (self.r_ab + self.r_a) * self.v_b / (
+                        self.v_b - self.v_a
+                    ) + self.r_b * self.v_a / (self.v_b - self.v_a)
+                    r_bw = clamp(r_bw, 0.0, self.r_ab)
+                    self.wiper_position = r_bw / self.r_ab
+            else:
+                v_bot = (voltage - self.v_load) * (self.r_w + self.r_load) / self.r_load
+                a = -v_bot * self.r_ab * self.r_ab
+                b = v_bot * (self.r_ab**2 + self.r_ab * (self.r_a - self.r_b)) + (
+                    self.r_w + self.r_load
+                ) * self.r_ab * (self.v_b - self.v_a)
+                c = (
+                    (v_bot + self.v_load)
+                    * (self.r_w + self.r_load)
+                    * (self.r_ab + self.r_a + self.r_b)
+                    + v_bot * (self.r_a * self.r_b + self.r_b * self.r_ab)
+                    - (self.r_w + self.r_load)
+                    * (self.v_a * self.r_b + self.v_b * self.r_a + self.v_b * self.r_ab)
+                )
+                descr = b * b - 4 * a * c
+                if descr >= 0:
+                    sol = []
+                    x1 = (-b + m.sqrt(descr)) / (2 * a)
+                    x2 = (-b - m.sqrt(descr)) / (2 * a)
+                    if 0 <= x1 <= 1:
+                        sol.append(x1)
+                    if 0 <= x2 <= 1:
+                        sol.append(x2)
+                    if len(sol) == 2:
+                        if abs(self.wiper_position - sol[0]) < abs(
+                            self.wiper_position - sol[1]
+                        ):
+                            self.wiper_position = sol[0]
+                        else:
+                            self.wiper_position = sol[1]
+                    elif len(sol) == 1:
+                        self.wiper_position = sol[0]
+        else:
+            self.logger.debug("R(L) is zero, setting wiper to the middle")
+            self.wiper_position = 0.5
