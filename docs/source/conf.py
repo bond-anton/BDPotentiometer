@@ -5,11 +5,11 @@
 # -- Project information
 
 project = "BDPotentiometer"
-copyright = "2023, Anton Bondarenko"
+copyright = "2024, Anton Bondarenko"
 author = "Anton Bondarenko"
 
-release = "0.0.2"
-version = "0.0.2"
+release = "0.0.4"
+version = "0.0.4"
 
 # -- General configuration
 
