@@ -153,8 +153,10 @@ class MCP4xxxWiper(SpiDigitalWiper):
 class MCP4xxx(SPIDevice):
     """Base class for MCP4XXX series devices"""
 
-    def __init__(self, **spi_args) -> None:
-        super().__init__(shared=True, **spi_args)
+    def __init__(self, **kwargs) -> None:
+        spi_args = {"channel", "port", "device", "clock_pin", "mosi_pin", "miso_pin", "select_pin"}
+        spi_kwargs = {key: kwargs[key] for key in spi_args if key in kwargs}
+        super().__init__(shared=True, **spi_kwargs)
 
     @property
     def value(self):
