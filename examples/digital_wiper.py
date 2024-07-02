@@ -1,4 +1,4 @@
-"""Example of Potentiometer class usage"""
+"""Example of DigitalWiper class usage"""
 
 import logging
 import numpy as np
