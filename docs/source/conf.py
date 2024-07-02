@@ -8,8 +8,8 @@ project = "BDPotentiometer"
 copyright = "2024, Anton Bondarenko"
 author = "Anton Bondarenko"
 
-release = "0.0.4"
-version = "0.0.4"
+release = "0.1.0"
+version = "0.1.0"
 
 # -- General configuration
 
