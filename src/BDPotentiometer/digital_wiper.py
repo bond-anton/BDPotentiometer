@@ -6,14 +6,13 @@ from gpiozero import SPI
 
 from .potentiometer import Potentiometer
 from .__helpers import check_integer, check_positive, check_not_negative, clamp
+from .__logger import get_logger
 
 
 class DigitalWiper:
     """
     Generic digital wiper class.
     Digital wiper change position by discrete movement between 0 and `max_value`.
-    Property `parameters_locked` is used to disable change of `max_value`
-    parameter after object is created, only wiper position change is allowed.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -23,9 +22,8 @@ class DigitalWiper:
         potentiometer: Potentiometer,
         max_value: int = 128,
         invert: bool = False,
-        parameters_locked: bool = False,
+        **kwargs,
     ) -> None:
-        self.__parameters_locked: bool = bool(parameters_locked)
         if isinstance(potentiometer, Potentiometer):
             self.__potentiometer: Potentiometer = potentiometer
         else:
@@ -36,16 +34,11 @@ class DigitalWiper:
         self.__invert: bool = bool(invert)
         self.__max_value: int = check_integer(check_positive(max_value))
         self.__value: int = 0
+        self.logger = get_logger(
+            kwargs.get("label", "Digital Wiper"),
+            kwargs.get("log_level", None),
+        )
         self.read()
-
-    @property
-    def parameters_locked(self) -> bool:
-        """
-        Check if parameters of the wiper are locked.
-
-        :return: True if locked and False otherwise
-        """
-        return self.__parameters_locked
 
     @property
     def potentiometer(self) -> Potentiometer:
@@ -61,8 +54,8 @@ class DigitalWiper:
         return self.__channel
 
     @channel.setter
-    def channel(self, channel: int) -> None:
-        self.__channel = check_integer(check_not_negative(channel))
+    def channel(self, channel_id: int):
+        self.__channel = check_integer(check_not_negative(channel_id))
 
     @property
     def invert(self) -> bool:
@@ -72,6 +65,7 @@ class DigitalWiper:
     @invert.setter
     def invert(self, invert: bool) -> None:
         self.__invert = bool(invert)
+        self.logger.debug("Set wiper INVERT to %s", self.__invert)
 
     @property
     def min_value(self) -> int:
@@ -92,32 +86,9 @@ class DigitalWiper:
 
     @max_value.setter
     def max_value(self, max_value: int) -> None:
-        new_value = check_integer(check_positive(max_value))
-        if not self.parameters_locked:
-            self.__max_value = new_value
-            self.value = self.__value
-
-    def _check_value(self, value: int) -> int:
-        """
-        Set given wiper position to `value`.
-
-        :param value: Requested value as int.
-        :return: Value actually set as int.
-        """
-        value = int(round(clamp(value, 0, self.max_value)))
-        if self.invert:
-            return self.max_value - value
-        return value
-
-    def _set_value(self, value: int) -> int:
-        """
-        Set given wiper position to `value`.
-
-        :param value: Requested value as int.
-        :return: Value actually set as int.
-        """
-        value = self._check_value(value)
-        return value
+        self.__max_value = check_integer(check_positive(max_value))
+        self.logger.debug("Set max value to %d", self.__max_value)
+        self.value = self.__value
 
     def _read_value(self) -> int:
         """
@@ -125,13 +96,26 @@ class DigitalWiper:
 
         :return: Wiper position value (int).
         """
-        return self.__value
+        return int(round(self.potentiometer.wiper_position * self.max_value))
+
+    def _set_value(self, value: int) -> int:
+        """
+        Calculate proper wiper position value.
+        """
+        value = int(round(clamp(value, 0, self.max_value)))
+        value = self.max_value - value if self.invert else value
+        self.logger.debug("Setting value to %d", value)
+        self.potentiometer.wiper_position = value / self.max_value
+        return value
 
     def read(self) -> None:
         """
         Read wiper position into value property.
         """
-        self.__value = self._read_value()
+        value = self._read_value()
+        if self.__value != value:
+            self.__value = value
+            self.logger.debug("Wiper position updated to %d", value)
 
     @property
     def value(self) -> int:
@@ -147,9 +131,10 @@ class DigitalWiper:
 
     @value.setter
     def value(self, value: int) -> None:
-        value = int(clamp(check_integer(value), 0, self.max_value))
-        data = self._set_value(value)
-        self.__value = data
+        """
+        Set wiper position value.
+        """
+        self.__value = self._set_value(value)
 
     @property
     def value_relative(self) -> float:
@@ -172,13 +157,12 @@ class DigitalWiper:
 
         :return: Resistance between terminals B and W (float).
         """
-        return self.potentiometer.r_wb(self.value_relative)
+        return self.potentiometer.r_wb
 
     @r_wb.setter
     def r_wb(self, resistance: float) -> None:
-        self.value = int(
-            round(self.potentiometer.r_wb_to_position(resistance) * self.max_value)
-        )
+        self.potentiometer.r_wb = resistance
+        self.read()
 
     @property
     def r_wa(self) -> float:
@@ -187,66 +171,22 @@ class DigitalWiper:
 
         :return: Resistance between terminals A and W (float).
         """
-        return self.potentiometer.r_wa(self.value_relative)
+        return self.potentiometer.r_wa
 
     @r_wa.setter
     def r_wa(self, resistance: float) -> None:
-        self.value = int(
-            round(self.potentiometer.r_wa_to_position(resistance) * self.max_value)
-        )
+        self.potentiometer.r_wa = resistance
+        self.read()
 
     @property
-    def r_lim(self) -> float:
-        """
-        Potentiometer current limiting resistor.
-        """
-        return self.potentiometer.r_lim
+    def v_w(self) -> float:
+        """Voltage at wiper terminal"""
+        return self.potentiometer.v_w
 
-    @r_lim.setter
-    def r_lim(self, r_lim: float) -> None:
-        self.potentiometer.r_lim = r_lim
-
-    @property
-    def r_load(self) -> float:
-        """
-        Potentiometer load resistor.
-        """
-        return self.potentiometer.r_load
-
-    @r_load.setter
-    def r_load(self, r_load: float) -> None:
-        self.potentiometer.r_load = r_load
-
-    @property
-    def voltage_in(self) -> float:
-        """
-        Device input Voltage.
-
-        :return: Input voltage (float).
-        """
-        return self.potentiometer.voltage_in
-
-    @voltage_in.setter
-    def voltage_in(self, voltage: float) -> None:
-        self.potentiometer.voltage_in = voltage
-
-    @property
-    def voltage_out(self) -> float:
-        """
-        Calculates output voltage for given wiper position.
-
-        :return: Output voltage (float).
-        """
-        return self.potentiometer.voltage_out(self.value / self.max_value)
-
-    @voltage_out.setter
-    def voltage_out(self, voltage: float) -> None:
-        self.value = int(
-            round(
-                self.potentiometer.voltage_out_to_wiper_position(voltage)
-                * self.max_value
-            )
-        )
+    @v_w.setter
+    def v_w(self, voltage: float) -> None:
+        self.potentiometer.v_w = voltage
+        self.read()
 
     def __deepcopy__(self, memo):
         cls = self.__class__
@@ -267,16 +207,13 @@ class SpiDigitalWiper(DigitalWiper):
         spi: Union[SPI, None] = None,
         max_value: int = 128,
         invert: bool = False,
-        parameters_locked: bool = False,
+        **kwargs,
     ):
         self.__spi = None
         if isinstance(spi, SPI):
             self.__spi = spi
         super().__init__(
-            potentiometer=potentiometer,
-            max_value=max_value,
-            invert=invert,
-            parameters_locked=parameters_locked,
+            potentiometer=potentiometer, max_value=max_value, invert=invert, **kwargs
         )
 
     @property
@@ -292,6 +229,7 @@ class SpiDigitalWiper(DigitalWiper):
         if isinstance(spi, SPI):
             self.__spi = spi
         self.__spi = None
+        self.logger.debug("SPI interface set to %s", self.__spi)
 
     def __deepcopy__(self, memo):
         cls = self.__class__

@@ -50,12 +50,12 @@ voltage :math:`V_{out}` at wiper terminal would be
 Rheostat
 --------
 The use of only two terminals, one of which is the wiper `W`, turns potentiometer
-into rheostat or variable resistor `B-W` or `A-W`. This is a simplest application of the potentiometer.
+into rheostat or variable resistor `B-W` or `A-W`. This is the simplest application of the potentiometer.
 
 Digital Potentiometer
 ---------------------
 The digital potentiometer is a special type of potentiometer
-with electronically controlled wiper position. They usually consist of a network of resistors
+with electronically controlled wiper position. It usually consists of a network of resistors
 connected in series. The movement of the wiper is emulated by electronic switches,
 which connect certain resistor of the network to the output terminal of the digital potentiometer.
 The resolution of discrete wiper movement is determined by the value
@@ -67,8 +67,8 @@ of the single resistor of the network.
 
     Fig. 2. Equivalent circuit of digital potentiometer with resistor ladder design.
 
-As you can see in Fig. 2. each tap of resistor ladder has its own wiper resistance `R_w`
-(usually some tens of Ohms). Small variations of `R_w` are possible between taps,
+As you can see in Fig. 2. each tap of resistor ladder has its own wiper resistance :math:`R_w`
+(usually some tens of Ohms). Small variations of :math:`R_w` are possible between taps,
 which can lead to a non-linear change in resistance when changing the value of the slider position.
 The lower the total resistance of the potentiometer, the more noticeable this effect.
 
@@ -87,7 +87,7 @@ to `A` (:math:`x=n`), then
 Programming Digital Potentiometer
 ---------------------------------
 
-Digital potentiometer is usually being programmed using its serial communication interface.
+Digital potentiometer can be controlled using its dedicated input/output pins.
 This could be:
 
 * Up/Down input pins for incrementing/decrementing pot's value;
@@ -96,4 +96,4 @@ This could be:
 
 Some digital potentiometers have non-volatile memory for wiper position storage.
 Such pots restore wiper position after power cycle. Other potentiometers reset wiper position on
-power cycle to default value (usually middle of the scale).
+power cycle to default value (middle tap usually).

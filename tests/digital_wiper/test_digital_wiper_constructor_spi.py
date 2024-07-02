@@ -17,20 +17,16 @@ class TestSpiDigitalWiperConstructor(unittest.TestCase):
         """
         Set up Unittest
         """
-        self.pot = Potentiometer(
-            r_ab=10e3, r_w=75, rheostat=False, parameters_locked=False
-        )
+        self.pot = Potentiometer(r_ab=10e3, r_w=75)
         self.spi_digital_wiper = SpiDigitalWiper(
-            spi=None, potentiometer=self.pot, max_value=128, parameters_locked=False
+            spi=None, potentiometer=self.pot, max_value=128
         )
 
     def test_spi_digital_wiper(self):
         """
         Test SpiDigitalWiper constructor (without SPI interface).
         """
-        digital_wiper = SpiDigitalWiper(
-            spi=None, potentiometer=self.pot, max_value=128, parameters_locked=False
-        )
+        digital_wiper = SpiDigitalWiper(spi=None, potentiometer=self.pot, max_value=128)
         self.assertEqual(digital_wiper.spi, None)
         digital_wiper.spi = None
         self.assertEqual(digital_wiper.spi, None)

@@ -15,13 +15,13 @@ def check_number(num: Union[float, int, Real]) -> Union[float, int]:
     :return: Unchanged `num` as float or int or raises ValueError if num is not a real number.
     """
     if not isinstance(num, Real):
-        raise TypeError(f"Expected integer or float number, got {type(num)}")
+        raise TypeError(f"Expected a finite integer or float number, got {type(num)}")
     if isinstance(num, Integral):
         return int(num)
     if num in [float("inf"), float("-inf")]:
-        raise ValueError(f"Expected integer or float number, got {num}")
+        raise ValueError(f"Expected a finite integer or float number, got {num}")
     if isnan(num):
-        raise ValueError("Expected integer or float number, not NaN")
+        raise ValueError("Expected a finite integer or float number, not NaN")
     if num == 0:
         return 0.0
     return float(num)
@@ -37,7 +37,7 @@ def check_integer(num: Union[float, int, Real]) -> int:
     num = check_number(num)
     if isinstance(num, float):
         if not num.is_integer():
-            raise ValueError("Argument should be integer number")
+            raise ValueError(f"Expected an integer number, got {num}")
     return int(num)
 
 
@@ -50,7 +50,7 @@ def check_not_negative(num: Union[float, int]) -> Union[float, int]:
     """
     num = check_number(num)
     if num < 0:
-        raise ValueError("Argument should be not negative number")
+        raise ValueError(f"Expected non-negative number, got {num}")
     return num
 
 
@@ -63,7 +63,7 @@ def check_positive(num: Union[float, int]) -> Union[float, int]:
     """
     num = check_number(num)
     if num <= 0:
-        raise ValueError("Argument should be a positive number")
+        raise ValueError(f"Expected a positive number, got {num}")
     return num
 
 

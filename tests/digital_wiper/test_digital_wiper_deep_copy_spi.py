@@ -18,11 +18,9 @@ class TestSpiDigitalWiperDeepCopy(unittest.TestCase):
         """
         Set up Unittest
         """
-        self.pot = Potentiometer(
-            r_ab=10e3, r_w=75, rheostat=False, parameters_locked=False
-        )
+        self.pot = Potentiometer(r_ab=10e3, r_w=75)
         self.spi_digital_wiper = SpiDigitalWiper(
-            spi=None, potentiometer=self.pot, max_value=128, parameters_locked=False
+            spi=None, potentiometer=self.pot, max_value=128
         )
 
     def test_spi_deepcopy(self):
@@ -30,9 +28,12 @@ class TestSpiDigitalWiperDeepCopy(unittest.TestCase):
         Test deepcopy for SpiDigitalWiper.
         """
 
-        self.spi_digital_wiper.r_lim = 200
+        self.spi_digital_wiper.r_a = 200
+        self.spi_digital_wiper.r_b = 400
         self.spi_digital_wiper.r_load = 1e100
-        self.spi_digital_wiper.voltage_in = 5
+        self.spi_digital_wiper.v_a = 5
+        self.spi_digital_wiper.v_b = 2
+        self.spi_digital_wiper.v_load = -1
         dw_copy = deepcopy(self.spi_digital_wiper)
         self.assertIsInstance(dw_copy, SpiDigitalWiper)
         self.assertNotEqual(dw_copy, self.spi_digital_wiper)
@@ -46,14 +47,22 @@ class TestSpiDigitalWiperDeepCopy(unittest.TestCase):
             dw_copy.potentiometer.r_w, self.spi_digital_wiper.potentiometer.r_w
         )
         self.assertEqual(
-            dw_copy.potentiometer.r_lim, self.spi_digital_wiper.potentiometer.r_lim
+            dw_copy.potentiometer.r_a, self.spi_digital_wiper.potentiometer.r_a
+        )
+        self.assertEqual(
+            dw_copy.potentiometer.r_b, self.spi_digital_wiper.potentiometer.r_b
         )
         self.assertEqual(
             dw_copy.potentiometer.r_load, self.spi_digital_wiper.potentiometer.r_load
         )
         self.assertEqual(
-            dw_copy.potentiometer.voltage_in,
-            self.spi_digital_wiper.potentiometer.voltage_in,
+            dw_copy.potentiometer.v_a, self.spi_digital_wiper.potentiometer.v_a
+        )
+        self.assertEqual(
+            dw_copy.potentiometer.v_b, self.spi_digital_wiper.potentiometer.v_b
+        )
+        self.assertEqual(
+            dw_copy.potentiometer.v_load, self.spi_digital_wiper.potentiometer.v_load
         )
         self.assertEqual(dw_copy.spi, self.spi_digital_wiper.spi)
 
