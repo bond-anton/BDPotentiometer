@@ -288,52 +288,86 @@ class Potentiometer:
 
         :param voltage: Voltage at the terminal W (float).
         """
-        # pylint: disable=too-many-branches
         if not isinstance(voltage, (float, int)):
             raise TypeError(f"Float value expected, got {voltage} ({type(voltage)}).")
         self.logger.debug("Setting V(W) to %2.2g V", voltage)
         if self.r_load != 0:
-            if voltage - self.v_load == 0:
-                if self.v_b - self.v_a == 0:
-                    self.wiper_position = 0.5
-                else:
-                    r_bw = (self.r_ab + self.r_a) * self.v_b / (
-                        self.v_b - self.v_a
-                    ) + self.r_b * self.v_a / (self.v_b - self.v_a)
-                    r_bw = clamp(r_bw, 0.0, self.r_ab)
-                    self.wiper_position = r_bw / self.r_ab
+            if voltage == self.v_load:
+                self._v_out_eq_v_load()
             else:
-                v_bot = (voltage - self.v_load) * (self.r_w + self.r_load) / self.r_load
-                a = -v_bot * self.r_ab * self.r_ab
-                b = v_bot * (self.r_ab**2 + self.r_ab * (self.r_a - self.r_b)) + (
-                    self.r_w + self.r_load
-                ) * self.r_ab * (self.v_b - self.v_a)
-                c = (
-                    (v_bot + self.v_load)
-                    * (self.r_w + self.r_load)
-                    * (self.r_ab + self.r_a + self.r_b)
-                    + v_bot * (self.r_a * self.r_b + self.r_b * self.r_ab)
-                    - (self.r_w + self.r_load)
-                    * (self.v_a * self.r_b + self.v_b * self.r_a + self.v_b * self.r_ab)
-                )
-                descr = b * b - 4 * a * c
-                if descr >= 0:
-                    sol = []
-                    x1 = (-b + m.sqrt(descr)) / (2 * a)
-                    x2 = (-b - m.sqrt(descr)) / (2 * a)
-                    if 0 <= x1 <= 1:
-                        sol.append(x1)
-                    if 0 <= x2 <= 1:
-                        sol.append(x2)
-                    if len(sol) == 2:
-                        if abs(self.wiper_position - sol[0]) < abs(
-                            self.wiper_position - sol[1]
-                        ):
-                            self.wiper_position = sol[0]
-                        else:
-                            self.wiper_position = sol[1]
-                    elif len(sol) == 1:
-                        self.wiper_position = sol[0]
+                self._v_out_gen_solution(voltage)
         else:
             self.logger.debug("R(L) is zero, setting wiper to the middle")
             self.wiper_position = 0.5
+
+    def _v_out_eq_v_load(self):
+        self.logger.debug("Load current is zero, V_load = V_w = %s", self.v_load)
+        if self.v_b == self.v_a == self.v_load:
+            self.logger.debug("V_a = V_b = V_load = %s", self.v_load)
+            self.logger.debug(
+                "V_w independent of wiper position, setting wiper to the middle."
+            )
+            self.wiper_position = 0.5
+        elif self.v_b == self.v_a:
+            self.logger.debug("V_a = V_b = %s", self.v_a)
+            r_bw = (self.r_a + self.r_ab - self.r_b) / 2
+            self.logger.debug("R_bw = %s", r_bw)
+            r_bw = clamp(r_bw, 0.0, self.r_ab)
+            self.logger.debug("Setting wiper to %s", r_bw / self.r_ab)
+            self.wiper_position = r_bw / self.r_ab
+        elif self.v_b == self.v_load:
+            self.logger.debug("V_a != V_b = V_load = %s", self.v_load)
+            self.logger.debug("Setting wiper to 0")
+            self.wiper_position = 0
+        elif self.v_a == self.v_load:
+            self.logger.debug("V_b != V_a = V_load = %s", self.v_load)
+            self.logger.debug("Setting wiper to 1")
+            self.wiper_position = 1
+        else:
+            k = (self.v_a - self.v_load) / (self.v_load - self.v_b)
+            r_bw = (self.r_a + self.r_ab - k * self.r_b) / (k + 1)
+            self.logger.debug("R_bw = %s", r_bw)
+            r_bw = clamp(r_bw, 0.0, self.r_ab)
+            self.logger.debug("Setting wiper to %s", r_bw / self.r_ab)
+            self.wiper_position = r_bw / self.r_ab
+
+    def _v_out_gen_solution(self, voltage: float) -> None:
+        i_l: float = (self.v_load - voltage) / self.r_load
+        v_bot: float = voltage - i_l * self.r_w
+        self.logger.debug("V_bot = %s, V_b = %s, V_a = %s", v_bot, self.v_b, self.v_a)
+        if v_bot <= self.v_b < self.v_a or v_bot >= self.v_b > self.v_a:
+            self.logger.debug("Coerce to V_b, setting wiper to 0")
+            self.wiper_position = 0
+        elif v_bot <= self.v_a < self.v_b or v_bot >= self.v_a > self.v_b:
+            self.logger.debug("Coerce to V_a, setting wiper to 1")
+            self.wiper_position = 1
+        else:
+            r_top: float = self.r_ab + self.r_a + self.r_b
+            r_tl: float = self.r_ab + self.r_a
+            v_top: float = self.v_b - self.v_a
+            b: float = self.r_b - r_tl + v_top / i_l
+            c: float = (
+                v_bot * r_top / i_l
+                - self.r_b * r_tl
+                - (self.v_a * self.r_b + self.v_b * r_tl) / i_l
+            )
+            d = b * b - 4 * c
+            if d >= 0:
+                sol = []
+                x1 = (-b + m.sqrt(d)) / (2 * self.r_ab)
+                x2 = (-b - m.sqrt(d)) / (2 * self.r_ab)
+                if 0 <= x1 <= 1:
+                    sol.append(x1)
+                if 0 <= x2 <= 1:
+                    sol.append(x2)
+                if len(sol) == 2:
+                    if abs(self.wiper_position - sol[0]) < abs(
+                        self.wiper_position - sol[1]
+                    ):
+                        self.wiper_position = sol[0]
+                    else:
+                        self.wiper_position = sol[1]
+                elif len(sol) == 1:
+                    self.wiper_position = sol[0]
+            else:
+                self.logger.debug("No solution wiper holds position")
