@@ -2,7 +2,8 @@ Introduction
 ============
 
 **BDPotentiometer** is a python module for easy control of multichannel
-digital potentiometer or rheostat.
+digital potentiometer or rheostat. The module can also be used to model analog or digital
+potentiometer devices using **Potentiometer** and **DigitalWiper** classes correspondingly.
 
 Potentiometer
 -------------
