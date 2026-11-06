@@ -56,6 +56,28 @@ class _FailingOpenSpiDev(_StubSpiDev):
         raise PermissionError(13, "Permission denied")
 
 
+class _ConfigFailingSpiDev(_StubSpiDev):
+    """Stand-in whose mode assignment fails like a rejected bus setting."""
+
+    instances = []
+
+    def __init__(self):
+        super().__init__()
+        _ConfigFailingSpiDev.instances.append(self)
+
+    def __setattr__(self, name, value):
+        if name == "mode":
+            raise OSError(22, "Invalid argument")
+        super().__setattr__(name, value)
+
+
+class _TransferFailingSpiDev(_StubSpiDev):
+    """Stand-in whose transfer fails at the kernel boundary."""
+
+    def xfer2(self, tx):
+        raise OSError(5, "Input/output error")
+
+
 def _stub_module(spi_dev_class=_StubSpiDev):
     module = types.ModuleType("spidev")
     module.SpiDev = spi_dev_class
@@ -148,6 +170,35 @@ class TestSpiDevTransport(unittest.TestCase):
         self.assertIn("/dev/spidev0.0", message)
         self.assertIn("spi", message)
         self.assertIn("dtparam=spi=on", message)
+
+    def test_config_failure_is_wrapped_and_closes_handle(self) -> None:
+        """
+        A rejected bus setting becomes TransportError and closes the handle.
+        """
+        _ConfigFailingSpiDev.instances = []
+        with (
+            mock.patch.dict(
+                sys.modules, {"spidev": _stub_module(_ConfigFailingSpiDev)}
+            ),
+            self.assertRaises(TransportError) as context,
+        ):
+            SpiDevTransport(bus=1, device=2)
+        message = str(context.exception)
+        self.assertIn("/dev/spidev1.2", message)
+        self.assertIsInstance(context.exception.__cause__, OSError)
+        self.assertTrue(_ConfigFailingSpiDev.instances[0].closed)
+
+    def test_transfer_oserror_is_not_wrapped(self) -> None:
+        """
+        An OSError from xfer2 propagates unchanged; transfer wrapping is out of scope.
+        """
+        with mock.patch.dict(
+            sys.modules, {"spidev": _stub_module(_TransferFailingSpiDev)}
+        ):
+            transport = SpiDevTransport()
+            with self.assertRaises(OSError) as context:
+                transport.transfer([0x0C, 0])
+        self.assertIs(type(context.exception), OSError)
 
     def test_missing_spidev_raises_import_error(self) -> None:
         """

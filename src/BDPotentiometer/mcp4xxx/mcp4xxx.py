@@ -213,7 +213,8 @@ class MCP4xxx:
             transport = GpiozeroSpiTransport(**spi_args)
         if transport is not None and not is_spi_transport(transport):
             raise TypeError(
-                f"Expected an SPI transport with transfer(), got {type(transport)}"
+                "Expected an SPI transport with transfer() and close(), "
+                f"got {type(transport)}"
             )
         self._transport: Union[SpiTransport, None] = transport
 

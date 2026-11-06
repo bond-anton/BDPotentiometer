@@ -63,6 +63,48 @@ class TestSpiTransportProtocol(unittest.TestCase):
 
         self.assertFalse(is_spi_transport(_NotCallable()))
 
+    def test_transfer_without_close_is_not_spi_transport(self) -> None:
+        """
+        An object that can transfer but cannot release the bus is rejected.
+        """
+
+        class _TransferOnly:
+            def transfer(self, tx):
+                """Return a zero frame."""
+                return [0] * len(tx)
+
+        self.assertFalse(is_spi_transport(_TransferOnly()))
+
+    def test_class_object_is_not_spi_transport(self) -> None:
+        """
+        Passing the class rather than an instance is rejected.
+        """
+
+        class _CompleteTransport:
+            def transfer(self, tx):
+                """Return a zero frame."""
+                return [0] * len(tx)
+
+            def close(self):
+                """No-op close."""
+
+        self.assertFalse(is_spi_transport(_CompleteTransport))
+
+    def test_wrong_arity_transfer_is_still_accepted(self) -> None:
+        """
+        Signature checks are out of scope: only callability is inspected.
+        """
+
+        class _WrongArity:
+            def transfer(self, tx, extra):
+                """Accept an unusable signature to exercise the gate."""
+                return [0] * len(tx)
+
+            def close(self):
+                """No-op close."""
+
+        self.assertTrue(is_spi_transport(_WrongArity()))
+
     def test_fake_is_instance_of_spi_protocol(self) -> None:
         """
         FakeSpiTransport satisfies the runtime-checkable SpiTransport protocol.

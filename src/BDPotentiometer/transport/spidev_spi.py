@@ -1,5 +1,6 @@
 """SPI transport backed by the Linux spidev device interface."""
 
+import contextlib
 from collections.abc import Sequence
 from typing import Any
 
@@ -47,17 +48,20 @@ class SpiDevTransport:
         self._closed = False
         try:
             self._spi.open(bus, device)
+            self._spi.max_speed_hz = max_speed_hz
+            self._spi.mode = mode
+            self._spi.bits_per_word = bits_per_word
+            self._spi.lsbfirst = lsbfirst
+            self._spi.cshigh = False
         except OSError as exc:
+            with contextlib.suppress(OSError):
+                # The original open/configuration error is the actionable one.
+                self._spi.close()
             raise TransportError(
-                f"Failed to open /dev/spidev{bus}.{device}: {exc}. "
+                f"Failed to open or configure /dev/spidev{bus}.{device}: {exc}. "
                 "Ensure SPI is enabled (dtparam=spi=on) and that the current "
                 "user is in the 'spi' group."
             ) from exc
-        self._spi.max_speed_hz = max_speed_hz
-        self._spi.mode = mode
-        self._spi.bits_per_word = bits_per_word
-        self._spi.lsbfirst = lsbfirst
-        self._spi.cshigh = False
 
     @property
     def raw(self) -> Any:

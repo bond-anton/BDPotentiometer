@@ -11,13 +11,21 @@ class MCP4xx2(DigitalPotentiometerDevice, MCP4xxx):
         self, r_ab: float = 10e3, max_value: int = 128, channels: int = 1, **kwargs
     ) -> None:
         MCP4xxx.__init__(self, **kwargs)
-        potentiometer = MCP4xxxPotentiometer(r_ab, rheostat=True)
+        pot_kwargs = {
+            key: value
+            for key, value in kwargs.items()
+            if key not in ("transport", "spi")
+        }
+        potentiometer = MCP4xxxPotentiometer(r_ab, **pot_kwargs)
         wiper = MCP4xxxWiper(
             potentiometer=potentiometer,
             transport=self._transport,
             max_value=max_value,
+            **pot_kwargs,
         )
-        DigitalPotentiometerDevice.__init__(self, wiper=wiper, channels=channels)
+        DigitalPotentiometerDevice.__init__(
+            self, wiper=wiper, channels=channels, **pot_kwargs
+        )
 
 
 class MCP4132(MCP4xx2):

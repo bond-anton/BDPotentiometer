@@ -33,6 +33,10 @@ class GpiozeroSpiTransport:
     constructor accepted (`channel`, `port`, `device`, `clock_pin`,
     `mosi_pin`, `miso_pin`, `select_pin`). `shared=True` is kept so that
     several devices can share one hardware SPI port.
+
+    Ownership follows construction: a transport that built its own handle
+    closes it, while a transport wrapping a caller-supplied `spi=` only
+    marks itself closed and leaves the shared bus open for its other users.
     """
 
     _SPI_ARGS = (
@@ -47,6 +51,7 @@ class GpiozeroSpiTransport:
 
     def __init__(self, spi: Any = None, **spi_args) -> None:
         self._closed = False
+        self._owns_raw = spi is None
         self._handle = None
         if spi is None:
             self._handle = _GpiozeroSpiHandle(**spi_args)
@@ -77,11 +82,9 @@ class GpiozeroSpiTransport:
         return rx
 
     def close(self) -> None:
-        """Close the SPI handle. Repeated calls have no effect."""
+        """Close an owned SPI handle. Repeated calls have no effect."""
         if self._closed:
             return
         self._closed = True
-        if self._handle is not None:
+        if self._owns_raw and self._handle is not None:
             self._handle.close()
-        else:
-            self._raw.close()

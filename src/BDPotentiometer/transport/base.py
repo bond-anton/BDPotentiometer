@@ -47,5 +47,9 @@ class I2cTransport(Protocol):
 
 
 def is_spi_transport(obj: object) -> bool:
-    """Structural check: object can perform full-duplex SPI transfers."""
-    return callable(getattr(obj, "transfer", None))
+    """Structural check: object can transfer and release an SPI bus."""
+    if isinstance(obj, type):
+        return False
+    return callable(getattr(obj, "transfer", None)) and callable(
+        getattr(obj, "close", None)
+    )

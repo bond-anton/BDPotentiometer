@@ -1,12 +1,15 @@
 """Tests for GpiozeroSpiTransport using a stubbed SPI object."""
 
 import unittest
+from unittest import mock
 
 try:
     from src.BDPotentiometer.transport import TransportClosed, TransportError
+    from src.BDPotentiometer.transport import gpiozero_spi as gpiozero_spi_module
     from src.BDPotentiometer.transport.gpiozero_spi import GpiozeroSpiTransport
 except ModuleNotFoundError:
     from BDPotentiometer.transport import TransportClosed, TransportError
+    from BDPotentiometer.transport import gpiozero_spi as gpiozero_spi_module
     from BDPotentiometer.transport.gpiozero_spi import GpiozeroSpiTransport
 
 
@@ -28,6 +31,22 @@ class _StubSpi:
     def close(self):
         """Record the close."""
         self.closed = True
+
+
+class _StubGpiozeroHandle:
+    """Stand-in for the private gpiozero device that owns the raw SPI."""
+
+    instances = []
+
+    def __init__(self, **spi_args):
+        self.spi_args = spi_args
+        self.raw = _StubSpi()
+        self.close_calls = 0
+        _StubGpiozeroHandle.instances.append(self)
+
+    def close(self):
+        """Record the close instead of touching hardware."""
+        self.close_calls += 1
 
 
 class TestGpiozeroSpiTransport(unittest.TestCase):
@@ -65,18 +84,36 @@ class TestGpiozeroSpiTransport(unittest.TestCase):
         with self.assertRaises(TransportError):
             transport.transfer([0x0C, 0])
 
-    def test_close_blocks_transfers(self) -> None:
+    def test_close_leaves_injected_spi_open(self) -> None:
         """
-        close() is idempotent, closes the SPI object, and blocks transfers.
+        close() is idempotent, keeps a caller-supplied SPI open, and blocks transfers.
         """
         stub = _StubSpi()
         transport = GpiozeroSpiTransport(spi=stub)
         transport.close()
         transport.close()
         self.assertTrue(transport.closed)
-        self.assertTrue(stub.closed)
+        self.assertFalse(stub.closed)
         with self.assertRaises(TransportClosed):
             transport.transfer([0x0C, 0])
+
+    def test_default_construction_closes_owned_handle(self) -> None:
+        """
+        Without an injected SPI the transport builds a handle and closes it once.
+        """
+        _StubGpiozeroHandle.instances = []
+        with mock.patch.object(
+            gpiozero_spi_module, "_GpiozeroSpiHandle", _StubGpiozeroHandle
+        ):
+            transport = GpiozeroSpiTransport(device=1)
+        handle = _StubGpiozeroHandle.instances[0]
+        self.assertEqual(handle.spi_args, {"device": 1})
+        self.assertIs(transport.raw, handle.raw)
+        self.assertFalse(transport.closed)
+        transport.close()
+        transport.close()
+        self.assertEqual(handle.close_calls, 1)
+        self.assertFalse(handle.raw.closed)
 
     def test_spi_args_match_legacy_constructor(self) -> None:
         """
