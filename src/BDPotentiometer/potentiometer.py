@@ -98,12 +98,17 @@ class Potentiometer:
         Initialize the potentiometer model.
 
         :param r_ab: Total resistance between terminals A and B in Ohm (float).
+            Must be positive, otherwise `ValueError` is raised.
         :param wiper_position: Initial wiper position in the range [0, 1], where
             0 is terminal B and 1 is terminal A. Clamped to that range (float).
         :param kwargs: Optional model parameters: `r_w`, `r_a`, `r_b` (resistances
             in Ohm, default 0), `v_a`, `v_b`, `v_load` (voltages in V, default 0),
             `r_load` (load resistance in Ohm, default 1e10), `label` (logger name,
             default "Potentiometer"), and `log_level` (logger level).
+        :raises TypeError: If a numeric parameter is not a real number (bool
+            included).
+        :raises ValueError: If `r_ab` is not positive, if `r_w`, `r_a`, `r_b`, or
+            `r_load` is negative, or if a voltage is infinite or `NaN`.
         """
         self._r_ab: float = float(check_positive(r_ab))
         self._r_w: float = float(check_not_negative(kwargs.get("r_w", 0.0)))
@@ -320,16 +325,28 @@ class Potentiometer:
         """
         Move the wiper to the position that gives the requested W voltage.
 
+        When no wiper position can produce the requested voltage, the wiper
+        saturates at the terminal the target points at; if even that is
+        ambiguous the position is kept and a warning is logged. The requested
+        voltage is clamped by the divider, so the property does not raise for
+        an unreachable target.
+
+        A target within `rel_tol=1e-9` and `abs_tol=1e-12` of `v_load` is
+        solved as an unloaded divider, because the load current vanishes and
+        the general solution divides by it.
+
         When the load resistance `r_load` is zero the load shorts the wiper, the
         output no longer depends on the wiper position, and the wiper is centred
         at 0.5 as the only neutral choice.
 
         :param voltage: Voltage at the terminal W (float).
+        :raises TypeError: If `voltage` is not a real number.
+        :raises ValueError: If `voltage` is infinite or `NaN`.
         """
         voltage = float(check_number(voltage))
         self.logger.debug("Setting V(W) to %2.2g V", voltage)
         if self.r_load != 0:
-            if voltage == self.v_load:
+            if m.isclose(voltage, self.v_load, rel_tol=1e-9, abs_tol=1e-12):
                 self._v_out_eq_v_load()
             else:
                 self._v_out_gen_solution(voltage)
@@ -338,7 +355,16 @@ class Potentiometer:
             self.wiper_position = 0.5
 
     def _v_out_eq_v_load(self):
-        """Pick the wiper position that keeps V(W) equal to `v_load`."""
+        """
+        Pick the wiper position that keeps V(W) equal to `v_load`.
+
+        With no load current the wiper voltage follows the unloaded divider, so
+        `v_load` is reachable only inside the rail span; a target outside it is
+        clamped to the nearest terminal. When `v_a == v_b == v_load` every
+        position produces the target and the wiper is centred. When
+        `v_a == v_b != v_load` no position produces the target at all; the
+        wiper is left untouched and a warning is logged.
+        """
         self.logger.debug("Load current is zero, V_load = V_w = %s", self.v_load)
         if self.v_b == self.v_a == self.v_load:
             self.logger.debug("V_a = V_b = V_load = %s", self.v_load)
@@ -347,12 +373,13 @@ class Potentiometer:
             )
             self.wiper_position = 0.5
         elif self.v_b == self.v_a:
-            self.logger.debug("V_a = V_b = %s", self.v_a)
-            r_bw = (self.r_a + self.r_ab - self.r_b) / 2
-            self.logger.debug("R_bw = %s", r_bw)
-            r_bw = clamp(r_bw, 0.0, self.r_ab)
-            self.logger.debug("Setting wiper to %s", r_bw / self.r_ab)
-            self.wiper_position = r_bw / self.r_ab
+            self.logger.warning(
+                "V_a = V_b = %s is unreachable for V_load = %s at any wiper "
+                "position, holding position %s",
+                self.v_a,
+                self.v_load,
+                self.wiper_position,
+            )
         elif self.v_b == self.v_load:
             self.logger.debug("V_a != V_b = V_load = %s", self.v_load)
             self.logger.debug("Setting wiper to 0")
@@ -370,10 +397,47 @@ class Potentiometer:
             self.wiper_position = r_bw / self.r_ab
 
     def _v_out_gen_solution(self, voltage: float) -> None:
-        """Solve the divider equation for the wiper position giving `voltage`."""
+        """
+        Solve the divider equation for the wiper position giving `voltage`.
+
+        The solution is the root of a quadratic in the wiper position, which can
+        have two valid positions or none. Two roots are disambiguated by keeping
+        the one closest to the current position; a root just outside [0, 1] is
+        clamped to the terminal. When no root is usable the wiper saturates at
+        the terminal the target points at, and a target that cannot be reached
+        at all leaves the position untouched with a warning.
+        """
         i_l: float = (self.v_load - voltage) / self.r_load
         v_bot: float = voltage - i_l * self.r_w
         self.logger.debug("V_bot = %s, V_b = %s, V_a = %s", v_bot, self.v_b, self.v_a)
+        r_tl: float = self.r_ab + self.r_a
+        r_top: float = self.r_ab + self.r_a + self.r_b
+        v_top: float = self.v_b - self.v_a
+        b: float = self.r_b - r_tl + v_top / i_l
+        c: float = (
+            v_bot * r_top / i_l
+            - self.r_b * r_tl
+            - (self.v_a * self.r_b + self.v_b * r_tl) / i_l
+        )
+        # The monic quadratic is x^2 + (b / r_ab) * x + c / r_ab^2 = 0. The
+        # textbook formula cancels catastrophically when b dominates, so build
+        # the well-conditioned root and derive the second one from the product.
+        d = b * b - 4 * c
+        candidates = []
+        if d >= 0:
+            q = -(b + m.copysign(1.0, b) * m.sqrt(d)) / (2 * self.r_ab)
+            if q == 0:
+                roots = [0.0] if c == 0 else []
+            else:
+                roots = [q, c / (self.r_ab * self.r_ab * q)]
+            candidates = [
+                clamp(root, 0.0, 1.0) for root in roots if -1e-12 <= root <= 1.0 + 1e-12
+            ]
+        if candidates:
+            self.wiper_position = min(
+                candidates, key=lambda root: abs(self.wiper_position - root)
+            )
+            return
         if v_bot <= self.v_b < self.v_a or v_bot >= self.v_b > self.v_a:
             self.logger.debug("Coerce to V_b, setting wiper to 0")
             self.wiper_position = 0
@@ -381,32 +445,6 @@ class Potentiometer:
             self.logger.debug("Coerce to V_a, setting wiper to 1")
             self.wiper_position = 1
         else:
-            r_top: float = self.r_ab + self.r_a + self.r_b
-            r_tl: float = self.r_ab + self.r_a
-            v_top: float = self.v_b - self.v_a
-            b: float = self.r_b - r_tl + v_top / i_l
-            c: float = (
-                v_bot * r_top / i_l
-                - self.r_b * r_tl
-                - (self.v_a * self.r_b + self.v_b * r_tl) / i_l
+            self.logger.warning(
+                "No wiper position gives V(W) = %s V, wiper holds position", voltage
             )
-            d = b * b - 4 * c
-            if d >= 0:
-                sol = []
-                x1 = (-b + m.sqrt(d)) / (2 * self.r_ab)
-                x2 = (-b - m.sqrt(d)) / (2 * self.r_ab)
-                if 0 <= x1 <= 1:
-                    sol.append(x1)
-                if 0 <= x2 <= 1:
-                    sol.append(x2)
-                if len(sol) == 2:
-                    if abs(self.wiper_position - sol[0]) < abs(
-                        self.wiper_position - sol[1]
-                    ):
-                        self.wiper_position = sol[0]
-                    else:
-                        self.wiper_position = sol[1]
-                elif len(sol) == 1:
-                    self.wiper_position = sol[0]
-            else:
-                self.logger.debug("No solution wiper holds position")

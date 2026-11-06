@@ -63,6 +63,24 @@ class TestDigitalWiperInvert(unittest.TestCase):
         self.assertEqual(wiper.value, 100)
         self.assertEqual(potentiometer.wiper_position, 156 / 256)
 
+    def test_set_value_returns_raw_inverted_code(self):
+        """`_set_value` returns the stored code, which is already inverted."""
+        wiper, _ = self._make(invert=True, max_value=128)
+        self.assertEqual(wiper._set_value(0), 128)
+        self.assertEqual(wiper._set_value(128), 0)
+
+    def test_invert_rejects_non_bool(self):
+        """`invert` accepts booleans only; truthy strings and numbers raise."""
+        potentiometer = Potentiometer(r_ab=10e3, r_w=75)
+        for invalid in ["false", "", 0, 1, 0.0, None]:
+            with self.assertRaises(TypeError):
+                DigitalWiper(potentiometer=potentiometer, max_value=128, invert=invalid)
+        wiper = DigitalWiper(potentiometer=potentiometer, max_value=128)
+        for invalid in ["false", "", 0, 1, 0.0, None]:
+            with self.assertRaises(TypeError):
+                wiper.invert = invalid
+        self.assertIs(wiper.invert, False)
+
 
 if __name__ == "__main__":
     unittest.main()

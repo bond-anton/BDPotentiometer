@@ -41,6 +41,11 @@ Backends
 A bare install ships no hardware backend, and constructing a device for real
 hardware raises ``ImportError`` naming the extra to install.
 
+Backend keywords select the default transport only. Passing ``port=``,
+``device=``, or any pin keyword together with ``transport=`` or ``spi=``
+raises ``TypeError``: supply either an explicit transport or the backend
+keywords, never both.
+
 Injection
 ---------
 
@@ -78,5 +83,7 @@ system::
    SUBSYSTEM=="spidev", GROUP="gpio", MODE="0660"
 
 Install the rule under ``/etc/udev/rules.d/``, reload the rules, and reconnect
-the device. Kernel SPI must also be enabled, for example with
+the device. The user running the process must be a member of the group in the
+rule; on this project's Fedora setup that group is ``gpio``, because no ``spi``
+group exists. Kernel SPI must also be enabled, for example with
 ``dtparam=spi=on`` in ``/boot/firmware/config.txt`` on current Raspberry Pi OS.

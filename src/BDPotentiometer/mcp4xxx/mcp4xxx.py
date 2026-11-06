@@ -141,17 +141,23 @@ def _encode_wiper_write(channel: int, value: int) -> list[int]:
     """
     Encode a wiper position write command.
 
+    The wiper data field is nine bits wide: D8 rides in bit 0 of the high
+    byte, D7:D0 fill the low byte. That lets code 256 (full scale, terminal A)
+    be represented.
+
     :param channel: channel number, either 0 or 1 (int).
     :param value: wiper position value (int).
     :return: Command frame ready for transfer (list).
     :raises ValueError: If `channel` is not 0 or 1, or `value` is outside the
-        0..255 register range.
+        0..256 register range.
     """
     if channel not in (0, 1):
         raise ValueError(f"Channel must be 0 or 1, got {channel}")
-    if not 0 <= value <= 0xFF:
-        raise ValueError(f"Wiper value must be in the range 0..255, got {value}")
-    return [_W_CMD | _CH[channel], value]
+    if not 0 <= value <= 0x100:
+        raise ValueError(f"Wiper value must be in the range 0..256, got {value}")
+    high = _W_CMD | _CH[channel] | ((value >> 8) & 0x01)
+    low = value & 0xFF
+    return [high, low]
 
 
 def _encode_wiper_read(channel: int) -> list[int]:
@@ -171,12 +177,15 @@ def _decode_wiper_read(data: list) -> int:
     """
     Decode a wiper position read response.
 
+    The response is ``1111 111D8 D7:D0``, so the ninth data bit comes from
+    bit 0 of the first word.
+
     :param data: Response data (list).
     :return: Wiper position value (int).
     :raises ValueError: If `data` is None or shorter than two words.
     """
     _check_read_response(data)
-    return data[1]
+    return ((data[0] & 0x01) << 8) | (data[1] & 0xFF)
 
 
 class MCP4xxxPotentiometer(Potentiometer):
@@ -203,8 +212,9 @@ class MCP4xxxPotentiometer(Potentiometer):
 class MCP4xxxWiper(SpiDigitalWiper):
     """SPI wiper for one MCP4XXX channel.
 
-    Values are clamped to ``0..max_code``. 8-bit parts expose `max_value` 256
-    as the full-scale divisor while the wiper register holds codes 0..255.
+    Values are clamped to ``0..max_code``. Both families count steps, so the
+    full-scale divisor is also the highest code: 8-bit parts have `max_value`
+    256 with codes 0..256, 7-bit parts `max_value` 128 with codes 0..128.
     A failed write restores the previous wiper position before re-raising.
     """
 
@@ -252,12 +262,13 @@ class MCP4xxxWiper(SpiDigitalWiper):
         """
         Highest wiper code accepted by the device.
 
-        8-bit parts use `max_value` 256 as the full-scale divisor while the
-        wiper register holds codes 0..255.
+        Both families count steps, so the full-scale code equals `max_value`:
+        128 for a 7-bit part (codes 0..128) and 256 for an 8-bit part
+        (codes 0..256).
 
         :return: Highest wiper code as int.
         """
-        return min(self.max_value, 0xFF)
+        return self.max_value
 
     def _set_value(self, value: int) -> int:
         value = int(round(clamp(value, 0, self.max_code)))
@@ -338,21 +349,30 @@ class MCP4xxx:
             backend.
         :param select_pin: GPIO pin used as SPI chip select; selects the
             gpiozero backend.
-        :raises TypeError: If the supplied transport lacks transfer() or close().
+        :raises TypeError: If the supplied transport lacks transfer() or
+            close(), or if backend keywords accompany an explicit transport.
         :raises ImportError: If the optional package for the selected backend
             is missing.
         """
+        supplied = {
+            "port": port,
+            "device": device,
+            "clock_pin": clock_pin,
+            "mosi_pin": mosi_pin,
+            "miso_pin": miso_pin,
+            "select_pin": select_pin,
+        }
         if transport is None and spi is not None:
             transport = spi
-        if transport is None:
-            transport = build_default_transport(
-                port=port,
-                device=device,
-                clock_pin=clock_pin,
-                mosi_pin=mosi_pin,
-                miso_pin=miso_pin,
-                select_pin=select_pin,
-            )
+        if transport is not None:
+            rejected = [name for name in self._SPI_ARGS if supplied[name] is not None]
+            if rejected:
+                raise TypeError(
+                    f"{', '.join(rejected)} cannot be combined with "
+                    "transport/spi; pass either a transport or backend keywords"
+                )
+        else:
+            transport = build_default_transport(**supplied)
         if transport is not None and not is_spi_transport(transport):
             raise TypeError(
                 "Expected an SPI transport with transfer() and close(), "
@@ -378,10 +398,16 @@ class MCP4xxx:
         """
         True when the device has no transport, `close()` has run, or the
         transport reports itself closed.
+
+        A callable `closed` attribute is called first; only a literal True
+        result counts as closed.
         """
         if self._transport is None:
             return True
-        return self._closed or bool(getattr(self._transport, "closed", False))
+        reported = getattr(self._transport, "closed", False)
+        if callable(reported):
+            reported = reported()
+        return self._closed or (reported is True)
 
     def close(self) -> None:
         """Close the underlying transport and mark the device closed."""

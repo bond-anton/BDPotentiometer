@@ -23,6 +23,11 @@ def check_number(num: Union[float, int, Real]) -> Union[float, int]:
     :raises TypeError: If `num` is not a real number.
     :raises ValueError: If `num` is infinite or `NaN`.
     """
+    if isinstance(num, bool):
+        raise TypeError(
+            f"Expected a finite integer or float number, not bool {num!r} "
+            f"of type {type(num)}"
+        )
     if not isinstance(num, Real):
         raise TypeError(f"Expected a finite integer or float number, got {type(num)}")
     if isinstance(num, Integral):
@@ -49,6 +54,19 @@ def check_integer(num: Union[float, int, Real]) -> int:
     if isinstance(num, float) and not num.is_integer():
         raise ValueError(f"Expected an integer number, got {num}")
     return int(num)
+
+
+def check_bool(value: bool) -> bool:
+    """
+    Check that `value` is a boolean.
+
+    :param value: variable to check.
+    :return: Unchanged `value` as bool.
+    :raises TypeError: If `value` is not a boolean.
+    """
+    if not isinstance(value, bool):
+        raise TypeError(f"Expected a boolean, got {value!r} of type {type(value)}")
+    return value
 
 
 def check_not_negative(num: Union[float, int]) -> Union[float, int]:

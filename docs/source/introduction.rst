@@ -104,9 +104,10 @@ If :math:`x` is again the wiper code (an integer this time) measured from `B`
     R_{AW} = \frac{R_{AB}}{N} \cdot (N - x) + R_{w} = R_{s} \cdot (N - x) + R_{w}.
 
 ``max_value`` is this divisor: 128 for 7-bit parts and 256 for 8-bit parts.
-The highest accepted code is ``max_code = min(max_value, 255)``, so 8-bit
-parts clamp at 255 while still dividing by 256. The resulting :math:`x / N` is
-the relative wiper position in the range 0 to 1.
+The highest accepted code is ``max_code = max_value``: 7-bit parts have 128
+steps and 129 taps with codes ``0..128``, 8-bit parts have 256 steps and 257
+taps with codes ``0..256``. The resulting :math:`x / N` is the relative wiper
+position in the range 0 to 1.
 
 
 Programming Digital Potentiometer

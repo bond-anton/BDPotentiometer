@@ -120,19 +120,14 @@ class TestMCP4xxxConstructorWiring(unittest.TestCase):
         gpiozero_adapter.assert_not_called()
         self.assertIs(pot.transport, stub)
 
-    def test_explicit_transport_wins(self):
+    def test_explicit_transport_rejects_device_keyword(self):
         """
-        transport= bypasses backend construction and wins over device kwargs.
+        transport= cannot be combined with backend keywords and names the offender.
         """
         fake = FakeSpiTransport(default=[0, 0])
-        spidev_adapter = mock.MagicMock()
-        gpiozero_adapter = mock.MagicMock()
-        spidev_patch, gpiozero_patch = _patch_backends(spidev_adapter, gpiozero_adapter)
-        with spidev_patch, gpiozero_patch:
-            pot = MCP4231(r_ab=10e3, device=0, transport=fake)
-        spidev_adapter.assert_not_called()
-        gpiozero_adapter.assert_not_called()
-        self.assertIs(pot.transport, fake)
+        with self.assertRaises(TypeError) as raised:
+            MCP4231(r_ab=10e3, device=0, transport=fake)
+        self.assertIn("device", str(raised.exception))
 
     def test_mcp4251_constructs_through_adapter(self):
         """

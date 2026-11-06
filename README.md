@@ -45,6 +45,11 @@ needs the `spi` extra. Pin keywords select the gpiozero backend instead:
 my_pot = MCP4231(r_ab=10e3, clock_pin=11, select_pin=8)
 ```
 
+`value` is an integer code clamped to `0..max_code`, which equals `max_value`:
+`0..128` on 7-bit parts and `0..256` on 8-bit parts. Fractional values and
+booleans are rejected. Backend keywords cannot be combined with `transport=`
+or `spi=`; doing so raises `TypeError`.
+
 ## Transports
 
 SPI access goes through a transport object passed with `transport=`:

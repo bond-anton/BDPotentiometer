@@ -3,7 +3,13 @@
 from copy import deepcopy
 from typing import Union, cast
 
-from .__helpers import check_integer, check_not_negative, check_positive, clamp
+from .__helpers import (
+    check_bool,
+    check_integer,
+    check_not_negative,
+    check_positive,
+    clamp,
+)
 from .__logger import get_logger
 from .potentiometer import Potentiometer
 from .transport.base import SpiTransport, is_spi_transport
@@ -14,9 +20,9 @@ class DigitalWiper:
     Generic digital wiper.
 
     Moves the wiper of a `Potentiometer` in discrete steps between `min_value`
-    (always 0) and `max_code`. The step count is `max_value`; it doubles as the
-    full-scale divisor for the wiper position, which is why it can differ from
-    the highest accepted code.
+    (always 0) and `max_code`. The step count is `max_value`, which is also the
+    full-scale divisor for the wiper position; `max_code` equals `max_value` by
+    default, so the reachable codes span `0..max_value`.
     """
 
     def __init__(
@@ -33,7 +39,8 @@ class DigitalWiper:
         :param max_value: Number of discrete steps, also the full-scale divisor (int).
         :param invert: Mirror the wiper position, so value 0 is at terminal A (bool).
         :param kwargs: Optional `label` (logger name) and `log_level`.
-        :raises TypeError: If `potentiometer` is not a `Potentiometer`.
+        :raises TypeError: If `potentiometer` is not a `Potentiometer`, or
+            `invert` is not a bool.
         """
         if isinstance(potentiometer, Potentiometer):
             self.__potentiometer: Potentiometer = potentiometer
@@ -42,7 +49,7 @@ class DigitalWiper:
                 f"Expected an instance of Potentiometer class, got {type(potentiometer)}"
             )
         self.__channel: int = 0
-        self.__invert: bool = bool(invert)
+        self.__invert: bool = check_bool(invert)
         self.__max_value: int = check_integer(check_positive(max_value))
         self.__value: int = 0
         self.logger = get_logger(
@@ -67,8 +74,20 @@ class DigitalWiper:
 
     @channel.setter
     def channel(self, channel_id: int):
-        """Set the wiper channel number."""
+        """
+        Set the wiper channel number and reload the cached value.
+
+        The cache belongs to the previous channel, so it is refreshed with
+        `read()`. On a bus-backed wiper without a transport that raises
+        `ConnectionError` from `read()`, after the channel has been assigned.
+
+        :param channel_id: Channel number, a non-negative int.
+        :raises TypeError: If `channel_id` is not a real number.
+        :raises ValueError: If `channel_id` is negative, fractional, `NaN`, or
+            infinite.
+        """
         self.__channel = check_integer(check_not_negative(channel_id))
+        self.read()
 
     @property
     def invert(self) -> bool:
@@ -77,8 +96,13 @@ class DigitalWiper:
 
     @invert.setter
     def invert(self, invert: bool) -> None:
-        """Set whether the wiper position is mirrored."""
-        self.__invert = bool(invert)
+        """
+        Set whether the wiper position is mirrored.
+
+        :param invert: True to mirror the position (bool).
+        :raises TypeError: If `invert` is not a bool.
+        """
+        self.__invert = check_bool(invert)
         self.logger.debug("Set wiper INVERT to %s", self.__invert)
 
     @property
@@ -93,9 +117,14 @@ class DigitalWiper:
     @property
     def max_value(self) -> int:
         """
-        Returns device max wiper position value.
+        Return the full-scale divisor for wiper positions.
 
-        :return: Max wiper position value as int.
+        This is the divisor stored in `potentiometer.wiper_position`; `max_code`
+        is the highest accepted code and equals `max_value` by default.
+        Subclasses may narrow `max_code`, in which case the top
+        `value_relative` step is `max_code / max_value`.
+
+        :return: Full-scale divisor as int.
         """
         return self.__max_value
 
@@ -106,21 +135,34 @@ class DigitalWiper:
 
         The stored code is raw (already inverted), so the user-facing value is
         recomputed before `max_code` changes and then re-applied to the new
-        code range.
+        code range. If the re-application fails, both the divisor and the
+        cached code are restored before the error is re-raised.
+
+        :param max_value: New full-scale divisor, a positive int.
+        :raises TypeError: If `max_value` is not a real number.
+        :raises ValueError: If `max_value` is not positive, fractional, `NaN`,
+            or infinite.
         """
+        new_max_value = check_integer(check_positive(max_value))
         current = self.max_code - self.__value if self.__invert else self.__value
-        self.__max_value = check_integer(check_positive(max_value))
+        previous_max_value = self.__max_value
+        previous_value = self.__value
+        self.__max_value = new_max_value
         self.logger.debug("Set max value to %d", self.__max_value)
-        self.value = current
+        try:
+            self.value = current
+        except Exception:
+            self.__max_value = previous_max_value
+            self.__value = previous_value
+            raise
 
     @property
     def max_code(self) -> int:
         """
         Highest wiper code accepted by the device.
 
-        `max_value` is the full-scale divisor and may exceed the largest code
-        the register can hold (8-bit parts have `max_value` 256 but codes 0..255).
-        Override this property where the two differ.
+        This equals `max_value` by default. Subclasses may narrow it, in which
+        case the top `value_relative` step becomes `max_code / max_value`.
 
         :return: Highest wiper code as int.
         """
@@ -131,26 +173,32 @@ class DigitalWiper:
         Read the wiper position as a code.
 
         The base class has no bus: it derives the code from
-        `potentiometer.wiper_position`. Bus-backed subclasses override this to
-        read the device register instead.
+        `potentiometer.wiper_position` and clamps it to `0..max_code`, so a
+        position of 1.0 never exceeds the accepted code range. Bus-backed
+        subclasses override this to read the device register instead.
 
         :return: Wiper position value (int).
         """
-        return int(round(self.potentiometer.wiper_position * self.max_value))
+        code = int(round(self.potentiometer.wiper_position * self.max_value))
+        return min(max(code, 0), self.max_code)
 
     def _set_value(self, value: int) -> int:
         """
         Convert a value to a valid code and write it to the wiper.
 
-        The value is clamped to [`min_value`, `max_code`] and inverted when
-        `invert` is set, then stored in `potentiometer.wiper_position` as
-        `value / max_value`. Bus-backed subclasses override this to send the
-        code to the device.
+        The value must be an integer: integral floats are accepted, fractional
+        values, booleans, `NaN`, and infinities are rejected. It is then
+        clamped to [`min_value`, `max_code`] and inverted when `invert` is set,
+        then stored in `potentiometer.wiper_position` as `value / max_value`.
+        Bus-backed subclasses override this to send the code to the device.
 
         :param value: Requested wiper position value (int).
-        :return: Value actually applied (int).
+        :return: Raw code applied to the device, already inverted when `invert`
+            is set (`_set_value(0)` returns `max_code` on an inverted wiper).
+        :raises TypeError: If `value` is not a real number.
+        :raises ValueError: If `value` is fractional, `NaN`, or infinite.
         """
-        value = int(round(clamp(value, 0, self.max_code)))
+        value = int(clamp(check_integer(value), 0, self.max_code))
         value = self.max_code - value if self.invert else value
         self.logger.debug("Setting value to %d", value)
         self.potentiometer.wiper_position = value / self.max_value
@@ -185,14 +233,24 @@ class DigitalWiper:
         """
         Set the wiper position value.
 
+        Fractional values are rejected rather than rounded.
+
         :param value: Requested wiper position value (int), clamped to the valid code range.
+        :raises TypeError: If `value` is not a real number.
+        :raises ValueError: If `value` is fractional, `NaN`, or infinite.
         """
-        self.__value = self._set_value(value)
+        # Validate here as well as in `_set_value`: subclasses that override
+        # `_set_value` must still reject fractions through the property.
+        self.__value = self._set_value(check_integer(value))
 
     @property
     def value_relative(self) -> float:
         """
-        Relative wiper position value in the range 0..1.
+        Relative wiper position, `value / max_value`.
+
+        For the shipped parts `max_code` equals `max_value`, so the reachable
+        range is 0..1. A subclass that narrows `max_code` tops out at
+        `max_code / max_value`.
 
         :return: Relative wiper position (float)
         """
@@ -347,12 +405,16 @@ class SpiDigitalWiper(DigitalWiper):
         """
         Compatibility setter for the SPI interface.
 
-        Only a value implementing the SPI transport protocol is kept; anything
-        else is silently stored as `None`.
+        Assigning the value currently returned by `spi` is a no-op, so
+        `wiper.spi = wiper.spi` keeps the transport attached. `None` detaches
+        the bus; any other value must satisfy the SPI transport protocol.
 
-        :param spi: SPI transport, or `None` to detach the bus.
+        :param spi: SPI transport, the currently exposed handle, or `None`.
+        :raises TypeError: If `spi` is neither `None` nor an SPI transport.
         """
-        self.transport = spi if spi is None or is_spi_transport(spi) else None
+        if spi is not None and spi is self.spi:
+            return
+        self.transport = spi
 
     def __deepcopy__(self, memo):
         """

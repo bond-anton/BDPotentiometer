@@ -58,6 +58,29 @@ selects the gpiozero backend instead, which needs the ``gpiozero`` extra:
 
    my_pot = MCP4231(r_ab=10e3, clock_pin=11, select_pin=8)
 
+Values and validation
+---------------------
+
+``value`` is an integer wiper code, clamped to ``0..max_code``. Because
+``max_code`` equals ``max_value`` on the shipped parts, 7-bit parts accept
+``0..128`` and 8-bit parts ``0..256``. Fractional values are rejected rather
+than rounded, and booleans, ``NaN``, and infinities are rejected as numbers.
+``invert`` must be a real bool.
+
+``value_relative`` is ``value / max_value``. On the shipped parts it spans
+``0..1``; a subclass whose code range is narrower than its divisor tops out at
+``max_code / max_value``. The setter accepts ``0..1`` and rounds to the
+nearest code.
+
+``set_channel_label`` strips surrounding whitespace and rejects an empty
+label. Passing ``port``, ``device``, or any pin keyword together with
+``transport=`` or ``spi=`` raises ``TypeError``.
+
+``label`` and ``log_level`` configure the device logger. A logger is
+configured once: a later device without ``log_level`` keeps the level already
+set, and ``propagate`` stays enabled, so records may also reach the root
+handlers.
+
 Selecting a transport
 ---------------------
 

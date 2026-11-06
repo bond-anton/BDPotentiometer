@@ -80,4 +80,10 @@ def fix_gpiozero_dual_cs_spi() -> None:
                 return LocalPiHardwareSPIFixed
             return super()._get_spi_class(shared, hardware)
 
+    current_factory = Device.pin_factory
+    # An existing factory is the user's backend choice (MockFactory, lgpio, ...), so keep it.
+    if current_factory is not None and not isinstance(
+        current_factory, FixedRPiGPIOFactory
+    ):
+        return
     Device.pin_factory = FixedRPiGPIOFactory()

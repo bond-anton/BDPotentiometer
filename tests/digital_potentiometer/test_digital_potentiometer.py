@@ -63,10 +63,8 @@ class TestDigitalPotentiometer(unittest.TestCase):
         self.assertEqual(1, self.digital_pot._get_channel_number_by_label_or_id(1))
         self.assertIsNone(self.digital_pot._get_channel_number_by_label_or_id("CH C"))
         self.assertIsNone(self.digital_pot._get_channel_number_by_label_or_id(3))
-        with self.assertRaises(ValueError):
-            self.digital_pot._get_channel_number_by_label_or_id(1.1)
-        with self.assertRaises(ValueError):
-            self.digital_pot._get_channel_number_by_label_or_id(-1)
+        self.assertIsNone(self.digital_pot._get_channel_number_by_label_or_id(1.1))
+        self.assertIsNone(self.digital_pot._get_channel_number_by_label_or_id(-1))
         self.digital_pot.set_channel_label(0, None)
         self.assertEqual(0, self.digital_pot._get_channel_number_by_label_or_id("0"))
         self.digital_pot.set_channel_label(0, "CH A")
@@ -339,6 +337,71 @@ class TestDigitalPotentiometer(unittest.TestCase):
             self.digital_pot.get_r_load("CH XXX")
         with self.assertRaises(ValueError):
             self.digital_pot.set_r_load("CH B", -3e6)
+
+    def test_channel_lookup_invalid_input_returns_none(self):
+        """
+        Invalid channel identifiers are reported as "not found", not raised.
+        """
+        for channel in (-1, 1.5, True, "nope"):
+            with self.subTest(channel=channel):
+                self.assertIsNone(
+                    self.digital_pot._get_channel_number_by_label_or_id(channel)
+                )
+        self.assertEqual(self.digital_pot._get_channel_number_by_label_or_id(0), 0)
+        self.assertEqual(self.digital_pot._get_channel_number_by_label_or_id("CH A"), 0)
+
+    def test_channel_label_strips_whitespace(self):
+        """
+        Labels are stripped, so whitespace variants cannot bypass uniqueness.
+        """
+        self.digital_pot.set_channel_label(0, "  CH A  ")
+        self.assertEqual(self.digital_pot._get_channel_number_by_label_or_id("CH A"), 0)
+        with self.assertRaises(ValueError):
+            self.digital_pot.set_channel_label(1, " CH A ")
+        with self.assertRaises(ValueError) as ctx:
+            self.digital_pot.set_channel_label(1, "   ")
+        self.assertIn("channel 1", str(ctx.exception))
+        with self.assertRaises(ValueError):
+            self.digital_pot.set_channel_label(1, "")
+        self.assertEqual(self.digital_pot._get_channel_number_by_label_or_id("CH B"), 1)
+
+    def test_sequence_setter_rejects_later_element_without_writing(self):
+        """
+        A bad element aborts the whole tuple setter before any channel is written.
+        """
+        self.digital_pot.value = (10, 20)
+        with self.assertRaises(TypeError):
+            self.digital_pot.value = (11, "bad")
+        self.assertEqual(self.digital_pot.value, (10, 20))
+
+        self.digital_pot.r_a = (100, 200)
+        with self.assertRaises(ValueError):
+            self.digital_pot.r_a = (300, -100)
+        self.assertEqual(self.digital_pot.r_a, (100, 200))
+
+        self.digital_pot.v_a = (-5, 5)
+        with self.assertRaises(TypeError):
+            self.digital_pot.v_a = (1, "bad")
+        self.assertEqual(self.digital_pot.v_a, (-5, 5))
+
+        self.digital_pot.v_b = (-5, 5)
+        with self.assertRaises(ValueError):
+            self.digital_pot.v_b = (0, float("nan"))
+        self.assertEqual(self.digital_pot.v_b, (-5, 5))
+
+    def test_invert_requires_bool(self):
+        """
+        Non-boolean invert values are rejected instead of being coerced.
+        """
+        self.assertEqual(self.digital_pot.invert, (False, False))
+        with self.assertRaises(TypeError):
+            self.digital_pot.set_invert(0, "false")
+        self.assertEqual(self.digital_pot.invert, (False, False))
+        with self.assertRaises(TypeError):
+            self.digital_pot.invert = (True, 1)
+        self.assertEqual(self.digital_pot.invert, (False, False))
+        self.digital_pot.invert = (True, False)
+        self.assertEqual(self.digital_pot.invert, (True, False))
 
 
 if __name__ == "__main__":

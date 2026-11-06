@@ -1,5 +1,6 @@
 """Phase 5 backward-compatibility checks for the public API."""
 
+import importlib.util
 import subprocess
 import sys
 import unittest
@@ -12,7 +13,6 @@ try:
         DigitalPotentiometerDevice,
         DigitalWiper,
         FakeSpiTransport,
-        GpiozeroSpiTransport,
         I2cTransport,
         Potentiometer,
         SpiDevTransport,
@@ -32,7 +32,6 @@ except ModuleNotFoundError:
         DigitalPotentiometerDevice,
         DigitalWiper,
         FakeSpiTransport,
-        GpiozeroSpiTransport,
         I2cTransport,
         Potentiometer,
         SpiDevTransport,
@@ -72,10 +71,19 @@ class TestPublicExports(unittest.TestCase):
             is_spi_transport,
             FakeSpiTransport,
             SpiDevTransport,
-            GpiozeroSpiTransport,
         )
         for symbol in symbols:
             self.assertTrue(symbol is not None)
+
+    @unittest.skipUnless(
+        importlib.util.find_spec("gpiozero") is not None,
+        "gpiozero is not installed",
+    )
+    def test_gpiozero_transport_symbol(self):
+        """Package root resolves the optional transport only when installed."""
+        from BDPotentiometer.transport import GpiozeroSpiTransport
+
+        self.assertIsInstance(GpiozeroSpiTransport, type)
 
     def test_mcp4xxx_chips(self):
         """Chip classes remain importable from the mcp4xxx package."""

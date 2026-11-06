@@ -198,7 +198,7 @@ class TestSpiDevTransport(unittest.TestCase):
             SpiDevTransport(bus=0, device=0)
         message = str(context.exception)
         self.assertIn("/dev/spidev0.0", message)
-        self.assertIn("spi", message)
+        self.assertIn("gpio", message)
         self.assertIn("dtparam=spi=on", message)
 
     def test_config_failure_is_wrapped_and_closes_handle(self) -> None:

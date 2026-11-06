@@ -1,11 +1,45 @@
 """Digital potentiometer base class"""
 
 import copy
-from typing import Union
+from typing import Any, Callable, Union
 
-from .__helpers import check_integer, check_not_negative, check_positive
+from .__helpers import (
+    check_bool,
+    check_integer,
+    check_not_negative,
+    check_number,
+    check_positive,
+)
 from .__logger import get_logger
 from .digital_wiper import DigitalWiper
+
+
+def _require_sequence(
+    values: Union[list[Any], tuple[Any, ...]],
+    length: int,
+    check: Callable[[Any], Any],
+) -> tuple[Any, ...]:
+    """
+    Validate the container and every element of a per-channel sequence.
+
+    Every element is checked before the caller writes anything, so a rejected
+    element cannot leave the device partially updated.
+
+    :param values: Sequence of per-channel values (list or tuple).
+    :param length: Expected sequence length, one element per channel.
+    :param check: Validator applied to every element.
+    :return: Tuple of validated values.
+    :raises TypeError: If `values` is not a list or tuple.
+    :raises ValueError: If the sequence length differs from `length`.
+    """
+    if not isinstance(values, (list, tuple)):
+        raise TypeError(f"A tuple or list of values was expected, got {values}.")
+    if len(values) != length:
+        raise ValueError(
+            f"A tuple or list of length {length} was expected, "
+            f"got {type(values)} of length {len(values)}."
+        )
+    return tuple(check(value) for value in values)
 
 
 class DigitalPotentiometerDevice:
@@ -80,16 +114,25 @@ class DigitalPotentiometerDevice:
         """
         Look for channel number by label or number provided.
 
+        Invalid input is reported as "not found" rather than raised. An unknown
+        label, a bool, a negative or fractional number, and a value that is not
+        a number all return `None`, so callers only check for `None`.
+
         :param channel: Channel number or label (int | str).
-        :return: Channel number if channel found or None.
+        :return: Channel number if channel found, the matching label's channel
+            number, or `None`.
         """
         if isinstance(channel, str):
             try:
                 return list(self.__labels.values()).index(channel)
             except ValueError:
                 return None
-        if isinstance(channel, (int, float)):
+        if isinstance(channel, bool):
+            return None
+        try:
             channel = check_integer(check_not_negative(channel))
+        except (TypeError, ValueError):
+            return None
         if channel in self.__channels:
             return channel
         return None
@@ -101,21 +144,28 @@ class DigitalPotentiometerDevice:
         Assign a string label to a channel.
 
         Labels must stay unique. Without a label the channel number is used as
-        the label.
+        the label. A label is normalized by stripping surrounding whitespace;
+        an empty label is rejected.
 
         :param channel: Channel number or label.
         :param label: Label for the channel (str).
-        :raises ValueError: If the channel does not exist or the label is taken.
+        :raises ValueError: If the channel does not exist, the label is empty,
+            or the label is taken.
         """
         channel_id = self._get_channel_number_by_label_or_id(channel)
         if channel_id is None:
             raise ValueError(f"Channel {channel} does not exist.")
-        label = str(channel_id) if label is None else str(label)
+        if label is None:
+            text = str(channel_id)
+        else:
+            text = str(label).strip()
+            if not text:
+                raise ValueError(f"Label for channel {channel_id} is empty.")
         for idx, lbl in self.__labels.items():
-            if lbl == label and idx != channel_id:
-                raise ValueError(f"Label {label} already assigned to channel {idx}.")
-        self.__labels[channel_id] = label
-        self.logger.debug("Channel %s label is set to %s", channel_id, label)
+            if lbl == text and idx != channel_id:
+                raise ValueError(f"Label {text} already assigned to channel {idx}.")
+        self.__labels[channel_id] = text
+        self.logger.debug("Channel %s label is set to %s", channel_id, text)
 
     @property
     def channels(self) -> dict[int, DigitalWiper]:
@@ -180,16 +230,12 @@ class DigitalPotentiometerDevice:
         Set the wiper value for all channels.
 
         :param value: Sequence of length `channels_num`, one value per channel.
-        :raises TypeError: If `value` is not a list or tuple.
-        :raises ValueError: If the sequence length differs from `channels_num`.
+        :raises TypeError: If `value` is not a list or tuple, or an element is
+            not an integer.
+        :raises ValueError: If the sequence length differs from `channels_num`,
+            or an element is not a whole, finite number.
         """
-        if not isinstance(value, (list, tuple)):
-            raise TypeError(f"A tuple or list of values was expected, got {value}.")
-        if len(value) != self.channels_num:
-            raise ValueError(
-                f"A tuple or list of length {self.channels_num} was expected, "
-                f"got {type(value)} of length {len(value)}."
-            )
+        value = _require_sequence(value, self.channels_num, check_integer)
         for idx, channel_id in enumerate(self.__channels):
             self.__channels[channel_id].value = value[idx]
             self.logger.debug("Channel %s value is set to %d", channel_id, value[idx])
@@ -201,10 +247,12 @@ class DigitalPotentiometerDevice:
         :param channel: Channel number or label (int | str)
         :param invert: bool.
         :return: Wiper position value as int.
+        :raises TypeError: If `invert` is not a boolean.
         """
         channel_id = self._get_channel_number_by_label_or_id(channel)
         if channel_id is None:
             raise ValueError(f"Channel {channel} not found.")
+        invert = check_bool(invert)
         self.__channels[channel_id].invert = invert
         self.logger.debug("Channel %s invert is set to %s", channel_id, invert)
         return self.__channels[channel_id].value
@@ -236,16 +284,11 @@ class DigitalPotentiometerDevice:
         Set the invert property for all channels.
 
         :param invert: Sequence of length `channels_num`, one flag per channel.
-        :raises TypeError: If `invert` is not a list or tuple.
+        :raises TypeError: If `invert` is not a list or tuple, or an element is
+            not a boolean.
         :raises ValueError: If the sequence length differs from `channels_num`.
         """
-        if not isinstance(invert, (list, tuple)):
-            raise TypeError(f"A tuple or list of values was expected, got {invert}.")
-        if len(invert) != self.channels_num:
-            raise ValueError(
-                f"A tuple or list of length {self.channels_num} was expected, "
-                f"got {type(invert)} of length {len(invert)}."
-            )
+        invert = _require_sequence(invert, self.channels_num, check_bool)
         for idx, channel_id in enumerate(self.__channels):
             self.__channels[channel_id].invert = invert[idx]
             self.logger.debug("Channel %s invert is set to %s", channel_id, invert[idx])
@@ -293,18 +336,14 @@ class DigitalPotentiometerDevice:
         Set the B-W resistance for all channels.
 
         :param resistance_wb: Sequence of length `channels_num`, one resistance per channel.
-        :raises TypeError: If `resistance_wb` is not a list or tuple.
-        :raises ValueError: If the sequence length differs from `channels_num`.
+        :raises TypeError: If `resistance_wb` is not a list or tuple, or an
+            element is not a real number.
+        :raises ValueError: If the sequence length differs from `channels_num`,
+            or an element is negative, infinite, or `NaN`.
         """
-        if not isinstance(resistance_wb, (list, tuple)):
-            raise TypeError(
-                f"A tuple or list of values was expected, got {resistance_wb}."
-            )
-        if len(resistance_wb) != self.channels_num:
-            raise ValueError(
-                f"A tuple or list of length {self.channels_num} was expected, "
-                f"got {type(resistance_wb)} of length {len(resistance_wb)}."
-            )
+        resistance_wb = _require_sequence(
+            resistance_wb, self.channels_num, check_not_negative
+        )
         for idx, channel_id in enumerate(self.__channels):
             self.__channels[channel_id].r_wb = resistance_wb[idx]
             self.logger.debug(
@@ -354,18 +393,14 @@ class DigitalPotentiometerDevice:
         Set the A-W resistance for all channels.
 
         :param resistance_wa: Sequence of length `channels_num`, one resistance per channel.
-        :raises TypeError: If `resistance_wa` is not a list or tuple.
-        :raises ValueError: If the sequence length differs from `channels_num`.
+        :raises TypeError: If `resistance_wa` is not a list or tuple, or an
+            element is not a real number.
+        :raises ValueError: If the sequence length differs from `channels_num`,
+            or an element is negative, infinite, or `NaN`.
         """
-        if not isinstance(resistance_wa, (list, tuple)):
-            raise TypeError(
-                f"A tuple or list of values was expected, got {resistance_wa}."
-            )
-        if len(resistance_wa) != self.channels_num:
-            raise ValueError(
-                f"A tuple or list of length {self.channels_num} was expected, "
-                f"got {type(resistance_wa)} of length {len(resistance_wa)}."
-            )
+        resistance_wa = _require_sequence(
+            resistance_wa, self.channels_num, check_not_negative
+        )
         for idx, channel_id in enumerate(self.__channels):
             self.__channels[channel_id].r_wa = resistance_wa[idx]
             self.logger.debug(
@@ -410,18 +445,14 @@ class DigitalPotentiometerDevice:
         Set the A-terminal resistance for all channels.
 
         :param resistance_a: Sequence of length `channels_num`, one resistance per channel.
-        :raises TypeError: If `resistance_a` is not a list or tuple.
-        :raises ValueError: If the sequence length differs from `channels_num`.
+        :raises TypeError: If `resistance_a` is not a list or tuple, or an
+            element is not a real number.
+        :raises ValueError: If the sequence length differs from `channels_num`,
+            or an element is negative, infinite, or `NaN`.
         """
-        if not isinstance(resistance_a, (list, tuple)):
-            raise TypeError(
-                f"A tuple or list of values was expected, got {resistance_a}."
-            )
-        if len(resistance_a) != self.channels_num:
-            raise ValueError(
-                f"A tuple or list of length {self.channels_num} was expected, "
-                f"got {type(resistance_a)} of length {len(resistance_a)}."
-            )
+        resistance_a = _require_sequence(
+            resistance_a, self.channels_num, check_not_negative
+        )
         for idx, channel_id in enumerate(self.__channels):
             self.__channels[channel_id].potentiometer.r_a = resistance_a[idx]
             self.logger.debug(
@@ -466,18 +497,14 @@ class DigitalPotentiometerDevice:
         Set the B-terminal resistance for all channels.
 
         :param resistance_b: Sequence of length `channels_num`, one resistance per channel.
-        :raises TypeError: If `resistance_b` is not a list or tuple.
-        :raises ValueError: If the sequence length differs from `channels_num`.
+        :raises TypeError: If `resistance_b` is not a list or tuple, or an
+            element is not a real number.
+        :raises ValueError: If the sequence length differs from `channels_num`,
+            or an element is negative, infinite, or `NaN`.
         """
-        if not isinstance(resistance_b, (list, tuple)):
-            raise TypeError(
-                f"A tuple or list of values was expected, got {resistance_b}."
-            )
-        if len(resistance_b) != self.channels_num:
-            raise ValueError(
-                f"A tuple or list of length {self.channels_num} was expected, "
-                f"got {type(resistance_b)} of length {len(resistance_b)}."
-            )
+        resistance_b = _require_sequence(
+            resistance_b, self.channels_num, check_not_negative
+        )
         for idx, channel_id in enumerate(self.__channels):
             self.__channels[channel_id].potentiometer.r_b = resistance_b[idx]
             self.logger.debug(
@@ -522,18 +549,14 @@ class DigitalPotentiometerDevice:
         Set the load resistance for all channels.
 
         :param resistance_l: Sequence of length `channels_num`, one resistance per channel.
-        :raises TypeError: If `resistance_l` is not a list or tuple.
-        :raises ValueError: If the sequence length differs from `channels_num`.
+        :raises TypeError: If `resistance_l` is not a list or tuple, or an
+            element is not a real number.
+        :raises ValueError: If the sequence length differs from `channels_num`,
+            or an element is negative, infinite, or `NaN`.
         """
-        if not isinstance(resistance_l, (list, tuple)):
-            raise TypeError(
-                f"A tuple or list of values was expected, got {resistance_l}."
-            )
-        if len(resistance_l) != self.channels_num:
-            raise ValueError(
-                f"A tuple or list of length {self.channels_num} was expected, "
-                f"got {type(resistance_l)} of length {len(resistance_l)}."
-            )
+        resistance_l = _require_sequence(
+            resistance_l, self.channels_num, check_not_negative
+        )
         for idx, channel_id in enumerate(self.__channels):
             self.__channels[channel_id].potentiometer.r_load = resistance_l[idx]
             self.logger.debug(
@@ -578,16 +601,12 @@ class DigitalPotentiometerDevice:
         Set the A-terminal voltage for all channels.
 
         :param voltage_a: Sequence of length `channels_num`, one voltage per channel.
-        :raises TypeError: If `voltage_a` is not a list or tuple.
-        :raises ValueError: If the sequence length differs from `channels_num`.
+        :raises TypeError: If `voltage_a` is not a list or tuple, or an element
+            is not a real number.
+        :raises ValueError: If the sequence length differs from `channels_num`,
+            or an element is infinite or `NaN`.
         """
-        if not isinstance(voltage_a, (list, tuple)):
-            raise TypeError(f"A tuple or list of values was expected, got {voltage_a}.")
-        if len(voltage_a) != self.channels_num:
-            raise ValueError(
-                f"A tuple or list of length {self.channels_num} was expected, "
-                f"got {type(voltage_a)} of length {len(voltage_a)}."
-            )
+        voltage_a = _require_sequence(voltage_a, self.channels_num, check_number)
         for idx, channel_id in enumerate(self.__channels):
             self.__channels[channel_id].potentiometer.v_a = voltage_a[idx]
             self.logger.debug("Channel %s v_a is set to %s", channel_id, voltage_a[idx])
@@ -630,16 +649,12 @@ class DigitalPotentiometerDevice:
         Set the B-terminal voltage for all channels.
 
         :param voltage_b: Sequence of length `channels_num`, one voltage per channel.
-        :raises TypeError: If `voltage_b` is not a list or tuple.
-        :raises ValueError: If the sequence length differs from `channels_num`.
+        :raises TypeError: If `voltage_b` is not a list or tuple, or an element
+            is not a real number.
+        :raises ValueError: If the sequence length differs from `channels_num`,
+            or an element is infinite or `NaN`.
         """
-        if not isinstance(voltage_b, (list, tuple)):
-            raise TypeError(f"A tuple or list of values was expected, got {voltage_b}.")
-        if len(voltage_b) != self.channels_num:
-            raise ValueError(
-                f"A tuple or list of length {self.channels_num} was expected, "
-                f"got {type(voltage_b)} of length {len(voltage_b)}."
-            )
+        voltage_b = _require_sequence(voltage_b, self.channels_num, check_number)
         for idx, channel_id in enumerate(self.__channels):
             self.__channels[channel_id].potentiometer.v_b = voltage_b[idx]
             self.logger.debug("Channel %s v_b is set to %s", channel_id, voltage_b[idx])
@@ -682,16 +697,12 @@ class DigitalPotentiometerDevice:
         Set the load voltage for all channels.
 
         :param voltage_l: Sequence of length `channels_num`, one voltage per channel.
-        :raises TypeError: If `voltage_l` is not a list or tuple.
-        :raises ValueError: If the sequence length differs from `channels_num`.
+        :raises TypeError: If `voltage_l` is not a list or tuple, or an element
+            is not a real number.
+        :raises ValueError: If the sequence length differs from `channels_num`,
+            or an element is infinite or `NaN`.
         """
-        if not isinstance(voltage_l, (list, tuple)):
-            raise TypeError(f"A tuple or list of values was expected, got {voltage_l}.")
-        if len(voltage_l) != self.channels_num:
-            raise ValueError(
-                f"A tuple or list of length {self.channels_num} was expected, "
-                f"got {type(voltage_l)} of length {len(voltage_l)}."
-            )
+        voltage_l = _require_sequence(voltage_l, self.channels_num, check_number)
         for idx, channel_id in enumerate(self.__channels):
             self.__channels[channel_id].potentiometer.v_load = voltage_l[idx]
             self.logger.debug(
@@ -736,16 +747,12 @@ class DigitalPotentiometerDevice:
         Set the W-terminal voltage for all channels.
 
         :param voltage_w: Sequence of length `channels_num`, one voltage per channel.
-        :raises TypeError: If `voltage_w` is not a list or tuple.
-        :raises ValueError: If the sequence length differs from `channels_num`.
+        :raises TypeError: If `voltage_w` is not a list or tuple, or an element
+            is not a real number.
+        :raises ValueError: If the sequence length differs from `channels_num`,
+            or an element is infinite or `NaN`.
         """
-        if not isinstance(voltage_w, (list, tuple)):
-            raise TypeError(f"A tuple or list of values was expected, got {voltage_w}.")
-        if len(voltage_w) != self.channels_num:
-            raise ValueError(
-                f"A tuple or list of length {self.channels_num} was expected, "
-                f"got {type(voltage_w)} of length {len(voltage_w)}."
-            )
+        voltage_w = _require_sequence(voltage_w, self.channels_num, check_number)
         for idx, channel_id in enumerate(self.__channels):
             self.__channels[channel_id].potentiometer.v_w = voltage_w[idx]
             self.logger.debug("Channel %s v_w is set to %s", channel_id, voltage_w[idx])

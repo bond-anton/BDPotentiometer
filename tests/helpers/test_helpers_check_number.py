@@ -5,9 +5,9 @@ import unittest
 import numpy as np
 
 try:
-    from src.BDPotentiometer.__helpers import check_number
+    from src.BDPotentiometer.__helpers import check_bool, check_integer, check_number
 except ModuleNotFoundError:
-    from BDPotentiometer.__helpers import check_number
+    from BDPotentiometer.__helpers import check_bool, check_integer, check_number
 
 
 class TestHelpersCheckNumber(unittest.TestCase):
@@ -79,6 +79,51 @@ class TestHelpersCheckNumber(unittest.TestCase):
         ]:
             with self.assertRaises(TypeError):
                 check_number(input_value)
+
+    def test_check_number_bool(self):
+        """Check bool arguments are rejected despite being Integral subclasses."""
+        for input_value in [True, False]:
+            with self.assertRaises(TypeError):
+                check_number(input_value)
+
+    def test_check_number_int_float_still_accepted(self):
+        """Check plain int and float arguments are still accepted."""
+        for input_value in [1, -7, 0]:
+            self.assertIsInstance(check_number(input_value), int)
+        for input_value in [1.5, -7.25, 0.0]:
+            self.assertIsInstance(check_number(input_value), float)
+
+    def test_check_integer_bool(self):
+        """Check bool arguments are rejected by check_integer."""
+        for input_value in [True, False]:
+            with self.assertRaises(TypeError):
+                check_integer(input_value)
+
+    def test_check_integer_int_float_still_accepted(self):
+        """Check plain int and integer-valued float arguments are still accepted."""
+        for input_value in [1, -7, 0, 1.0, -7.0, 0.0]:
+            self.assertIsInstance(check_integer(input_value), int)
+
+
+class TestHelpersCheckBool(unittest.TestCase):
+    """
+    Testing check_bool function.
+    Function returns the argument unchanged if it is a bool and raises TypeError
+    otherwise.
+    """
+
+    def test_check_bool_bool(self):
+        """Check bool arguments are returned unchanged."""
+        for input_value in [True, False]:
+            output_value = check_bool(input_value)
+            self.assertIs(output_value, input_value)
+            self.assertIsInstance(output_value, bool)
+
+    def test_check_bool_wrong_type(self):
+        """Check TypeError is raised for non-bool arguments."""
+        for input_value in [1, 0, "true", None]:
+            with self.assertRaises(TypeError):
+                check_bool(input_value)
 
 
 if __name__ == "__main__":

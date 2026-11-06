@@ -26,7 +26,7 @@ class SpiDevTransport:
     Linux only. Requires kernel SPI (`dtparam=spi=on` in
     /boot/firmware/config.txt, or the older /boot/config.txt), the device
     node to exist, and read access for the current user (member of the
-    `spi` group, or root).
+    `gpio` group, or root).
 
     Transfers use `xfer2`, which keeps CS asserted for the whole frame;
     `xfer` would deassert CS between 8-bit words and break the 16-bit
@@ -76,7 +76,8 @@ class SpiDevTransport:
             raise TransportError(
                 f"Failed to open or configure /dev/spidev{bus}.{device}: {exc}. "
                 "Ensure SPI is enabled (dtparam=spi=on) and that the current "
-                "user is in the 'spi' group."
+                "user is in the 'gpio' group; the provided udev rule grants "
+                "the device to that group."
             ) from exc
 
     @property

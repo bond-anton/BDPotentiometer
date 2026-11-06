@@ -44,6 +44,27 @@ class TestDigitalWiperValue(unittest.TestCase):
             with self.assertRaises(TypeError):
                 digital_wiper.value = value_new
 
+    def test_value_rejects_fractional_and_non_finite(self):
+        """
+        Test that `value` accepts integers only instead of rounding fractions.
+        """
+        pot = Potentiometer(r_ab=100e3, r_w=175)
+        for max_value in [2, 16, 128]:
+            digital_wiper = DigitalWiper(potentiometer=pot, max_value=max_value)
+            digital_wiper.value = 1
+            # Fractional and non-finite numbers are rejected
+            for value_new in [1.5, 0.25, -2.5, float("nan"), float("inf")]:
+                with self.assertRaises(ValueError):
+                    digital_wiper.value = value_new
+            # Booleans and non-numbers are rejected as a type error
+            for value_new in [True, False, "1", None]:
+                with self.assertRaises(TypeError):
+                    digital_wiper.value = value_new
+            # Integral floats are still accepted
+            digital_wiper.value = 2.0
+            self.assertEqual(digital_wiper.value, 2)
+            self.assertIsInstance(digital_wiper.value, int)
+
     def test_value_relative(self):
         """
         Test relative value calculation.

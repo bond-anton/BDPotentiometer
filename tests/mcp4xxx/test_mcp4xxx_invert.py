@@ -25,9 +25,9 @@ class TestMCP4xxxInvert(unittest.TestCase):
         return device, fake
 
     def test_7bit_invert_value_0(self):
-        """7-bit inverted value 0 is transmitted as code 128."""
+        """7-bit inverted value 0 is transmitted as full-scale code 128."""
         device, fake = self._build(MCP4231, invert=True)
-        fake.queue([0, 0], [0, 128])
+        fake.queue([0, 0], [0xFE, 0x80])
         device.channels[0].value = 0
         self.assertEqual(fake.calls[0], [_WRITE_CH0, 0x80])
         self.assertEqual(device.channels[0].potentiometer.wiper_position, 1.0)
@@ -45,30 +45,37 @@ class TestMCP4xxxInvert(unittest.TestCase):
         self.assertEqual(fake.calls, [[_WRITE_CH0, 0x00], [_READ_CH0, 0]])
 
     def test_8bit_invert_value_0(self):
-        """8-bit inverted value 0 is transmitted as code 255."""
+        """8-bit inverted value 0 is transmitted as full-scale code 256."""
         device, fake = self._build(MCP4251, invert=True)
-        fake.queue([0, 0], [0, 255])
+        fake.queue([0, 0], [0xFF, 0x00])
         device.channels[0].value = 0
-        self.assertEqual(fake.calls[0], [_WRITE_CH0, 0xFF])
-        self.assertEqual(device.channels[0].potentiometer.wiper_position, 255 / 256)
+        self.assertEqual(fake.calls[0], [_WRITE_CH0 | 0x01, 0x00])
+        self.assertEqual(device.channels[0].potentiometer.wiper_position, 1.0)
         self.assertEqual(device.channels[0].value, 0)
-        self.assertEqual(fake.calls, [[_WRITE_CH0, 0xFF], [_READ_CH0, 0]])
+        self.assertEqual(fake.calls, [[_WRITE_CH0 | 0x01, 0x00], [_READ_CH0, 0]])
 
     def test_8bit_invert_value_255(self):
-        """8-bit inverted highest code 255 is transmitted as code 0."""
+        """8-bit inverted code 255 is transmitted as code 1."""
         device, fake = self._build(MCP4251, invert=True)
-        fake.queue([0, 0], [0, 0])
+        fake.queue([0, 0], [0x00, 0x01])
         device.channels[0].value = 255
-        self.assertEqual(fake.calls[0], [_WRITE_CH0, 0x00])
-        self.assertEqual(device.channels[0].potentiometer.wiper_position, 0.0)
+        self.assertEqual(fake.calls[0], [_WRITE_CH0, 0x01])
+        self.assertEqual(device.channels[0].potentiometer.wiper_position, 1 / 256)
         self.assertEqual(device.channels[0].value, 255)
-        self.assertEqual(fake.calls, [[_WRITE_CH0, 0x00], [_READ_CH0, 0]])
+        self.assertEqual(fake.calls, [[_WRITE_CH0, 0x01], [_READ_CH0, 0]])
 
     def test_read_back_inverts_code(self):
-        """The getter inverts a code read from the device."""
+        """The getter inverts a 7-bit code read from the device."""
         device, fake = self._build(MCP4231, invert=True)
         fake.queue([0, 100])
         self.assertEqual(device.channels[0].value, 28)
+        self.assertEqual(fake.calls, [[_READ_CH0, 0]])
+
+    def test_read_back_inverts_8bit_code(self):
+        """The getter inverts an 8-bit code against the 256-step scale."""
+        device, fake = self._build(MCP4251, invert=True)
+        fake.queue([0, 100])
+        self.assertEqual(device.channels[0].value, 156)
         self.assertEqual(fake.calls, [[_READ_CH0, 0]])
 
     def test_non_inverted_set_control(self):
