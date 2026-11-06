@@ -1,6 +1,4 @@
-""" MCP4xxx series Digital potentiometers and rheostats """
-
-from .mcp4xxx import resistance_list
+"""MCP4xxx series Digital potentiometers and rheostats"""
 
 from .mcp4xx1 import (
     MCP4131,
@@ -22,3 +20,24 @@ from .mcp4xx2 import (
     MCP4252,
     MCP4262,
 )
+from .mcp4xxx import resistance_list
+
+__all__ = [
+    "MCP4131",
+    "MCP4132",
+    "MCP4141",
+    "MCP4142",
+    "MCP4151",
+    "MCP4152",
+    "MCP4161",
+    "MCP4162",
+    "MCP4231",
+    "MCP4232",
+    "MCP4241",
+    "MCP4242",
+    "MCP4251",
+    "MCP4252",
+    "MCP4261",
+    "MCP4262",
+    "resistance_list",
+]

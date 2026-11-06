@@ -1,11 +1,11 @@
-""" MCP4XXX series SPI device base class """
+"""MCP4XXX series SPI device base class"""
 
 from typing import Union
-from gpiozero import SPI, SPIDevice
 
-from .. import SpiDigitalWiper, Potentiometer
+from .. import Potentiometer, SpiDigitalWiper
 from ..__helpers import clamp
-
+from ..transport.base import SpiTransport, is_spi_transport
+from ..transport.gpiozero_spi import GpiozeroSpiTransport
 
 resistance_list: tuple[float, ...] = (5e3, 10e3, 50e3, 100e3)
 
@@ -74,7 +74,7 @@ def _parse_tcon_response(data: int) -> dict[str, bool]:
     ":return: Parsed TCON state (dict).
     """
     result = {
-        "shdn": not (data & 0b1000 == 0b1000),
+        "shdn": data & 0b1000 != 0b1000,
         "A": data & 0b0100 == 0b0100,
         "W": data & 0b0010 == 0b0010,
         "B": data & 0b0001 == 0b0001,
@@ -103,6 +103,35 @@ _TCON = 0b01000000
 _SHDN = 0b10
 
 
+def _encode_wiper_write(channel: int, value: int) -> list[int]:
+    """
+    Encode a wiper position write command.
+    :param channel: channel number (int).
+    :param value: wiper position value (int).
+    :return: Command frame ready for transfer (list).
+    """
+    return [_W_CMD | _CH[channel], value]
+
+
+def _encode_wiper_read(channel: int) -> list[int]:
+    """
+    Encode a wiper position read command.
+    :param channel: channel number (int).
+    :return: Command frame ready for transfer (list).
+    """
+    return [_R_CMD | _CH[channel], 0]
+
+
+def _decode_wiper_read(data: list) -> int:
+    """
+    Decode a wiper position read response.
+    :param data: Response data (list).
+    :return: Wiper position value (int).
+    """
+    _check_read_response(data)
+    return data[1]
+
+
 class MCP4xxxPotentiometer(Potentiometer):
     """Potentiometer to use with MCP4XXX"""
 
@@ -117,9 +146,10 @@ class MCP4xxxWiper(SpiDigitalWiper):
     def __init__(
         self,
         potentiometer: MCP4xxxPotentiometer,
-        spi: Union[SPI, None] = None,
+        spi: Union[SpiTransport, None] = None,
         max_value: int = 128,
         invert: bool = False,
+        transport: Union[SpiTransport, None] = None,
         **kwargs,
     ):
         max_value = _coerce_max_value(max_value)
@@ -128,38 +158,82 @@ class MCP4xxxWiper(SpiDigitalWiper):
             spi=spi,
             max_value=max_value,
             invert=invert,
+            transport=transport,
             **kwargs,
         )
 
     def _set_value(self, value: int) -> int:
-        if isinstance(self.spi, SPI):
-            value = int(round(clamp(value, 0, self.max_value)))
-            value = self.max_value - value if self.invert else value
-            self.logger.debug("Setting value to %d", value)
-            data = self.spi.transfer([_W_CMD | _CH[self.channel], value])
-            _check_write_response(data)
-            self.potentiometer.wiper_position = value / self.max_value
-            return value
-        raise ConnectionError("SPI interface not set")
+        value = int(round(clamp(value, 0, self.max_value)))
+        value = self.max_value - value if self.invert else value
+        self.logger.debug("Setting value to %d", value)
+        data = self._require_transport().transfer(
+            _encode_wiper_write(self.channel, value)
+        )
+        _check_write_response(data)
+        self.potentiometer.wiper_position = value / self.max_value
+        return value
 
     def _read_value(self):
-        if isinstance(self.spi, SPI):
-            data = self.spi.transfer([_R_CMD | _CH[self.channel], 0])
-            _check_read_response(data)
-            return data[1]
-        raise ConnectionError("SPI interface not set")
+        data = self._require_transport().transfer(_encode_wiper_read(self.channel))
+        return _decode_wiper_read(data)
 
 
-class MCP4xxx(SPIDevice):
-    """Base class for MCP4XXX series devices"""
+class MCP4xxx:
+    """Base class for MCP4XXX series devices.
 
-    def __init__(self, **kwargs) -> None:
-        spi_args = {"channel", "port", "device", "clock_pin", "mosi_pin", "miso_pin", "select_pin"}
-        spi_kwargs = {key: kwargs[key] for key in spi_args if key in kwargs}
-        super().__init__(shared=True, **spi_kwargs)
+    No longer a ``gpiozero.SPIDevice``; use ``.close()`` and ``.spi`` instead.
+    """
+
+    _SPI_ARGS = GpiozeroSpiTransport._SPI_ARGS
+
+    def __init__(
+        self,
+        transport: Union[SpiTransport, None] = None,
+        spi: Union[SpiTransport, None] = None,
+        **kwargs,
+    ) -> None:
+        if transport is None and spi is not None:
+            transport = spi
+        if transport is None:
+            spi_args = {key: kwargs[key] for key in self._SPI_ARGS if key in kwargs}
+            transport = GpiozeroSpiTransport(**spi_args)
+        if transport is not None and not is_spi_transport(transport):
+            raise TypeError(
+                f"Expected an SPI transport with transfer(), got {type(transport)}"
+            )
+        self._transport: Union[SpiTransport, None] = transport
+
+    @property
+    def transport(self) -> Union[SpiTransport, None]:
+        """SPI transport used by the device."""
+        return self._transport
+
+    @property
+    def spi(self):
+        """Backward-compatible accessor: raw gpiozero SPI if wrapped."""
+        if self._transport is None:
+            return None
+        return getattr(self._transport, "raw", self._transport)
+
+    @property
+    def closed(self) -> bool:
+        """True when the device has no transport or the transport is closed."""
+        return bool(getattr(self._transport, "closed", self._transport is None))
+
+    def close(self) -> None:
+        """Close the underlying transport."""
+        if self._transport is not None:
+            self._transport.close()
+
+    def _require_transport(self) -> SpiTransport:
+        """Return the transport, raising if the device has none."""
+        if self._transport is None:
+            raise ConnectionError("SPI interface not set")
+        return self._transport
 
     @property
     def value(self):
+        """Value is provided by the concrete device classes."""
         raise NotImplementedError
 
     def get_shdn_pin_status(self) -> bool:
@@ -168,11 +242,9 @@ class MCP4xxx(SPIDevice):
 
         :return: SHDN state (bool).
         """
-        data = self._spi.transfer([_R_CMD | _STATUS, 0])
+        data = self._require_transport().transfer([_R_CMD | _STATUS, 0])
         _check_status_response(data)
-        if data[1] & _SHDN == _SHDN:
-            return True
-        return False
+        return data[1] & _SHDN == _SHDN
 
     def read_tcon(self) -> tuple[dict[str, bool], dict[str, bool]]:
         """
@@ -180,7 +252,7 @@ class MCP4xxx(SPIDevice):
 
         :return: Tuple of TCON status dicts.
         """
-        data = self._spi.transfer([_R_CMD | _TCON, 0])
+        data = self._require_transport().transfer([_R_CMD | _TCON, 0])
         _check_tcon_response(data)
         ch0 = data[1] & 0b1111
         ch1 = (data[1] & 0b11110000) >> 4
@@ -204,12 +276,10 @@ class MCP4xxx(SPIDevice):
         ch0_cmd = _tcon_to_cmd(ch0)
         ch1_cmd = _tcon_to_cmd(ch1)
         data = ch0_cmd | (ch1_cmd << 4)
-        _ = self._spi.transfer([_W_CMD | _TCON, data])
-        resp = self._spi.transfer([_R_CMD | _TCON, 0])
+        _ = self._require_transport().transfer([_W_CMD | _TCON, data])
+        resp = self._require_transport().transfer([_R_CMD | _TCON, 0])
         _check_tcon_response(resp)
-        if resp[1] == data:
-            return True
-        return False
+        return resp[1] == data
 
     def shdn(self, ch0: bool = False, ch1: bool = False) -> bool:
         """

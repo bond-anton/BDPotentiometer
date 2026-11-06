@@ -1,7 +1,7 @@
-""" MCP4XX1 series potentiometers """
+"""MCP4XX1 series potentiometers"""
 
 from .. import DigitalPotentiometerDevice
-from .mcp4xxx import MCP4xxxPotentiometer, MCP4xxxWiper, MCP4xxx
+from .mcp4xxx import MCP4xxx, MCP4xxxPotentiometer, MCP4xxxWiper
 
 
 class MCP4xx1(DigitalPotentiometerDevice, MCP4xxx):
@@ -11,12 +11,20 @@ class MCP4xx1(DigitalPotentiometerDevice, MCP4xxx):
         self, r_ab: float = 10e3, max_value: int = 128, channels: int = 1, **kwargs
     ) -> None:
         MCP4xxx.__init__(self, **kwargs)
-        potentiometer = MCP4xxxPotentiometer(r_ab, **kwargs)
+        pot_kwargs = {
+            key: value
+            for key, value in kwargs.items()
+            if key not in ("transport", "spi")
+        }
+        potentiometer = MCP4xxxPotentiometer(r_ab, **pot_kwargs)
         wiper = MCP4xxxWiper(
-            potentiometer=potentiometer, spi=self._spi, max_value=max_value, **kwargs
+            potentiometer=potentiometer,
+            transport=self._transport,
+            max_value=max_value,
+            **pot_kwargs,
         )
         DigitalPotentiometerDevice.__init__(
-            self, wiper=wiper, channels=channels, **kwargs
+            self, wiper=wiper, channels=channels, **pot_kwargs
         )
 
 

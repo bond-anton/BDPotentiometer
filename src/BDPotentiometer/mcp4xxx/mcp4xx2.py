@@ -1,7 +1,7 @@
-""" MCP4XX2 series rheostats """
+"""MCP4XX2 series rheostats"""
 
 from .. import DigitalPotentiometerDevice
-from .mcp4xxx import MCP4xxxPotentiometer, MCP4xxxWiper, MCP4xxx
+from .mcp4xxx import MCP4xxx, MCP4xxxPotentiometer, MCP4xxxWiper
 
 
 class MCP4xx2(DigitalPotentiometerDevice, MCP4xxx):
@@ -13,7 +13,9 @@ class MCP4xx2(DigitalPotentiometerDevice, MCP4xxx):
         MCP4xxx.__init__(self, **kwargs)
         potentiometer = MCP4xxxPotentiometer(r_ab, rheostat=True)
         wiper = MCP4xxxWiper(
-            potentiometer=potentiometer, spi=self._spi, max_value=max_value
+            potentiometer=potentiometer,
+            transport=self._transport,
+            max_value=max_value,
         )
         DigitalPotentiometerDevice.__init__(self, wiper=wiper, channels=channels)
 

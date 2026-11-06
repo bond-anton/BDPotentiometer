@@ -1,12 +1,12 @@
-""" Module contains basic digital wiper class implementation """
+"""Module contains basic digital wiper class implementation"""
 
 from copy import deepcopy
-from typing import Union
-from gpiozero import SPI
+from typing import Union, cast
 
-from .potentiometer import Potentiometer
-from .__helpers import check_integer, check_positive, check_not_negative, clamp
+from .__helpers import check_integer, check_not_negative, check_positive, clamp
 from .__logger import get_logger
+from .potentiometer import Potentiometer
+from .transport.base import SpiTransport, is_spi_transport
 
 
 class DigitalWiper:
@@ -14,8 +14,6 @@ class DigitalWiper:
     Generic digital wiper class.
     Digital wiper change position by discrete movement between 0 and `max_value`.
     """
-
-    # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
@@ -36,7 +34,7 @@ class DigitalWiper:
         self.__value: int = 0
         self.logger = get_logger(
             kwargs.get("label", "Digital Wiper"),
-            kwargs.get("log_level", None),
+            kwargs.get("log_level"),
         )
         self.read()
 
@@ -200,43 +198,65 @@ class DigitalWiper:
 class SpiDigitalWiper(DigitalWiper):
     """Digital wiper with SPI interface"""
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         potentiometer: Potentiometer,
-        spi: Union[SPI, None] = None,
+        spi: Union[SpiTransport, None] = None,
         max_value: int = 128,
         invert: bool = False,
+        transport: Union[SpiTransport, None] = None,
         **kwargs,
     ):
-        self.__spi = None
-        if isinstance(spi, SPI):
-            self.__spi = spi
+        self._transport = self._resolve_transport(
+            transport if transport is not None else spi
+        )
         super().__init__(
             potentiometer=potentiometer, max_value=max_value, invert=invert, **kwargs
         )
 
+    @staticmethod
+    def _resolve_transport(value: object) -> Union[SpiTransport, None]:
+        if value is None:
+            return None
+        if is_spi_transport(value):
+            return cast(SpiTransport, value)
+        raise TypeError(f"Expected an SPI transport with transfer(), got {type(value)}")
+
+    def _require_transport(self) -> SpiTransport:
+        if self._transport is None:
+            raise ConnectionError("SPI interface not set")
+        return self._transport
+
     @property
-    def spi(self) -> Union[SPI, None]:
+    def transport(self) -> Union[SpiTransport, None]:
+        """Canonical SPI transport; ``spi`` is a compatibility accessor."""
+        return self._transport
+
+    @transport.setter
+    def transport(self, value: Union[SpiTransport, None]) -> None:
+        self._transport = self._resolve_transport(value)
+        self.logger.debug("Transport set to %s", self._transport)
+
+    @property
+    def spi(self) -> Union[SpiTransport, None]:
         """
-        Get SPI interface
-        :return: SPI interface (gpiozero.SPI)
+        Compatibility accessor for the SPI interface; ``transport`` is canonical.
+        :return: SPI interface (raw gpiozero SPI if wrapped, else the transport)
         """
-        return self.__spi
+        if self._transport is None:
+            return None
+        return getattr(self._transport, "raw", self._transport)
 
     @spi.setter
-    def spi(self, spi: Union[SPI, None]) -> None:
-        if isinstance(spi, SPI):
-            self.__spi = spi
-        self.__spi = None
-        self.logger.debug("SPI interface set to %s", self.__spi)
+    def spi(self, spi: Union[SpiTransport, None]) -> None:
+        self.transport = spi if spi is None or is_spi_transport(spi) else None
 
     def __deepcopy__(self, memo):
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
         for key, value in self.__dict__.items():
-            if "_spi" in key:
+            if key == "_transport":
                 setattr(result, key, value)
                 continue
             setattr(result, key, deepcopy(value, memo))
