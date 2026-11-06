@@ -19,9 +19,9 @@ jobs:
         python-version: ["3.9", "3.10", "3.11"]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -30,7 +30,11 @@ jobs:
         python -m pip install -e .[dev,test]
     - name: Install with pip
       run: |
-        pip install .
+        pip install --force-reinstall --no-deps .
+    - name: Verify installed wheel is importable
+      working-directory: ${{ runner.temp }}
+      run: |
+        python -c "import pathlib, BDPotentiometer; path = pathlib.Path(BDPotentiometer.__file__).resolve(); print(f'Imported {path}'); assert 'site-packages' in path.parts, path"
     - name: Test with pytest
       run: |
         pytest

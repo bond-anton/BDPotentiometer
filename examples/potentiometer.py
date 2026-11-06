@@ -21,6 +21,14 @@ def main():
     pot.v_load = 1
     pot.v_a = 5.1
 
+    print(
+        f"Potentiometer: R_AB={pot.r_ab:g} Ohm, R_A={pot.r_a:g} Ohm, "
+        f"R_B={pot.r_b:g} Ohm, R_W={pot.r_w:g} Ohm"
+    )
+    print(
+        f"Terminal voltages: V_A={pot.v_a:g} V, V_B={pot.v_b:g} V, V_L={pot.v_load:g} V"
+    )
+
     v_out = np.linspace(-1, 6, num=71)
     values = np.zeros_like(v_out)
     v_act = np.zeros_like(v_out)
@@ -28,6 +36,10 @@ def main():
         pot.v_w = voltage
         v_act[i] = pot.v_w
         values[i] = pot.wiper_position
+
+    print("Requested V_W [V] -> achieved V_W [V], wiper position:")
+    for voltage, actual, position in zip(v_out[::10], v_act[::10], values[::10]):
+        print(f"  {voltage:6.2f} -> {actual:6.2f}, {position:5.3f}")
     # plt.plot(v_out, values, 'r-o')
     # plt.plot(v_out, v_act, "b-o")
     # plt.grid(True)

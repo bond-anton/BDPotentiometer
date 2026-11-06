@@ -29,6 +29,8 @@ def main():
         log_level=logging.DEBUG,
     )
 
+    print(f"Digital wiper: max_value={dw.max_value}, invert={dw.invert}")
+
     v_out = np.linspace(-1, 6, num=71)
     values = np.zeros_like(v_out)
     v_act = np.zeros_like(v_out)
@@ -37,6 +39,10 @@ def main():
         v_act[i] = dw.v_w
         # values[i] = dw.potentiometer.wiper_position
         values[i] = dw.value
+
+    print("Requested V_W [V] -> achieved V_W [V], wiper value:")
+    for voltage, actual, value in zip(v_out[::10], v_act[::10], values[::10]):
+        print(f"  {voltage:6.2f} -> {actual:6.2f}, {value:6.1f}")
     # # plt.plot(v_out, values, 'r-o')
     # plt.plot(v_out, v_act, "b-o")
 
@@ -48,6 +54,10 @@ def main():
         # v_act[i] = dw.value
         v_act[i] = dw.potentiometer.wiper_position
         v_out[i] = dw.v_w
+
+    print("Requested wiper value -> achieved position, actual V_W [V]:")
+    for value, position, voltage in zip(values[::16], v_act[::16], v_out[::16]):
+        print(f"  {value:3d} -> {position:5.3f}, {voltage:6.2f}")
     # plt.plot(values, v_out, 'r-o')
     # plt.plot(values, v_act, "b-o")
     #

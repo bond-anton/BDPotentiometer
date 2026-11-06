@@ -35,6 +35,9 @@ spi = ["spidev>=3.6"]
 [tool.setuptools.dynamic]
 version = {attr = "BDPotentiometer.__version__"}
 
+[tool.setuptools.package-data]
+BDPotentiometer = ["py.typed"]
+
 [tool.pytest.ini_options]
 pythonpath = [
   "src"
