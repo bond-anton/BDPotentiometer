@@ -1,18 +1,17 @@
-""" Tests for DigitalPotentiometerDevice class. """
-
-# pylint: disable=protected-access
+"""Tests for DigitalPotentiometerDevice class."""
 
 import unittest
+
 import numpy as np
 
 try:
     from src.BDPotentiometer import (
-        Potentiometer,
-        DigitalWiper,
         DigitalPotentiometerDevice,
+        DigitalWiper,
+        Potentiometer,
     )
 except ModuleNotFoundError:
-    from BDPotentiometer import Potentiometer, DigitalWiper, DigitalPotentiometerDevice
+    from BDPotentiometer import DigitalPotentiometerDevice, DigitalWiper, Potentiometer
 
 
 class TestDigitalPotentiometer(unittest.TestCase):

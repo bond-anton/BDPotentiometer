@@ -1,6 +1,7 @@
-""" Testing helpers functions (check_integer). """
+"""Testing helpers functions (check_integer)."""
 
 import unittest
+
 import numpy as np
 
 try:

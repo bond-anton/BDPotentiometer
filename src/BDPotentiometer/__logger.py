@@ -1,7 +1,7 @@
 """Logging helper functions"""
 
-from typing import Union
 import logging
+from typing import Union
 
 
 def get_logger(label: str, log_level: Union[int, None] = None) -> logging.Logger:

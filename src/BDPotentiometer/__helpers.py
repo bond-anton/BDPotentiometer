@@ -1,8 +1,8 @@
 """This module contains internal helper functions and not supposed to be used outside."""
 
-from numbers import Real, Integral
 from math import isnan
-from typing import Union, Callable
+from numbers import Integral, Real
+from typing import Callable, Union
 
 
 def check_number(num: Union[float, int, Real]) -> Union[float, int]:
@@ -35,9 +35,8 @@ def check_integer(num: Union[float, int, Real]) -> int:
     :return: int representation of `num` or rises ValueError.
     """
     num = check_number(num)
-    if isinstance(num, float):
-        if not num.is_integer():
-            raise ValueError(f"Expected an integer number, got {num}")
+    if isinstance(num, float) and not num.is_integer():
+        raise ValueError(f"Expected an integer number, got {num}")
     return int(num)
 
 

@@ -1,14 +1,12 @@
-""" Basic potentiometer device implementation """
+"""Basic potentiometer device implementation"""
 
 import math as m
-from .__helpers import clamp, check_number, check_positive, check_not_negative
+
+from .__helpers import check_not_negative, check_number, check_positive, clamp
 from .__logger import get_logger
 
 
 class Potentiometer:
-
-    # pylint: disable=too-many-instance-attributes
-
     """
     Represents a generic potentiometer with 3 terminals A, B, and W.
 
@@ -105,7 +103,7 @@ class Potentiometer:
         self._r_load: float = check_not_negative(kwargs.get("r_load", 1.0e10))
         self._wiper_position: float = float(clamp(wiper_position, 0, 1))
         self.logger = get_logger(
-            kwargs.get("label", "Potentiometer"), kwargs.get("log_level", None)
+            kwargs.get("label", "Potentiometer"), kwargs.get("log_level")
         )
 
     @property

@@ -1,4 +1,4 @@
-""" Test package version is correctly set """
+"""Test package version is correctly set"""
 
 import unittest
 

@@ -1,4 +1,4 @@
-""" Tests for SpiDigitalWiper class constructor. """
+"""Tests for SpiDigitalWiper class constructor."""
 
 import unittest
 

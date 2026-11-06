@@ -1,11 +1,11 @@
-""" Tests for DigitalWiper min max value properties. """
+"""Tests for DigitalWiper min max value properties."""
 
 import unittest
 
 try:
-    from src.BDPotentiometer import Potentiometer, DigitalWiper
+    from src.BDPotentiometer import DigitalWiper, Potentiometer
 except ModuleNotFoundError:
-    from BDPotentiometer import Potentiometer, DigitalWiper
+    from BDPotentiometer import DigitalWiper, Potentiometer
 
 
 class TestDigitalWiperMinMaxValue(unittest.TestCase):

@@ -1,12 +1,12 @@
-""" Tests for DigitalWiper class deep copy. """
+"""Tests for DigitalWiper class deep copy."""
 
-from copy import deepcopy
 import unittest
+from copy import deepcopy
 
 try:
-    from src.BDPotentiometer import Potentiometer, DigitalWiper
+    from src.BDPotentiometer import DigitalWiper, Potentiometer
 except ModuleNotFoundError:
-    from BDPotentiometer import Potentiometer, DigitalWiper
+    from BDPotentiometer import DigitalWiper, Potentiometer
 
 
 class TestDigitalWiperDeepCopy(unittest.TestCase):

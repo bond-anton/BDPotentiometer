@@ -1,6 +1,7 @@
-""" Test Potentiometer resistors properties setters and getters. """
+"""Test Potentiometer resistors properties setters and getters."""
 
 import unittest
+
 import numpy as np
 
 try:

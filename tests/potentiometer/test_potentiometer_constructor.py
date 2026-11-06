@@ -1,6 +1,7 @@
-""" Tests for Potentiometer constructor. """
+"""Tests for Potentiometer constructor."""
 
 import unittest
+
 import numpy as np
 
 try:

@@ -1,12 +1,13 @@
-""" Tests for DigitalWiper output voltage property. """
+"""Tests for DigitalWiper output voltage property."""
 
 import unittest
+
 import numpy as np
 
 try:
-    from src.BDPotentiometer import Potentiometer, DigitalWiper
+    from src.BDPotentiometer import DigitalWiper, Potentiometer
 except ModuleNotFoundError:
-    from BDPotentiometer import Potentiometer, DigitalWiper
+    from BDPotentiometer import DigitalWiper, Potentiometer
 
 
 class TestDigitalWiperVoltageOut(unittest.TestCase):

@@ -1,23 +1,24 @@
-""" Testing helpers functions. """
+"""Testing helpers functions."""
 
 import unittest
+
 import numpy as np
 
 try:
     from src.BDPotentiometer.__helpers import (
+        adjust_tuple,
+        build_tuple,
         check_not_negative,
         check_positive,
         clamp,
-        build_tuple,
-        adjust_tuple,
     )
 except ModuleNotFoundError:
     from BDPotentiometer.__helpers import (
+        adjust_tuple,
+        build_tuple,
         check_not_negative,
         check_positive,
         clamp,
-        build_tuple,
-        adjust_tuple,
     )
 
 

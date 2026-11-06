@@ -1,4 +1,4 @@
-""" Example of MCP4231 usage """
+"""Example of MCP4231 usage"""
 
 from BDPotentiometer.mcp4xxx import MCP4231
 

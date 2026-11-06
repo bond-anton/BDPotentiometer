@@ -28,20 +28,38 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["gpiozero>=1.6.2", "numpy"]
-test = ["flake8", "pytest", "numpy"]
-lint = ["pylint"]
+test = ["pytest", "numpy"]
+lint = ["ruff==0.17.4", "ty==0.0.99"]
+spi = ["spidev>=3.6"]
 
 [tool.setuptools.dynamic]
 version = {attr = "BDPotentiometer.__version__"}
-
-[tool.mypy]
-python_version = "3.9"
-
-[[tool.mypy.overrides]]
-module = ["gpiozero.*"]
-ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 pythonpath = [
   "src"
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+extend-exclude = ["docs"]
+
+[tool.ruff.lint]
+select = ["E4","E7","E9","F","W","I","B","C4","SIM","UP","PLC0415","PLR0913","PLR0917"]
+ignore = ["E501","SLF001"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PLC0415"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+docstring-code-format = false
+
+[tool.ty.environment]
+python-version = "3.9"
+
+[tool.ty.analysis]
+replace-imports-with-any = ["gpiozero.**", "spidev.**"]

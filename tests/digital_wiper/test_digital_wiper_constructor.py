@@ -1,11 +1,11 @@
-""" Tests for DigitalWiper constructor. """
+"""Tests for DigitalWiper constructor."""
 
 import unittest
 
 try:
-    from src.BDPotentiometer import Potentiometer, DigitalWiper
+    from src.BDPotentiometer import DigitalWiper, Potentiometer
 except ModuleNotFoundError:
-    from BDPotentiometer import Potentiometer, DigitalWiper
+    from BDPotentiometer import DigitalWiper, Potentiometer
 
 
 class TestDigitalWiperConstructor(unittest.TestCase):

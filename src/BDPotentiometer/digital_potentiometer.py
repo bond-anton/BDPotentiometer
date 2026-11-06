@@ -1,11 +1,11 @@
-""" Digital potentiometer base class """
+"""Digital potentiometer base class"""
 
 import copy
 from typing import Union
 
-from .digital_wiper import DigitalWiper
-from .__helpers import check_not_negative, check_positive, check_integer
+from .__helpers import check_integer, check_not_negative, check_positive
 from .__logger import get_logger
+from .digital_wiper import DigitalWiper
 
 
 class DigitalPotentiometerDevice:
@@ -51,9 +51,6 @@ class DigitalPotentiometerDevice:
 
     """
 
-    # pylint: disable=too-many-public-methods
-    # pylint: disable=too-many-instance-attributes
-
     def __init__(self, wiper: DigitalWiper, channels: int = 1, **kwargs) -> None:
         self.__channels: dict[int, DigitalWiper] = {}
         self.__labels: dict[int, str] = {0: "0"}
@@ -64,7 +61,7 @@ class DigitalPotentiometerDevice:
             self.__channels[i] = wiper
             self.__labels[i] = str(i)
         self.logger = get_logger(
-            kwargs.get("label", "DigiPot"), kwargs.get("log_level", None)
+            kwargs.get("label", "DigiPot"), kwargs.get("log_level")
         )
 
     def _get_channel_number_by_label_or_id(

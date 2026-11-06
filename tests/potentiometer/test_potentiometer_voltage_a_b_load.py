@@ -1,6 +1,7 @@
-""" Tests for Potentiometer input voltage property. """
+"""Tests for Potentiometer input voltage property."""
 
 import unittest
+
 import numpy as np
 
 try:

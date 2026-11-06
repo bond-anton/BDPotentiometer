@@ -1,6 +1,7 @@
-""" Tests for Potentiometer `r_wa` and `r_wb` calculation. """
+"""Tests for Potentiometer `r_wa` and `r_wb` calculation."""
 
 import unittest
+
 import numpy as np
 
 try:

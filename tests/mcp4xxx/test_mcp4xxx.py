@@ -1,30 +1,30 @@
-""" Tests for DigitalPotentiometerDevice class. """
+"""Tests for DigitalPotentiometerDevice class."""
 
 import unittest
 
 try:
     from src.BDPotentiometer.mcp4xxx.mcp4xxx import (
-        resistance_list,
-        _coerce_max_value,
-        _coerce_r_ab,
-        _check_write_response,
         _check_read_response,
         # _check_status_response,
         # _check_tcon_response,
         # _parse_tcon_response,
         # _tcon_to_cmd,
+        _check_write_response,
+        _coerce_max_value,
+        _coerce_r_ab,
+        resistance_list,
     )
 except ModuleNotFoundError:
     from BDPotentiometer.mcp4xxx.mcp4xxx import (
-        resistance_list,
-        _coerce_max_value,
-        _coerce_r_ab,
-        _check_write_response,
         _check_read_response,
         # _check_status_response,
         # _check_tcon_response,
         # _parse_tcon_response,
         # _tcon_to_cmd,
+        _check_write_response,
+        _coerce_max_value,
+        _coerce_r_ab,
+        resistance_list,
     )
 
 

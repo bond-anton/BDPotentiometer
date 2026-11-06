@@ -19,9 +19,7 @@ def fix_gpiozero_dual_cs_spi() -> None:
     class LocalPiHardwareSPIFixed(LocalPiHardwareSPI):
         """Custom conflict checker"""
 
-        # pylint: disable=too-few-public-methods
         def _conflicts_with(self, other):
-            # pylint: disable=protected-access
             return not (
                 isinstance(other, LocalPiHardwareSPI)
                 and (self._port, self._device) != (other._port, other._device)
@@ -41,7 +39,6 @@ def fix_gpiozero_dual_cs_spi() -> None:
         """Custom Shared SPI hardware class inheriting from fixed Hardware SPI class above"""
 
         def _conflicts_with(self, other):
-            # pylint: disable=protected-access
             return not (
                 isinstance(other, LocalPiHardwareSPI)
                 and (self._port, self._device) != (other._port, other._device)
