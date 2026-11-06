@@ -47,6 +47,21 @@ class _MutatingRaisingTransport:
         """No-op close."""
 
 
+class _MinimalTransport:
+    """Transport with transfer() and close() but no closed attribute."""
+
+    def __init__(self) -> None:
+        self.close_calls = 0
+
+    def transfer(self, tx):
+        """Return a zero response."""
+        return [0, 0]
+
+    def close(self) -> None:
+        """Record the close."""
+        self.close_calls += 1
+
+
 class TestMCP4xxxTransport(unittest.TestCase):
     """
     Testing MCP4231 wire bytes and transport sharing through a fake.
@@ -124,6 +139,17 @@ class TestMCP4xxxTransport(unittest.TestCase):
         self.assertTrue(pot.closed)
         with self.assertRaises(TransportClosed):
             pot.set_value(0, 1)
+
+    def test_closed_flips_for_transport_without_closed_attribute(self):
+        """
+        closed tracks device state even when the transport exposes no closed.
+        """
+        transport = _MinimalTransport()
+        device = mcp4xxx_module.MCP4xxx(transport=transport)
+        self.assertFalse(device.closed)
+        device.close()
+        self.assertTrue(device.closed)
+        self.assertEqual(transport.close_calls, 1)
 
     def test_missing_transport_raises_connection_error(self):
         """

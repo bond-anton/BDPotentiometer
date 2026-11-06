@@ -101,10 +101,17 @@ class DigitalWiper:
 
     @max_value.setter
     def max_value(self, max_value: int) -> None:
-        """Set the number of discrete steps and reshape the current value to it."""
+        """
+        Set the number of discrete steps, preserving the user-facing value.
+
+        The stored code is raw (already inverted), so the user-facing value is
+        recomputed before `max_code` changes and then re-applied to the new
+        code range.
+        """
+        current = self.max_code - self.__value if self.__invert else self.__value
         self.__max_value = check_integer(check_positive(max_value))
         self.logger.debug("Set max value to %d", self.__max_value)
-        self.value = self.__value
+        self.value = current
 
     @property
     def max_code(self) -> int:

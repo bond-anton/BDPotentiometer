@@ -38,6 +38,7 @@ class TestMCP4xxxConstructorWiring(unittest.TestCase):
         A bare constructor still builds the default gpiozero transport.
         """
         with mock.patch.object(mcp4xxx_module, "GpiozeroSpiTransport") as adapter:
+            adapter.return_value.transfer.return_value = [0, 0]
             pot = MCP4231(r_ab=10e3)
         adapter.assert_called_once_with()
         self.assertIs(pot.transport, adapter.return_value)
@@ -47,6 +48,7 @@ class TestMCP4xxxConstructorWiring(unittest.TestCase):
         device= builds a GpiozeroSpiTransport with that device number.
         """
         with mock.patch.object(mcp4xxx_module, "GpiozeroSpiTransport") as adapter:
+            adapter.return_value.transfer.return_value = [0, 0]
             pot = MCP4231(r_ab=10e3, device=0)
         adapter.assert_called_once_with(device=0)
         self.assertIs(pot.transport, adapter.return_value)
@@ -56,6 +58,7 @@ class TestMCP4xxxConstructorWiring(unittest.TestCase):
         All legacy SPI keyword arguments are forwarded to the adapter.
         """
         with mock.patch.object(mcp4xxx_module, "GpiozeroSpiTransport") as adapter:
+            adapter.return_value.transfer.return_value = [0, 0]
             MCP4231(r_ab=10e3, port=0, device=1, clock_pin=11)
         adapter.assert_called_once_with(port=0, device=1, clock_pin=11)
 
@@ -101,6 +104,7 @@ class TestMCP4xxxConstructorWiring(unittest.TestCase):
         An 8-bit dual pot constructs through the same adapter path.
         """
         with mock.patch.object(mcp4xxx_module, "GpiozeroSpiTransport") as adapter:
+            adapter.return_value.transfer.return_value = [0, 0]
             pot = MCP4251(r_ab=10e3, device=0)
         adapter.assert_called_once_with(device=0)
         self.assertEqual(pot.channels_num, 2)
@@ -110,6 +114,7 @@ class TestMCP4xxxConstructorWiring(unittest.TestCase):
         A rheostat constructs through the same adapter path.
         """
         with mock.patch.object(mcp4xxx_module, "GpiozeroSpiTransport") as adapter:
+            adapter.return_value.transfer.return_value = [0, 0]
             pot = MCP4232(r_ab=10e3, device=1)
         adapter.assert_called_once_with(device=1)
         self.assertEqual(pot.channels_num, 2)

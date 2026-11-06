@@ -78,6 +78,21 @@ class _TransferFailingSpiDev(_StubSpiDev):
         raise OSError(5, "Input/output error")
 
 
+class _FailingCloseSpiDev(_StubSpiDev):
+    """Stand-in whose first close() fails before succeeding on retry."""
+
+    def __init__(self):
+        super().__init__()
+        self.close_calls = 0
+
+    def close(self):
+        """Fail the first close, then record success."""
+        self.close_calls += 1
+        if self.close_calls == 1:
+            raise OSError(5, "Input/output error")
+        self.closed = True
+
+
 def _stub_module(spi_dev_class=_StubSpiDev):
     module = types.ModuleType("spidev")
     module.SpiDev = spi_dev_class
@@ -156,6 +171,21 @@ class TestSpiDevTransport(unittest.TestCase):
             self.assertTrue(transport.raw.closed)
             with self.assertRaises(TransportClosed):
                 transport.transfer([0x0C, 0])
+
+    def test_failed_close_leaves_transport_open(self) -> None:
+        """
+        A failing handle close leaves closed False and a second close retries.
+        """
+        with mock.patch.dict(
+            sys.modules, {"spidev": _stub_module(_FailingCloseSpiDev)}
+        ):
+            transport = SpiDevTransport()
+        with self.assertRaises(OSError):
+            transport.close()
+        self.assertFalse(transport.closed)
+        transport.close()
+        self.assertEqual(transport.raw.close_calls, 2)
+        self.assertTrue(transport.closed)
 
     def test_open_failure_is_wrapped(self) -> None:
         """

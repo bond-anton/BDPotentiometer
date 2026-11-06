@@ -14,7 +14,11 @@ class TestGetLogger(unittest.TestCase):
     Testing logger creation and reuse.
     """
 
-    NAMES = ("bdpot-test-single-handler", "bdpot-test-log-level")
+    NAMES = (
+        "bdpot-test-single-handler",
+        "bdpot-test-log-level",
+        "bdpot-test-log-notset",
+    )
 
     def tearDown(self) -> None:
         for name in self.NAMES:
@@ -45,3 +49,11 @@ class TestGetLogger(unittest.TestCase):
             logger.handlers[0].formatter._fmt,
             "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
+
+    def test_notset_level_is_honoured(self) -> None:
+        """
+        logging.NOTSET is applied instead of falling back to ERROR.
+        """
+        logger = get_logger("bdpot-test-log-notset", logging.NOTSET)
+        self.assertEqual(logger.level, logging.NOTSET)
+        self.assertEqual(logger.handlers[0].level, logging.NOTSET)

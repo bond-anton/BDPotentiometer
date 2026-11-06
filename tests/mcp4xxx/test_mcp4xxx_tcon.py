@@ -4,11 +4,17 @@ import unittest
 
 try:
     from src.BDPotentiometer.mcp4xxx import MCP4231
-    from src.BDPotentiometer.mcp4xxx.mcp4xxx import _check_tcon_response
+    from src.BDPotentiometer.mcp4xxx.mcp4xxx import (
+        _check_status_response,
+        _check_tcon_response,
+    )
     from src.BDPotentiometer.transport import FakeSpiTransport
 except ModuleNotFoundError:
     from BDPotentiometer.mcp4xxx import MCP4231
-    from BDPotentiometer.mcp4xxx.mcp4xxx import _check_tcon_response
+    from BDPotentiometer.mcp4xxx.mcp4xxx import (
+        _check_status_response,
+        _check_tcon_response,
+    )
     from BDPotentiometer.transport import FakeSpiTransport
 
 # Command bytes from the MCP4XXX protocol.
@@ -89,9 +95,16 @@ class TestMCP4xxxTcon(unittest.TestCase):
             device.read_tcon()
 
     def test_tcon_codec_rejects_too_short_response(self):
-        """A short response lacking the reserved bit raises ValueError."""
-        with self.assertRaises(ValueError):
-            _check_tcon_response([0])
+        """A truncated response raises ValueError before indexing."""
+        for data in ([1], [], None):
+            with self.assertRaises(ValueError):
+                _check_tcon_response(data)
+
+    def test_status_codec_rejects_too_short_response(self):
+        """A truncated status response raises ValueError before indexing."""
+        for data in ([1], [], None):
+            with self.assertRaises(ValueError):
+                _check_status_response(data)
 
 
 if __name__ == "__main__":

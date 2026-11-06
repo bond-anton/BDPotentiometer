@@ -4,6 +4,8 @@ import unittest
 
 try:
     from src.BDPotentiometer.mcp4xxx.mcp4xxx import (
+        MCP4xxxPotentiometer,
+        MCP4xxxWiper,
         _check_read_response,
         # _check_status_response,
         # _check_tcon_response,
@@ -16,6 +18,8 @@ try:
     )
 except ModuleNotFoundError:
     from BDPotentiometer.mcp4xxx.mcp4xxx import (
+        MCP4xxxPotentiometer,
+        MCP4xxxWiper,
         _check_read_response,
         # _check_status_response,
         # _check_tcon_response,
@@ -41,9 +45,11 @@ class MCP4xxxTestCase(unittest.TestCase):
         """test correct coercion of max_value."""
         self.assertEqual(_coerce_max_value(128), 128)
         self.assertEqual(_coerce_max_value(256), 256)
+        self.assertEqual(_coerce_max_value(128.0), 128)
+        self.assertIsInstance(_coerce_max_value(128.0), int)
         with self.assertRaises(ValueError):
             _coerce_max_value(512)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _coerce_max_value("a")
 
     def test_coerce_r_ab(self):
@@ -64,6 +70,16 @@ class MCP4xxxTestCase(unittest.TestCase):
         """Test read response checker."""
         with self.assertRaises(ValueError):
             _check_read_response(None)
+        with self.assertRaises(ValueError):
+            _check_read_response([])
+        with self.assertRaises(ValueError):
+            _check_read_response([0])
+
+    def test_wiper_requires_transport(self):
+        """A bus-backed wiper without a transport or spi fails fast."""
+        potentiometer = MCP4xxxPotentiometer(10e3)
+        with self.assertRaises(ValueError):
+            MCP4xxxWiper(potentiometer=potentiometer)
 
 
 if __name__ == "__main__":

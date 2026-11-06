@@ -3,7 +3,7 @@
 from typing import Any, Union
 
 from .. import Potentiometer, SpiDigitalWiper
-from ..__helpers import clamp
+from ..__helpers import check_integer, clamp
 from ..transport.base import SpiTransport, is_spi_transport
 from ..transport.gpiozero_spi import GpiozeroSpiTransport
 
@@ -12,6 +12,15 @@ resistance_list: tuple[float, ...] = (5e3, 10e3, 50e3, 100e3)
 
 
 def _coerce_max_value(max_value: int) -> int:
+    """
+    Validate the full-scale divisor of an MCP4XXX wiper.
+
+    :param max_value: Full-scale divisor, either 128 or 256 (int).
+    :return: The validated divisor as int.
+    :raises TypeError: If `max_value` is not a real number.
+    :raises ValueError: If `max_value` is not 128 or 256.
+    """
+    max_value = check_integer(max_value)
     if max_value not in (128, 256):
         raise ValueError("Max value must be equal to 128 or 256.")
     return max_value
@@ -45,14 +54,15 @@ def _check_write_response(data: list) -> None:
 
 def _check_read_response(data: list) -> None:
     """
-    Reject a missing read response.
+    Reject a missing or truncated read response.
 
-    Only ``None`` is rejected; the returned words are not inspected here.
+    The returned words are not inspected here; only the frame length is
+    validated.
 
     :param data: Response data (list or None).
-    :raises ValueError: If `data` is None.
+    :raises ValueError: If `data` is None or shorter than two words.
     """
-    if data is None:
+    if data is None or len(data) < 2:
         raise ValueError(f"Wrong response {data}")
 
 
@@ -61,8 +71,11 @@ def _check_status_response(data: list) -> None:
     Validate the reserved bits of a status response.
 
     :param data: Response data (list).
-    :raises ValueError: If the reserved bits are not set.
+    :raises ValueError: If the frame is shorter than two words or the reserved
+        bits are not set.
     """
+    if data is None or len(data) < 2:
+        raise ValueError(f"Wrong response {data}")
     reserved = (0b1, 0b11100000)
     if not (
         data[0] & reserved[0] == reserved[0] and data[1] & reserved[1] == reserved[1]
@@ -74,9 +87,13 @@ def _check_tcon_response(data: list) -> None:
     """
     Validate the reserved bit of a TCON response.
 
-    :param data: Response data (list).
-    :raises ValueError: If the reserved bit is not set.
+    :param data: Response data (list). Both words are required even though
+        only the first carries the reserved bit.
+    :raises ValueError: If the frame is shorter than two words or the reserved
+        bit is not set.
     """
+    if data is None or len(data) < 2:
+        raise ValueError(f"Wrong response {data}")
     reserved = (0b1,)
     if not data[0] & reserved[0] == reserved[0]:
         raise ValueError(f"Wrong response {data}")
@@ -124,11 +141,14 @@ def _encode_wiper_write(channel: int, value: int) -> list[int]:
     """
     Encode a wiper position write command.
 
-    :param channel: channel number (int).
+    :param channel: channel number, either 0 or 1 (int).
     :param value: wiper position value (int).
     :return: Command frame ready for transfer (list).
-    :raises ValueError: If `value` is outside the 0..255 register range.
+    :raises ValueError: If `channel` is not 0 or 1, or `value` is outside the
+        0..255 register range.
     """
+    if channel not in (0, 1):
+        raise ValueError(f"Channel must be 0 or 1, got {channel}")
     if not 0 <= value <= 0xFF:
         raise ValueError(f"Wiper value must be in the range 0..255, got {value}")
     return [_W_CMD | _CH[channel], value]
@@ -138,9 +158,12 @@ def _encode_wiper_read(channel: int) -> list[int]:
     """
     Encode a wiper position read command.
 
-    :param channel: channel number (int).
+    :param channel: channel number, either 0 or 1 (int).
     :return: Command frame ready for transfer (list).
+    :raises ValueError: If `channel` is not 0 or 1.
     """
+    if channel not in (0, 1):
+        raise ValueError(f"Channel must be 0 or 1, got {channel}")
     return [_R_CMD | _CH[channel], 0]
 
 
@@ -150,7 +173,7 @@ def _decode_wiper_read(data: list) -> int:
 
     :param data: Response data (list).
     :return: Wiper position value (int).
-    :raises ValueError: If `data` is None.
+    :raises ValueError: If `data` is None or shorter than two words.
     """
     _check_read_response(data)
     return data[1]
@@ -197,6 +220,9 @@ class MCP4xxxWiper(SpiDigitalWiper):
         """
         Build the SPI wiper for one channel.
 
+        Unlike `SpiDigitalWiper`, this bus-backed subclass reads the device
+        during construction, so it requires a `transport` or `spi` up front.
+
         :param potentiometer: Potentiometer model driven by this wiper.
         :param spi: Legacy alias for `transport`, used only when `transport`
             is None.
@@ -205,9 +231,12 @@ class MCP4xxxWiper(SpiDigitalWiper):
         :param transport: Canonical SPI transport for the wiper.
         :param kwargs: Extra keywords forwarded to `SpiDigitalWiper`
             (`label`, `log_level`).
-        :raises ValueError: If `max_value` is not 128 or 256.
+        :raises ValueError: If `max_value` is not 128 or 256, or if neither
+            `transport` nor `spi` is supplied.
         """
         max_value = _coerce_max_value(max_value)
+        if transport is None and spi is None:
+            raise ValueError("MCP4xxxWiper requires a transport or spi")
         super().__init__(
             potentiometer=potentiometer,
             spi=spi,
@@ -260,8 +289,8 @@ class MCP4xxx:
     Compatibility surface: ``.transport`` returns the injected transport,
     ``.spi`` returns the raw gpiozero SPI object when the transport wraps one
     and the transport itself otherwise, ``.close()`` closes the transport, and
-    ``.closed`` is True when there is no transport or the transport reports
-    itself closed.
+    ``.closed`` is True after ``close()`` has run, when the transport reports
+    itself closed, or when there is no transport.
     """
 
     _SPI_ARGS = GpiozeroSpiTransport._SPI_ARGS
@@ -318,6 +347,7 @@ class MCP4xxx:
                 f"got {type(transport)}"
             )
         self._transport: Union[SpiTransport, None] = transport
+        self._closed = False
 
     @property
     def transport(self) -> Union[SpiTransport, None]:
@@ -333,13 +363,19 @@ class MCP4xxx:
 
     @property
     def closed(self) -> bool:
-        """True when the device has no transport or the transport is closed."""
-        return bool(getattr(self._transport, "closed", self._transport is None))
+        """
+        True when the device has no transport, `close()` has run, or the
+        transport reports itself closed.
+        """
+        if self._transport is None:
+            return True
+        return self._closed or bool(getattr(self._transport, "closed", False))
 
     def close(self) -> None:
-        """Close the underlying transport."""
+        """Close the underlying transport and mark the device closed."""
         if self._transport is not None:
             self._transport.close()
+            self._closed = True
 
     def _require_transport(self) -> SpiTransport:
         """Return the transport, raising if the device has none."""

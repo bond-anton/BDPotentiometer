@@ -105,5 +105,5 @@ class SpiDevTransport:
         """Close the device handle. Repeated calls have no effect."""
         if self._closed:
             return
-        self._closed = True
         self._spi.close()
+        self._closed = True

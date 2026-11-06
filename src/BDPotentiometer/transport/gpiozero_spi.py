@@ -92,6 +92,6 @@ class GpiozeroSpiTransport:
         """Close an owned SPI handle. Repeated calls have no effect."""
         if self._closed:
             return
-        self._closed = True
         if self._owns_raw and self._handle is not None:
             self._handle.close()
+        self._closed = True

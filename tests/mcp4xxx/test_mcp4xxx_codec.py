@@ -50,8 +50,21 @@ class MCP4xxxCodecTestCase(unittest.TestCase):
 
     def test_decode_wiper_read_invalid(self):
         """Test malformed read response raises ValueError."""
-        with self.assertRaises(ValueError):
-            _decode_wiper_read(None)
+        for data in (None, [], [0]):
+            with self.assertRaises(ValueError):
+                _decode_wiper_read(data)
+
+    def test_encode_wiper_write_invalid_channel(self):
+        """Channels outside 0 and 1 raise ValueError."""
+        for channel in (2, -1, 1234):
+            with self.assertRaises(ValueError):
+                _encode_wiper_write(channel, 0)
+
+    def test_encode_wiper_read_invalid_channel(self):
+        """Channels outside 0 and 1 raise ValueError."""
+        for channel in (2, -1, 1234):
+            with self.assertRaises(ValueError):
+                _encode_wiper_read(channel)
 
 
 if __name__ == "__main__":

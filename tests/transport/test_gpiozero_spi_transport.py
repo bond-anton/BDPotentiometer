@@ -49,6 +49,24 @@ class _StubGpiozeroHandle:
         self.close_calls += 1
 
 
+class _FailingCloseHandle:
+    """Handle whose first close() fails before succeeding on retry."""
+
+    instances = []
+
+    def __init__(self, **spi_args):
+        self.spi_args = spi_args
+        self.raw = _StubSpi()
+        self.close_calls = 0
+        _FailingCloseHandle.instances.append(self)
+
+    def close(self):
+        """Fail the first close, then record success."""
+        self.close_calls += 1
+        if self.close_calls == 1:
+            raise OSError("close failed")
+
+
 class TestGpiozeroSpiTransport(unittest.TestCase):
     """
     Testing the gpiozero-backed transport without hardware.
@@ -114,6 +132,23 @@ class TestGpiozeroSpiTransport(unittest.TestCase):
         transport.close()
         self.assertEqual(handle.close_calls, 1)
         self.assertFalse(handle.raw.closed)
+
+    def test_failed_close_leaves_transport_open(self) -> None:
+        """
+        A failing handle close leaves closed False and a second close retries.
+        """
+        _FailingCloseHandle.instances = []
+        with mock.patch.object(
+            gpiozero_spi_module, "_GpiozeroSpiHandle", _FailingCloseHandle
+        ):
+            transport = GpiozeroSpiTransport(device=1)
+        handle = _FailingCloseHandle.instances[0]
+        with self.assertRaises(OSError):
+            transport.close()
+        self.assertFalse(transport.closed)
+        transport.close()
+        self.assertEqual(handle.close_calls, 2)
+        self.assertTrue(transport.closed)
 
     def test_spi_args_match_gpiozero_constructor(self) -> None:
         """

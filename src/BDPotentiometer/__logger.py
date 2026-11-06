@@ -12,7 +12,7 @@ def get_logger(label: str, log_level: Union[int, None] = None) -> logging.Logger
     """
     Return the named logger `label`, configured once.
 
-    The level defaults to `logging.ERROR` when `log_level` is falsy. On first use
+    The level defaults to `logging.ERROR` when `log_level` is None. On first use
     the logger gets exactly one `logging.StreamHandler` with the package format;
     later calls reuse that handler and re-apply the logger level to every handler,
     so changing `log_level` on a later call takes effect.
@@ -22,7 +22,7 @@ def get_logger(label: str, log_level: Union[int, None] = None) -> logging.Logger
     :return: Configured logger.
     """
     logger = logging.getLogger(label)
-    if log_level:
+    if log_level is not None:
         logger.setLevel(log_level)
     else:
         logger.setLevel(logging.ERROR)

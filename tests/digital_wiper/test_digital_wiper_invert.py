@@ -54,6 +54,15 @@ class TestDigitalWiperInvert(unittest.TestCase):
         self.assertEqual(potentiometer.wiper_position, 42 / 128)
         self.assertEqual(wiper.value, 42)
 
+    def test_max_value_change_preserves_inverted_value(self):
+        """Changing max_value keeps the user-facing value, not the raw code."""
+        wiper, potentiometer = self._make(invert=True, max_value=128)
+        wiper.value = 100
+        self.assertEqual(potentiometer.wiper_position, 28 / 128)
+        wiper.max_value = 256
+        self.assertEqual(wiper.value, 100)
+        self.assertEqual(potentiometer.wiper_position, 156 / 256)
+
 
 if __name__ == "__main__":
     unittest.main()
