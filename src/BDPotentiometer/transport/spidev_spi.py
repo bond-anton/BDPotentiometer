@@ -43,6 +43,22 @@ class SpiDevTransport:
         bits_per_word: int = 8,
         lsbfirst: bool = False,
     ) -> None:
+        """
+        Open and configure a spidev device.
+
+        The settings are applied as ioctls on open. If any of them is
+        rejected, the handle is closed before `TransportError` is raised with
+        the original error as its cause.
+
+        :param bus: SPI bus number (`/dev/spidev<bus>.<device>`).
+        :param device: Chip-select number on the bus.
+        :param max_speed_hz: Clock frequency in Hz.
+        :param mode: SPI mode (clock polarity and phase).
+        :param bits_per_word: Word size in bits.
+        :param lsbfirst: Send the least-significant bit first when True.
+        :raises TransportError: If the device cannot be opened or configured.
+        :raises ImportError: If the optional `spidev` package is missing.
+        """
         spidev = _load_spidev()
         self._spi = spidev()
         self._closed = False

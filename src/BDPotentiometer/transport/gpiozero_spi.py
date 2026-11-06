@@ -49,6 +49,14 @@ class GpiozeroSpiTransport:
     )
 
     def __init__(self, spi: Any = None, **spi_args) -> None:
+        """
+        Wrap an existing gpiozero SPI object or build a shared one.
+
+        :param spi: Existing gpiozero SPI object to wrap; when None a private
+            `SPIDevice` is built from `spi_args` and owned by this transport.
+        :param spi_args: gpiozero `SPIDevice` keywords (`port`, `device`,
+            `clock_pin`, `mosi_pin`, `miso_pin`, `select_pin`).
+        """
         self._closed = False
         self._owns_raw = spi is None
         self._handle = None

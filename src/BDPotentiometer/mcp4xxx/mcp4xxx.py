@@ -7,6 +7,7 @@ from ..__helpers import clamp
 from ..transport.base import SpiTransport, is_spi_transport
 from ..transport.gpiozero_spi import GpiozeroSpiTransport
 
+#: Supported `r_ab` values in ohms for MCP4XXX devices.
 resistance_list: tuple[float, ...] = (5e3, 10e3, 50e3, 100e3)
 
 
@@ -18,9 +19,11 @@ def _coerce_max_value(max_value: int) -> int:
 
 def _coerce_r_ab(r_ab: float) -> float:
     """
-    Coerce resistance to the closest available for MCP4XXX devices.
-    :param r_ab: input resistance (float).
-    :return: resistance coerced to one from `resistance_list` (float).
+    Validate `r_ab` against the resistances supported by MCP4XXX devices.
+
+    :param r_ab: Input resistance in ohms (float).
+    :return: The validated resistance as float.
+    :raises ValueError: If `r_ab` is not in `resistance_list`.
     """
     if r_ab not in resistance_list:
         raise ValueError(f"r_ab must be in {resistance_list}")
@@ -29,8 +32,12 @@ def _coerce_r_ab(r_ab: float) -> float:
 
 def _check_write_response(data: list) -> None:
     """
-    Checks that the write response is in correct format.
-    :param data: Response data (list).
+    Reject a missing write response.
+
+    Only ``None`` is rejected; the returned words are not inspected here.
+
+    :param data: Response data (list or None).
+    :raises ValueError: If `data` is None.
     """
     if data is None:
         raise ValueError(f"Wrong response {data}")
@@ -38,8 +45,12 @@ def _check_write_response(data: list) -> None:
 
 def _check_read_response(data: list) -> None:
     """
-    Checks that the read response is in correct format.
-    :param data: Response data (list).
+    Reject a missing read response.
+
+    Only ``None`` is rejected; the returned words are not inspected here.
+
+    :param data: Response data (list or None).
+    :raises ValueError: If `data` is None.
     """
     if data is None:
         raise ValueError(f"Wrong response {data}")
@@ -47,8 +58,10 @@ def _check_read_response(data: list) -> None:
 
 def _check_status_response(data: list) -> None:
     """
-    Checks that the status request response is in correct format.
+    Validate the reserved bits of a status response.
+
     :param data: Response data (list).
+    :raises ValueError: If the reserved bits are not set.
     """
     reserved = (0b1, 0b11100000)
     if not (
@@ -59,8 +72,10 @@ def _check_status_response(data: list) -> None:
 
 def _check_tcon_response(data: list) -> None:
     """
-    Checks that the TCON response is in correct format.
+    Validate the reserved bit of a TCON response.
+
     :param data: Response data (list).
+    :raises ValueError: If the reserved bit is not set.
     """
     reserved = (0b1,)
     if not data[0] & reserved[0] == reserved[0]:
@@ -69,9 +84,10 @@ def _check_tcon_response(data: list) -> None:
 
 def _parse_tcon_response(data: int) -> dict[str, bool]:
     """
-    Parses TCON response data.
-    :param data: raw TCON response data (int).
-    ":return: Parsed TCON state (dict).
+    Parse one TCON nibble into named terminal states.
+
+    :param data: Raw TCON nibble (int).
+    :return: Parsed TCON state with keys ``shdn``, ``A``, ``W``, and ``B`` (dict).
     """
     result = {
         "shdn": data & 0b1000 != 0b1000,
@@ -84,9 +100,10 @@ def _parse_tcon_response(data: int) -> dict[str, bool]:
 
 def _tcon_to_cmd(tcon: dict[str, bool]) -> int:
     """
-    Convert TCON dict to TCON cmd ready for sending to device.
-    :param tcon: TCON requested state (dict).
-    :return: TCON cmd (int).
+    Convert a TCON state dict into the TCON command nibble.
+
+    :param tcon: Requested TCON state (dict).
+    :return: TCON command nibble (int).
     """
     shdn = 0 if tcon["shdn"] else 0b1000
     terminal_a = 0b0100 if tcon["A"] else 0
@@ -95,20 +112,22 @@ def _tcon_to_cmd(tcon: dict[str, bool]) -> int:
     return shdn | terminal_a | terminal_w | terminal_b
 
 
-_W_CMD = 0b00000000
-_R_CMD = 0b00001100
-_CH = (0b00000000, 0b00010000)
-_STATUS = 0b01010000
-_TCON = 0b01000000
-_SHDN = 0b10
+_W_CMD = 0b00000000  # Write command bits (C1:C0 = 00).
+_R_CMD = 0b00001100  # Read command bits (C1:C0 = 11).
+_CH = (0b00000000, 0b00010000)  # Register address bit AD0 for channel 0 and 1.
+_STATUS = 0b01010000  # Status register address (0x5) in a read command.
+_TCON = 0b01000000  # TCON register address (0x4) in a read or write command.
+_SHDN = 0b10  # Status register bit 1: SHDN pin state.
 
 
 def _encode_wiper_write(channel: int, value: int) -> list[int]:
     """
     Encode a wiper position write command.
+
     :param channel: channel number (int).
     :param value: wiper position value (int).
     :return: Command frame ready for transfer (list).
+    :raises ValueError: If `value` is outside the 0..255 register range.
     """
     if not 0 <= value <= 0xFF:
         raise ValueError(f"Wiper value must be in the range 0..255, got {value}")
@@ -118,6 +137,7 @@ def _encode_wiper_write(channel: int, value: int) -> list[int]:
 def _encode_wiper_read(channel: int) -> list[int]:
     """
     Encode a wiper position read command.
+
     :param channel: channel number (int).
     :return: Command frame ready for transfer (list).
     """
@@ -127,23 +147,43 @@ def _encode_wiper_read(channel: int) -> list[int]:
 def _decode_wiper_read(data: list) -> int:
     """
     Decode a wiper position read response.
+
     :param data: Response data (list).
     :return: Wiper position value (int).
+    :raises ValueError: If `data` is None.
     """
     _check_read_response(data)
     return data[1]
 
 
 class MCP4xxxPotentiometer(Potentiometer):
-    """Potentiometer to use with MCP4XXX"""
+    """Potentiometer model for one MCP4XXX channel.
+
+    The wiper resistance `r_w` is fixed at 75 ohm, the value passed to the
+    `Potentiometer` base constructor.
+    """
 
     def __init__(self, r_ab: float, wiper_position: float = 0.5, **kwargs) -> None:
+        """
+        Build the potentiometer model for one channel.
+
+        :param r_ab: Total resistance in ohms; must be in `resistance_list`.
+        :param wiper_position: Initial wiper position in the range 0..1 (float).
+        :param kwargs: Extra keywords forwarded to `Potentiometer`; `r_w` is
+            supplied as 75 ohm by this constructor.
+        :raises ValueError: If `r_ab` is not in `resistance_list`.
+        """
         r_ab = _coerce_r_ab(r_ab)
         super().__init__(r_ab=r_ab, wiper_position=wiper_position, r_w=75, **kwargs)
 
 
 class MCP4xxxWiper(SpiDigitalWiper):
-    """Special version of SPIDigitalWiper for MCP4XXX pots"""
+    """SPI wiper for one MCP4XXX channel.
+
+    Values are clamped to ``0..max_code``. 8-bit parts expose `max_value` 256
+    as the full-scale divisor while the wiper register holds codes 0..255.
+    A failed write restores the previous wiper position before re-raising.
+    """
 
     def __init__(
         self,
@@ -154,6 +194,19 @@ class MCP4xxxWiper(SpiDigitalWiper):
         transport: Union[SpiTransport, None] = None,
         **kwargs,
     ):
+        """
+        Build the SPI wiper for one channel.
+
+        :param potentiometer: Potentiometer model driven by this wiper.
+        :param spi: Legacy alias for `transport`, used only when `transport`
+            is None.
+        :param max_value: Full-scale divisor, either 128 or 256.
+        :param invert: Map code 0 to `max_code` and vice versa when True.
+        :param transport: Canonical SPI transport for the wiper.
+        :param kwargs: Extra keywords forwarded to `SpiDigitalWiper`
+            (`label`, `log_level`).
+        :raises ValueError: If `max_value` is not 128 or 256.
+        """
         max_value = _coerce_max_value(max_value)
         super().__init__(
             potentiometer=potentiometer,
@@ -200,7 +253,15 @@ class MCP4xxxWiper(SpiDigitalWiper):
 class MCP4xxx:
     """Base class for MCP4XXX series devices.
 
-    No longer a ``gpiozero.SPIDevice``; use ``.close()`` and ``.spi`` instead.
+    The device is no longer a ``gpiozero.SPIDevice``. ``transport=`` is the
+    canonical way to inject an SPI backend; ``spi=`` is a legacy alias used
+    only when ``transport`` is None.
+
+    Compatibility surface: ``.transport`` returns the injected transport,
+    ``.spi`` returns the raw gpiozero SPI object when the transport wraps one
+    and the transport itself otherwise, ``.close()`` closes the transport, and
+    ``.closed`` is True when there is no transport or the transport reports
+    itself closed.
     """
 
     _SPI_ARGS = GpiozeroSpiTransport._SPI_ARGS
@@ -217,6 +278,23 @@ class MCP4xxx:
         miso_pin: Any = None,
         select_pin: Any = None,
     ) -> None:
+        """
+        Build the device from an SPI transport or from gpiozero pin settings.
+
+        When neither `transport` nor `spi` is supplied, the keyword-only pin
+        settings build a `GpiozeroSpiTransport`.
+
+        :param transport: Canonical SPI transport to use (SpiTransport).
+        :param spi: Legacy alias for `transport`, used only when `transport`
+            is None.
+        :param port: gpiozero SPI port number.
+        :param device: gpiozero SPI device number.
+        :param clock_pin: GPIO pin used as SPI clock.
+        :param mosi_pin: GPIO pin used as SPI MOSI.
+        :param miso_pin: GPIO pin used as SPI MISO.
+        :param select_pin: GPIO pin used as SPI chip select.
+        :raises TypeError: If the supplied transport lacks transfer() or close().
+        """
         if transport is None and spi is not None:
             transport = spi
         if transport is None:
@@ -276,9 +354,14 @@ class MCP4xxx:
 
     def get_shdn_pin_status(self) -> bool:
         """
-        Check status of device SHDN pin.
+        Read the SHDN pin state reported by the status register.
 
-        :return: SHDN state (bool).
+        This reads the hardware SHDN pin bit, not the TCON shutdown bit used
+        by `shdn()`.
+
+        :return: True when the status-register SHDN bit is set, otherwise False.
+        :raises ValueError: If the status response has invalid reserved bits.
+        :raises ConnectionError: If the device has no transport.
         """
         data = self._require_transport().transfer([_R_CMD | _STATUS, 0])
         _check_status_response(data)
@@ -286,9 +369,17 @@ class MCP4xxx:
 
     def read_tcon(self) -> tuple[dict[str, bool], dict[str, bool]]:
         """
-        Read terminals connection (TCON) status of the device.
+        Read the terminal connection (TCON) state of both channels.
 
-        :return: Tuple of TCON status dicts.
+        Each dict has keys ``shdn``, ``A``, ``W``, and ``B``. For ``A``, ``W``,
+        and ``B``, True means the terminal is connected. For ``shdn``, True
+        means the channel is in shutdown. Index 0 of the returned tuple is
+        channel 0, index 1 is channel 1; single-channel parts still report a
+        second dict.
+
+        :return: Tuple of TCON state dicts, ``(channel 0, channel 1)``.
+        :raises ValueError: If the response lacks the reserved bit.
+        :raises ConnectionError: If the device has no transport.
         """
         data = self._require_transport().transfer([_R_CMD | _TCON, 0])
         _check_tcon_response(data)
@@ -302,9 +393,19 @@ class MCP4xxx:
         ch1: Union[dict[str, bool], None] = None,
     ) -> bool:
         """
-        MCP4XXX terminals connection (TCON) control.
+        Write the terminal connection (TCON) state of both channels.
 
-        :return: True if success, otherwise False.
+        A channel left as ``None`` keeps all terminals connected with shutdown
+        deasserted, equivalent to ``{"shdn": False, "A": True, "W": True,
+        "B": True}``.
+
+        :param ch0: Channel 0 state with keys ``shdn``, ``A``, ``W``, and ``B``.
+            For ``A``, ``W``, and ``B``, True connects the terminal. For
+            ``shdn``, True puts the channel in shutdown.
+        :param ch1: Channel 1 state, with the same keys and meaning as `ch0`.
+        :return: True if the read-back matches the written value, otherwise False.
+        :raises ValueError: If the read-back response lacks the reserved bit.
+        :raises ConnectionError: If the device has no transport.
         """
         default_tcon_value = {"shdn": False, "A": True, "W": True, "B": True}
         if ch0 is None:
@@ -321,10 +422,13 @@ class MCP4xxx:
 
     def shdn(self, ch0: bool = False, ch1: bool = False) -> bool:
         """
-        Shutdown of device channels using TCON control.
-        :param ch0: Boolean True for SHDN.
-        :param ch1: Boolean True for SHDN.
-        :return: True if success, otherwise False.
+        Put selected channels into shutdown through the TCON register.
+
+        :param ch0: True puts channel 0 into shutdown; False leaves it on.
+        :param ch1: True puts channel 1 into shutdown; False leaves it on.
+        :return: True if the read-back matches the written value, otherwise False.
+        :raises ValueError: If the read-back response lacks the reserved bit.
+        :raises ConnectionError: If the device has no transport.
         """
         return self.write_tcon(
             ch0={"shdn": ch0, "A": True, "W": True, "B": True},

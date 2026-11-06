@@ -31,6 +31,29 @@ class MCP4xx2(DigitalPotentiometerDevice, MCP4xxx):
         label: Union[str, None] = None,
         log_level: Union[int, str, None] = None,
     ) -> None:
+        """
+        Build an MCP4XX2 rheostat device.
+
+        :param r_ab: Total resistance in ohms; must be in `resistance_list`.
+        :param max_value: Full-scale divisor, 128 or 256; None uses the chip
+            class `_MAX_VALUE`.
+        :param channels: Channel count; None uses the chip class `_CHANNELS`.
+        :param transport: Canonical SPI transport.
+        :param spi: Legacy alias for `transport`, used only when `transport`
+            is None.
+        :param port: gpiozero SPI port, used when no transport is supplied.
+        :param device: gpiozero SPI device, used when no transport is supplied.
+        :param clock_pin: GPIO clock pin, used when no transport is supplied.
+        :param mosi_pin: GPIO MOSI pin, used when no transport is supplied.
+        :param miso_pin: GPIO MISO pin, used when no transport is supplied.
+        :param select_pin: GPIO chip-select pin, used when no transport is
+            supplied.
+        :param invert: Invert the wiper code mapping when True.
+        :param label: Logger name for the device.
+        :param log_level: Logger level for the device.
+        :raises ValueError: If `r_ab`, `max_value`, or `channels` is invalid.
+        :raises TypeError: If a supplied transport lacks transfer() or close().
+        """
         if max_value is None:
             max_value = self._MAX_VALUE
         if channels is None:

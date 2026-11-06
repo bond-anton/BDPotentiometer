@@ -1,4 +1,12 @@
-"""Some helpers for gpiozero."""
+"""gpiozero patch that lets two hardware-SPI devices share one SPI port.
+
+gpiozero refuses to create a second hardware-SPI device on a port that is
+already in use, even when the two devices use different chip-select lines (as
+the MCP4xxx dual-potentiometer boards do). `fix_gpiozero_dual_cs_spi` replaces
+`Device.pin_factory` with a factory whose SPI classes treat only a same port and
+same device pair as a conflict. Without the Raspberry Pi pin backend the
+function is a no-op stub.
+"""
 
 try:
     from gpiozero import Device
@@ -13,8 +21,12 @@ else:
 
     def fix_gpiozero_dual_cs_spi() -> None:
         """
-        A workaround written by slghb GitHub user to use two spi devices with hardware spi.
-        Taken from https://github.com/gpiozero/gpiozero/issues/1015
+        Patch gpiozero so two hardware-SPI devices can share one SPI port.
+
+        Installs a `RPiGPIOFactory` subclass into `Device.pin_factory`. Its SPI
+        classes report a conflict only when both the port and the device (chip
+        select) match, instead of whenever the port matches. Based on
+        https://github.com/gpiozero/gpiozero/issues/1015
 
         :return: None.
         """
@@ -30,12 +42,7 @@ else:
 
             @property
             def value(self):
-                """
-                Returns a value representing the device's state. Frequently, this is a
-                boolean value, or a number between 0 and 1 but some devices use larger
-                ranges (e.g. -1 to +1) and composite devices usually use tuples to
-                return the states of all their subordinate components.
-                """
+                """SPI pins carry no device state, so the value is not implemented."""
                 raise NotImplementedError
 
         class LocalPiHardwareSPISharedFixed(LocalPiHardwareSPIShared):
@@ -49,12 +56,7 @@ else:
 
             @property
             def value(self):
-                """
-                Returns a value representing the device's state. Frequently, this is a
-                boolean value, or a number between 0 and 1 but some devices use larger
-                ranges (e.g. -1 to +1) and composite devices usually use tuples to
-                return the states of all their subordinate components.
-                """
+                """SPI pins carry no device state, so the value is not implemented."""
                 raise NotImplementedError
 
         class FixedRPiGPIOFactory(RPiGPIOFactory):
@@ -66,7 +68,7 @@ else:
 
                 :param shared: Flag for shared usage of SPI port.
                 :param hardware: Flag for hardware SPI usage.
-                :return:
+                :return: Fixed SPI class for hardware SPI, the parent class otherwise.
                 """
                 if hardware:
                     if shared:

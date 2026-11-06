@@ -5,7 +5,11 @@ from typing import Protocol, runtime_checkable
 
 
 class TransportError(OSError):
-    """Raised when a bus transaction fails."""
+    """Raised when a bus transaction fails.
+
+    Subclasses `OSError` so callers that already handle gpiozero or spidev I/O
+    errors keep catching transport failures without changes.
+    """
 
 
 class TransportClosed(TransportError):
@@ -14,7 +18,12 @@ class TransportClosed(TransportError):
 
 @runtime_checkable
 class SpiTransport(Protocol):
-    """Full-duplex SPI backend."""
+    """Full-duplex SPI backend.
+
+    Structurally satisfied by any non-class object with callable `transfer`
+    and `close` methods. Use `is_spi_transport` for the check: it rejects
+    class objects, which `isinstance` against this protocol accepts.
+    """
 
     def transfer(self, tx: Sequence[int]) -> list[int]:
         """Transfer one frame and return the received words."""
@@ -27,7 +36,11 @@ class SpiTransport(Protocol):
 
 @runtime_checkable
 class I2cTransport(Protocol):
-    """I2C backend for future chips."""
+    """I2C backend protocol for future chips.
+
+    No implementation or device uses it yet; it keeps the transport surface
+    consistent for chips with an I2C interface.
+    """
 
     def write(self, data: Sequence[int]) -> None:
         """Write one frame."""
@@ -47,7 +60,11 @@ class I2cTransport(Protocol):
 
 
 def is_spi_transport(obj: object) -> bool:
-    """Structural check: object can transfer and release an SPI bus."""
+    """Check whether `obj` structurally satisfies `SpiTransport`.
+
+    Requires callable `transfer` and `close` attributes and rejects class
+    objects, so a transport class itself does not count.
+    """
     if isinstance(obj, type):
         return False
     return callable(getattr(obj, "transfer", None)) and callable(

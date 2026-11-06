@@ -10,18 +10,21 @@ from .digital_wiper import DigitalWiper
 
 class DigitalPotentiometerDevice:
     """
-    Represents a digital potentiometer device connected to SPI (serial interface).
+    Container for the channels of a digital potentiometer device.
+
+    The class is transport-agnostic: it only manages `DigitalWiper` channels and
+    the `Potentiometer` model behind each of them. Bus access lives in the wiper
+    subclass.
 
         A     ┌─────────────┐     B
          o────┤Potentiometer├─────o
               └──────▲──────┘
-       max_value <── │ ──> 0
+        max_code <── │ ──> 0
                      o W
 
     Total resistance of the potentiometer is `r_ab`. All terminals are available for connection.
-    W is a programmable wiper terminal. Wiper position can be set between 0 and `max_value`.
-    Parameter `default_value` sets initial wiper position.
-    For pots with non-volatile memory set `default_value` to None.
+    W is a programmable wiper terminal. Wiper position can be set between 0 and `max_code`
+    through the per-channel `value` and `value_relative` properties.
 
     Each terminal of the potentiometer has adjustable resistance `r_a`, `r_b`, and `r_w`.
     Wiper is connected to load resistance `r_load`.
@@ -52,6 +55,13 @@ class DigitalPotentiometerDevice:
     """
 
     def __init__(self, wiper: DigitalWiper, channels: int = 1, **kwargs) -> None:
+        """
+        Create `channels` independent copies of the prototype wiper.
+
+        :param wiper: `DigitalWiper` prototype; each channel gets a deep copy.
+        :param channels: Number of channels to create, must be positive (int).
+        :param kwargs: Optional `label` (logger name) and `log_level`.
+        """
         self.__channels: dict[int, DigitalWiper] = {}
         self.__labels: dict[int, str] = {0: "0"}
         for i in range(check_integer(check_positive(channels))):
@@ -88,11 +98,14 @@ class DigitalPotentiometerDevice:
         self, channel: Union[int, str] = 0, label: Union[str, None] = None
     ) -> None:
         """
-        Assigns string label to a channel.
-        Note that label must be unique, otherwise will rise ValueError.
+        Assign a string label to a channel.
+
+        Labels must stay unique. Without a label the channel number is used as
+        the label.
 
         :param channel: Channel number or label.
         :param label: Label for the channel (str).
+        :raises ValueError: If the channel does not exist or the label is taken.
         """
         channel_id = self._get_channel_number_by_label_or_id(channel)
         if channel_id is None:
@@ -163,6 +176,13 @@ class DigitalPotentiometerDevice:
 
     @value.setter
     def value(self, value: Union[list[int], tuple[int, ...]]) -> None:
+        """
+        Set the wiper value for all channels.
+
+        :param value: Sequence of length `channels_num`, one value per channel.
+        :raises TypeError: If `value` is not a list or tuple.
+        :raises ValueError: If the sequence length differs from `channels_num`.
+        """
         if not isinstance(value, (list, tuple)):
             raise TypeError(f"A tuple or list of values was expected, got {value}.")
         if len(value) != self.channels_num:
@@ -212,6 +232,13 @@ class DigitalPotentiometerDevice:
 
     @invert.setter
     def invert(self, invert: Union[list[bool], tuple[bool, ...]]) -> None:
+        """
+        Set the invert property for all channels.
+
+        :param invert: Sequence of length `channels_num`, one flag per channel.
+        :raises TypeError: If `invert` is not a list or tuple.
+        :raises ValueError: If the sequence length differs from `channels_num`.
+        """
         if not isinstance(invert, (list, tuple)):
             raise TypeError(f"A tuple or list of values was expected, got {invert}.")
         if len(invert) != self.channels_num:
@@ -262,6 +289,13 @@ class DigitalPotentiometerDevice:
 
     @r_wb.setter
     def r_wb(self, resistance_wb: Union[list[float], tuple[float, ...]]) -> None:
+        """
+        Set the B-W resistance for all channels.
+
+        :param resistance_wb: Sequence of length `channels_num`, one resistance per channel.
+        :raises TypeError: If `resistance_wb` is not a list or tuple.
+        :raises ValueError: If the sequence length differs from `channels_num`.
+        """
         if not isinstance(resistance_wb, (list, tuple)):
             raise TypeError(
                 f"A tuple or list of values was expected, got {resistance_wb}."
@@ -316,6 +350,13 @@ class DigitalPotentiometerDevice:
 
     @r_wa.setter
     def r_wa(self, resistance_wa: Union[list[float], tuple[float, ...]]) -> None:
+        """
+        Set the A-W resistance for all channels.
+
+        :param resistance_wa: Sequence of length `channels_num`, one resistance per channel.
+        :raises TypeError: If `resistance_wa` is not a list or tuple.
+        :raises ValueError: If the sequence length differs from `channels_num`.
+        """
         if not isinstance(resistance_wa, (list, tuple)):
             raise TypeError(
                 f"A tuple or list of values was expected, got {resistance_wa}."
@@ -365,6 +406,13 @@ class DigitalPotentiometerDevice:
 
     @r_a.setter
     def r_a(self, resistance_a: Union[list[float], tuple[float, ...]]) -> None:
+        """
+        Set the A-terminal resistance for all channels.
+
+        :param resistance_a: Sequence of length `channels_num`, one resistance per channel.
+        :raises TypeError: If `resistance_a` is not a list or tuple.
+        :raises ValueError: If the sequence length differs from `channels_num`.
+        """
         if not isinstance(resistance_a, (list, tuple)):
             raise TypeError(
                 f"A tuple or list of values was expected, got {resistance_a}."
@@ -414,6 +462,13 @@ class DigitalPotentiometerDevice:
 
     @r_b.setter
     def r_b(self, resistance_b: Union[list[float], tuple[float, ...]]) -> None:
+        """
+        Set the B-terminal resistance for all channels.
+
+        :param resistance_b: Sequence of length `channels_num`, one resistance per channel.
+        :raises TypeError: If `resistance_b` is not a list or tuple.
+        :raises ValueError: If the sequence length differs from `channels_num`.
+        """
         if not isinstance(resistance_b, (list, tuple)):
             raise TypeError(
                 f"A tuple or list of values was expected, got {resistance_b}."
@@ -463,6 +518,13 @@ class DigitalPotentiometerDevice:
 
     @r_load.setter
     def r_load(self, resistance_l: Union[list[float], tuple[float, ...]]) -> None:
+        """
+        Set the load resistance for all channels.
+
+        :param resistance_l: Sequence of length `channels_num`, one resistance per channel.
+        :raises TypeError: If `resistance_l` is not a list or tuple.
+        :raises ValueError: If the sequence length differs from `channels_num`.
+        """
         if not isinstance(resistance_l, (list, tuple)):
             raise TypeError(
                 f"A tuple or list of values was expected, got {resistance_l}."
@@ -512,6 +574,13 @@ class DigitalPotentiometerDevice:
 
     @v_a.setter
     def v_a(self, voltage_a: Union[list[float], tuple[float, ...]]) -> None:
+        """
+        Set the A-terminal voltage for all channels.
+
+        :param voltage_a: Sequence of length `channels_num`, one voltage per channel.
+        :raises TypeError: If `voltage_a` is not a list or tuple.
+        :raises ValueError: If the sequence length differs from `channels_num`.
+        """
         if not isinstance(voltage_a, (list, tuple)):
             raise TypeError(f"A tuple or list of values was expected, got {voltage_a}.")
         if len(voltage_a) != self.channels_num:
@@ -552,11 +621,18 @@ class DigitalPotentiometerDevice:
 
     @property
     def v_b(self) -> tuple[float, ...]:
-        """Terminal A voltage for all channels as a tuple of floats."""
+        """Terminal B voltage for all channels as a tuple of floats."""
         return tuple(wiper.potentiometer.v_b for _, wiper in self.__channels.items())
 
     @v_b.setter
     def v_b(self, voltage_b: Union[list[float], tuple[float, ...]]) -> None:
+        """
+        Set the B-terminal voltage for all channels.
+
+        :param voltage_b: Sequence of length `channels_num`, one voltage per channel.
+        :raises TypeError: If `voltage_b` is not a list or tuple.
+        :raises ValueError: If the sequence length differs from `channels_num`.
+        """
         if not isinstance(voltage_b, (list, tuple)):
             raise TypeError(f"A tuple or list of values was expected, got {voltage_b}.")
         if len(voltage_b) != self.channels_num:
@@ -602,6 +678,13 @@ class DigitalPotentiometerDevice:
 
     @v_load.setter
     def v_load(self, voltage_l: Union[list[float], tuple[float, ...]]) -> None:
+        """
+        Set the load voltage for all channels.
+
+        :param voltage_l: Sequence of length `channels_num`, one voltage per channel.
+        :raises TypeError: If `voltage_l` is not a list or tuple.
+        :raises ValueError: If the sequence length differs from `channels_num`.
+        """
         if not isinstance(voltage_l, (list, tuple)):
             raise TypeError(f"A tuple or list of values was expected, got {voltage_l}.")
         if len(voltage_l) != self.channels_num:
@@ -649,6 +732,13 @@ class DigitalPotentiometerDevice:
 
     @v_w.setter
     def v_w(self, voltage_w: Union[list[float], tuple[float, ...]]) -> None:
+        """
+        Set the W-terminal voltage for all channels.
+
+        :param voltage_w: Sequence of length `channels_num`, one voltage per channel.
+        :raises TypeError: If `voltage_w` is not a list or tuple.
+        :raises ValueError: If the sequence length differs from `channels_num`.
+        """
         if not isinstance(voltage_w, (list, tuple)):
             raise TypeError(f"A tuple or list of values was expected, got {voltage_w}.")
         if len(voltage_w) != self.channels_num:

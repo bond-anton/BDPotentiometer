@@ -11,9 +11,9 @@ class FakeSpiTransport:
 
     Responses are consumed FIFO. `default` is returned once the queue is
     empty; with `strict=False` an empty queue yields zero-filled frames
-    instead of an error. Frames are copied on the way in and out so that
-    mutating a caller's list cannot change a scripted response or a
-    recorded call.
+    instead of an error. Request words are validated to ints in 0..255.
+    Frames are copied on the way in and out so that mutating a caller's list
+    cannot change a scripted response or a recorded call.
     """
 
     def __init__(
@@ -22,6 +22,16 @@ class FakeSpiTransport:
         default: Optional[list[int]] = None,
         strict: bool = True,
     ) -> None:
+        """
+        Build a scripted transport.
+
+        :param responses: Response frames consumed FIFO; each frame must have
+            the same length as the request that consumes it.
+        :param default: Frame returned once `responses` is exhausted; when
+            omitted, an exhausted queue follows `strict`.
+        :param strict: When True an empty queue with no `default` raises
+            `TransportError`; when False it returns a zero-filled frame.
+        """
         self._responses = (
             [list(frame) for frame in responses] if responses is not None else []
         )
@@ -35,7 +45,18 @@ class FakeSpiTransport:
         self._responses.extend(list(frame) for frame in responses)
 
     def transfer(self, tx: Sequence[int]) -> list[int]:
-        """Return the next scripted frame for `tx`, validating its words."""
+        """Return the next scripted frame for `tx`.
+
+        Request words must be ints in 0..255; a malformed word raises
+        `ValueError` before the call is recorded.
+
+        :param tx: Request frame.
+        :return: Response frame of the same length.
+        :raises TransportClosed: If the transport is closed.
+        :raises ValueError: If a request word is not an int in 0..255.
+        :raises TransportError: If no response is available in strict mode or
+            the scripted response length does not match the request.
+        """
         if self.closed:
             raise TransportClosed("FakeSpiTransport is closed")
         frame = list(tx)
