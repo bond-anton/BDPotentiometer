@@ -4,14 +4,13 @@ import logging
 import unittest
 from unittest import mock
 
+from scietex.hal.spi import FakeSpiTransport
+from scietex.hal.spi import spidev_spi as spidev_spi_module
+
 try:
     from src.BDPotentiometer.mcp4xxx import MCP4251, MCP4252
-    from src.BDPotentiometer.transport import FakeSpiTransport
-    from src.BDPotentiometer.transport import spidev_spi as spidev_spi_module
 except ModuleNotFoundError:
     from BDPotentiometer.mcp4xxx import MCP4251, MCP4252
-    from BDPotentiometer.transport import FakeSpiTransport
-    from BDPotentiometer.transport import spidev_spi as spidev_spi_module
 
 
 class TestMCP4xxDeviceKwargs(unittest.TestCase):

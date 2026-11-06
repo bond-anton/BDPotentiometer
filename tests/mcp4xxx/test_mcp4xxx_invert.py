@@ -2,12 +2,12 @@
 
 import unittest
 
+from scietex.hal.spi import FakeSpiTransport
+
 try:
     from src.BDPotentiometer.mcp4xxx import MCP4231, MCP4251
-    from src.BDPotentiometer.transport import FakeSpiTransport
 except ModuleNotFoundError:
     from BDPotentiometer.mcp4xxx import MCP4231, MCP4251
-    from BDPotentiometer.transport import FakeSpiTransport
 
 # Command bytes from the MCP4XXX protocol.
 _WRITE_CH0 = 0b00000000

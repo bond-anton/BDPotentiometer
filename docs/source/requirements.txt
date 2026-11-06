@@ -1,4 +1,3 @@
 sphinx
 sphinx_rtd_theme
-gpiozero>=1.6.2
 numpy

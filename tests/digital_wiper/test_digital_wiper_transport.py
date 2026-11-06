@@ -2,12 +2,12 @@
 
 import unittest
 
+from scietex.hal.spi import FakeSpiTransport
+
 try:
     from src.BDPotentiometer import Potentiometer, SpiDigitalWiper
-    from src.BDPotentiometer.transport import FakeSpiTransport
 except ModuleNotFoundError:
     from BDPotentiometer import Potentiometer, SpiDigitalWiper
-    from BDPotentiometer.transport import FakeSpiTransport
 
 
 class _RawSpiStub:

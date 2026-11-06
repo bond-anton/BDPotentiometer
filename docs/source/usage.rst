@@ -11,20 +11,21 @@ To install the core library only use pip
    $ pip install BDPotentiometer
 
 A bare install ships no hardware backend: the model classes and
-:class:`~BDPotentiometer.transport.FakeSpiTransport` work, while building a
-device for real hardware raises ``ImportError`` naming the extra to install.
+``FakeSpiTransport`` work, while building a device for real hardware raises
+``ImportError`` naming the extra to install.
 
-The default hardware backend is spidev, installed by the ``spi`` extra:
+The default hardware backend is spidev, installed by the ``spi`` extra of the
+transport package:
 
 .. code-block:: console
 
-   $ pip install 'BDPotentiometer[spi]'
+   $ pip install 'scietex.hal.spi[spi]'
 
 The optional gpiozero backend is installed by the ``gpiozero`` extra:
 
 .. code-block:: console
 
-   $ pip install 'BDPotentiometer[gpiozero]'
+   $ pip install 'scietex.hal.spi[gpiozero]'
 
 Example (MCP4231)
 -----------------
@@ -41,10 +42,9 @@ Import the MCP4231 class first.
 Then create a new potentiometer given the total resistance ``r_ab``. The value
 must be one of the entries in
 :data:`BDPotentiometer.mcp4xxx.resistance_list`. With no ``transport=`` and no
-pin keywords, the device builds a
-:class:`~BDPotentiometer.transport.SpiDevTransport`: ``port`` selects the
-spidev bus and ``device`` selects the chip-select line, so this needs the
-``spi`` extra.
+pin keywords, the device builds a ``SpiDevTransport`` from
+``scietex.hal.spi``: ``port`` selects the spidev bus and ``device`` selects the
+chip-select line, so this needs the ``scietex.hal.spi[spi]`` extra.
 
 .. code-block:: python
 
@@ -93,27 +93,27 @@ handlers.
 Selecting a transport
 ---------------------
 
-Pass a transport instance with ``transport=``.
-:class:`~BDPotentiometer.transport.SpiDevTransport` opens the Linux spidev
-device directly and needs the ``spi`` extra. ``bus`` and ``device`` identify
+Pass a transport instance with ``transport=``. ``SpiDevTransport`` from
+``scietex.hal.spi`` opens the Linux spidev device directly and needs the
+``spi`` extra. ``bus`` and ``device`` identify
 ``/dev/spidev<bus>.<device>``, so their values depend on the wiring:
 
 .. code-block:: python
 
    from BDPotentiometer.mcp4xxx import MCP4231
-   from BDPotentiometer.transport import SpiDevTransport
+   from scietex.hal.spi import SpiDevTransport
 
    transport = SpiDevTransport(bus=0, device=0)
    my_pot = MCP4231(r_ab=10e3, transport=transport)
    my_pot.set_value(0, 27)
 
-For tests and dry runs, :class:`~BDPotentiometer.transport.FakeSpiTransport`
-returns scripted frames instead of touching hardware and needs no extra:
+For tests and dry runs, ``FakeSpiTransport`` returns scripted frames instead of
+touching hardware and needs no extra:
 
 .. code-block:: python
 
    from BDPotentiometer.mcp4xxx import MCP4231
-   from BDPotentiometer.transport import FakeSpiTransport
+   from scietex.hal.spi import FakeSpiTransport
 
    transport = FakeSpiTransport(default=[0, 0])
    my_pot = MCP4231(r_ab=10e3, transport=transport)

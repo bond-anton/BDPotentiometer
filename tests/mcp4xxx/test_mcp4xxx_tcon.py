@@ -2,6 +2,8 @@
 
 import unittest
 
+from scietex.hal.spi import FakeSpiTransport
+
 try:
     from src.BDPotentiometer.mcp4xxx import MCP4231
     from src.BDPotentiometer.mcp4xxx.mcp4xxx import (
@@ -9,7 +11,6 @@ try:
         _check_tcon_response,
         _tcon_to_cmd,
     )
-    from src.BDPotentiometer.transport import FakeSpiTransport
 except ModuleNotFoundError:
     from BDPotentiometer.mcp4xxx import MCP4231
     from BDPotentiometer.mcp4xxx.mcp4xxx import (
@@ -17,7 +18,6 @@ except ModuleNotFoundError:
         _check_tcon_response,
         _tcon_to_cmd,
     )
-    from BDPotentiometer.transport import FakeSpiTransport
 
 # Command bytes from the MCP4XXX protocol. The TCON write frame sets D8 to 1,
 # which Register 4-2 reserves and forces to 1.

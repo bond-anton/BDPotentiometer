@@ -3,6 +3,8 @@
 from copy import deepcopy
 from typing import cast
 
+from scietex.hal.spi import SpiTransport, is_spi_transport
+
 from .__helpers import (
     check_bool,
     check_integer,
@@ -12,7 +14,6 @@ from .__helpers import (
 )
 from .__logger import get_logger
 from .potentiometer import Potentiometer
-from .transport.base import SpiTransport, is_spi_transport
 
 
 class DigitalWiper:

@@ -3,10 +3,15 @@
 from contextlib import suppress
 from typing import Any
 
+from scietex.hal.spi import (
+    GPIOZERO_SPI_ARGS,
+    SpiTransport,
+    build_default_transport,
+    is_spi_transport,
+)
+
 from .. import Potentiometer, SpiDigitalWiper
 from ..__helpers import check_bool, check_integer, clamp
-from ..transport.base import SpiTransport, is_spi_transport
-from ..transport.selection import GPIOZERO_SPI_ARGS, build_default_transport
 
 #: Supported `r_ab` values in ohms for MCP4XXX devices.
 resistance_list: tuple[float, ...] = (5e3, 10e3, 50e3, 100e3)

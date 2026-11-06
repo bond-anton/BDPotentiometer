@@ -20,7 +20,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 requires-python = ">=3.10"
-dependencies = []
+dependencies = ["scietex.hal.spi >= 0.1.0, < 1.0.0"]
 
 [project.urls]
 "Homepage" = "https://github.com/bond-anton/BDPotentiometer"
@@ -28,10 +28,10 @@ dependencies = []
 "Documentation" = "https://bdpotentiometer.readthedocs.io"
 
 [project.optional-dependencies]
-gpiozero = ["gpiozero>=1.6.2"]
-spi = ["spidev>=3.6"]
-dev = ["gpiozero>=1.6.2", "spidev>=3.6", "numpy"]
-docs = ["sphinx", "sphinx_rtd_theme", "gpiozero>=1.6.2", "numpy"]
+gpiozero = ["scietex.hal.spi[gpiozero]"]
+spi = ["scietex.hal.spi[spi]"]
+dev = ["scietex.hal.spi[spi,gpiozero]", "numpy"]
+docs = ["sphinx", "sphinx_rtd_theme", "scietex.hal.spi[gpiozero]", "numpy"]
 test = ["pytest", "numpy"]
 lint = ["ruff==0.17.4", "ty==0.0.99"]
 

@@ -144,70 +144,27 @@ MCP4XX2 rheostats
 Transport backends
 ------------------
 
-.. autoclass:: BDPotentiometer.transport.base.SpiTransport
-   :members:
-   :show-inheritance:
+The transport layer is not part of this package. It ships in the separate
+``scietex.hal.spi`` distribution, which provides the ``SpiTransport`` protocol,
+the ``SpiDevTransport``, ``GpiozeroSpiTransport``, and ``FakeSpiTransport``
+backends, the ``TransportError`` and ``TransportClosed`` exceptions, and the
+selection helpers used by the device constructors:
 
-.. autoclass:: BDPotentiometer.transport.gpiozero_spi.GpiozeroSpiTransport
-   :members:
-   :show-inheritance:
+.. code-block:: python
 
-.. autoclass:: BDPotentiometer.transport.spidev_spi.SpiDevTransport
-   :members:
-   :show-inheritance:
+   from scietex.hal.spi import SpiDevTransport
 
-.. autoclass:: BDPotentiometer.transport.fake.FakeSpiTransport
-   :members:
-   :show-inheritance:
+See :doc:`transport` for backend selection, ownership, and permissions.
 
-.. autofunction:: BDPotentiometer.transport.base.is_spi_transport
+.. seealso::
 
-Protocols (not implemented)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. note::
-
-   ``I2cTransport`` is only a protocol placeholder for future I2C chips. No
-   I2C backend is implemented and no device uses it.
-
-.. autoclass:: BDPotentiometer.transport.base.I2cTransport
-   :members:
-   :show-inheritance:
-
-Transport selection
-~~~~~~~~~~~~~~~~~~~
-
-.. autofunction:: BDPotentiometer.transport.selection.build_default_transport
-
-.. autodata:: BDPotentiometer.transport.selection.GPIOZERO_PIN_ARGS
-
-.. autodata:: BDPotentiometer.transport.selection.GPIOZERO_SPI_ARGS
-
-gpiozero helpers
-~~~~~~~~~~~~~~~~
-
-.. autofunction:: BDPotentiometer.__gpiozero_helpers.fix_gpiozero_dual_cs_spi
-
-An existing ``Device.pin_factory`` is left untouched: the patch returns
-without replacing a factory the application already selected.
-
-Exceptions
-~~~~~~~~~~
-
-.. autoclass:: BDPotentiometer.transport.base.TransportError
-   :members:
-   :show-inheritance:
-
-.. autoclass:: BDPotentiometer.transport.base.TransportClosed
-   :members:
-   :show-inheritance:
+   `scietex.hal.spi <https://github.com/bond-anton/scietex.hal.spi>`_ -- API
+   reference for the transport layer.
 
 Package exports
 ---------------
 
-``from BDPotentiometer import *`` follows ``__all__``, which lists the model
-classes, the transports, ``TransportError``/``TransportClosed``,
-``is_spi_transport``, and ``fix_gpiozero_dual_cs_spi``. ``GpiozeroSpiTransport``
-is listed too but resolved lazily, so star-importing the package without the
-``gpiozero`` extra raises ``AttributeError``. Import the names explicitly when
-the optional backend may be absent.
+``from BDPotentiometer import *`` follows ``__all__``, which lists only the
+model classes: ``DigitalPotentiometerDevice``, ``DigitalWiper``,
+``Potentiometer``, and ``SpiDigitalWiper``. Import transports and transport
+exceptions from ``scietex.hal.spi``.

@@ -5,12 +5,12 @@ import types
 import unittest
 from unittest import mock
 
+from scietex.hal.spi import SpiDevTransport
+
 try:
     from src.BDPotentiometer.mcp4xxx import MCP4231
-    from src.BDPotentiometer.transport import SpiDevTransport
 except ModuleNotFoundError:
     from BDPotentiometer.mcp4xxx import MCP4231
-    from BDPotentiometer.transport import SpiDevTransport
 
 
 def _stub_module(raw):

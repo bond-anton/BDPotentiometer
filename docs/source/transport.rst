@@ -2,7 +2,10 @@ Transport backends
 ==================
 
 Devices and wipers do not talk to SPI directly. They send frames through a
-transport, which can be replaced with ``transport=``.
+transport, which can be replaced with ``transport=``. The transport layer is
+not part of this package: it lives in the separate
+`scietex.hal.spi <https://github.com/bond-anton/scietex.hal.spi>`_ distribution,
+so other SPI hardware libraries can share the same backends.
 
 Interface
 ---------
@@ -18,35 +21,66 @@ A transport provides:
   caller-supplied handle, this reports that the transport itself is closed, not
   that the shared bus was closed.
 
-The shipped backends satisfy the
-:class:`~BDPotentiometer.transport.SpiTransport` protocol. Any object with
+The shipped backends satisfy the ``SpiTransport`` protocol. Any object with
 callable ``transfer`` and ``close`` methods is accepted.
+
+Installation
+------------
+
+The transport package is not installed with the core library. Install the
+extra for the backend you need:
+
+.. code-block:: console
+
+   $ pip install 'scietex.hal.spi[spi]'
+   $ pip install 'scietex.hal.spi[gpiozero]'
+
+A bare install ships no hardware backend, and constructing a device for real
+hardware raises ``ImportError`` naming the extra to install.
 
 Backends
 --------
 
-:class:`~BDPotentiometer.transport.SpiDevTransport`
+``SpiDevTransport``
    Default. Opens ``/dev/spidev<bus>.<device>`` through ``spidev``. With no
    transport and no pin keywords, ``port=`` and ``device=`` select this
    transport, ``port`` mapping to the spidev bus and ``device`` to the
-   chip-select line. Requires ``pip install 'BDPotentiometer[spi]'``.
+   chip-select line. Requires ``scietex.hal.spi[spi]``.
 
-:class:`~BDPotentiometer.transport.GpiozeroSpiTransport`
+``GpiozeroSpiTransport``
    Optional. Wraps a gpiozero hardware SPI object. Passing ``clock_pin=``,
    ``mosi_pin=``, ``miso_pin=``, or ``select_pin=`` to a device builds this
-   transport. Requires ``pip install 'BDPotentiometer[gpiozero]'``.
+   transport. Requires ``scietex.hal.spi[gpiozero]``.
 
-:class:`~BDPotentiometer.transport.FakeSpiTransport`
+``FakeSpiTransport``
    In-memory backend with scripted responses, for tests without hardware. It
    needs no extra.
-
-A bare install ships no hardware backend, and constructing a device for real
-hardware raises ``ImportError`` naming the extra to install.
 
 Backend keywords select the default transport only. Passing ``port=``,
 ``device=``, or any pin keyword together with ``transport=`` or ``spi=``
 raises ``TypeError``: supply either an explicit transport or the backend
 keywords, never both.
+
+Backend keyword mapping
+-----------------------
+
+``build_default_transport`` turns the device keyword arguments into a
+transport:
+
+===================  ==================================================
+Keyword              Effect
+===================  ==================================================
+``port``             spidev bus number; with no pin keyword, selects
+                     ``SpiDevTransport``
+``device``           spidev chip-select line
+``clock_pin``        selects ``GpiozeroSpiTransport``
+``mosi_pin``         selects ``GpiozeroSpiTransport``
+``miso_pin``         selects ``GpiozeroSpiTransport``
+``select_pin``       selects ``GpiozeroSpiTransport``
+===================  ==================================================
+
+Pin keywords win over the spidev keywords, so any pin keyword builds the
+gpiozero backend.
 
 Injection
 ---------
@@ -54,7 +88,7 @@ Injection
 .. code-block:: python
 
    from BDPotentiometer.mcp4xxx import MCP4231
-   from BDPotentiometer.transport import SpiDevTransport
+   from scietex.hal.spi import SpiDevTransport
 
    transport = SpiDevTransport(bus=0, device=0)
    pot = MCP4231(r_ab=10e3, transport=transport)
@@ -64,7 +98,9 @@ Injection
 Ownership
 ---------
 
-A device's ``close()`` delegates to its transport.
+Whoever constructs the transport closes it. A device closes only a transport
+it built itself; a transport passed with ``transport=`` or ``spi=`` stays open
+after the device's ``close()``, because the caller still owns it.
 
 * ``GpiozeroSpiTransport`` closes only a handle it built. When it wraps a
   caller-supplied ``spi=`` object, ``close()`` marks the transport closed
@@ -90,3 +126,8 @@ the device. The user running the process must be a member of the group in the
 rule; on this project's Fedora setup that group is ``gpio``, because no ``spi``
 group exists. Kernel SPI must also be enabled, for example with
 ``dtparam=spi=on`` in ``/boot/firmware/config.txt`` on current Raspberry Pi OS.
+
+.. seealso::
+
+   `scietex.hal.spi <https://github.com/bond-anton/scietex.hal.spi>`_ -- the
+   transport package and its API reference.

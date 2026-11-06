@@ -16,14 +16,15 @@ The bare package installs the core library only: the model classes and
 $ pip install BDPotentiometer
 ```
 
-The default hardware backend is spidev; the `spi` extra installs it:
+The default hardware backend is spidev; the transport package's `spi` extra
+installs it:
 ```shell
-$ pip install 'BDPotentiometer[spi]'
+$ pip install 'scietex.hal.spi[spi]'
 ```
 
 The optional gpiozero backend needs its own extra:
 ```shell
-$ pip install 'BDPotentiometer[gpiozero]'
+$ pip install 'scietex.hal.spi[gpiozero]'
 ```
 
 ## Usage
@@ -52,20 +53,22 @@ or `spi=`; doing so raises `TypeError`.
 
 ## Transports
 
-SPI access goes through a transport object passed with `transport=`:
+The transport layer lives in the `scietex.hal.spi` distribution
+(https://github.com/bond-anton/scietex.hal.spi). SPI access goes through a
+transport object passed with `transport=`:
 
 * `SpiDevTransport` (default) opens `/dev/spidev<bus>.<device>` through
-  `spidev`; needs the `spi` extra. `port=` maps to the bus, `device=` to the
-  chip-select line.
+  `spidev`; needs `scietex.hal.spi[spi]`. `port=` maps to the bus, `device=` to
+  the chip-select line.
 * `GpiozeroSpiTransport` (optional) wraps gpiozero hardware SPI; passing
   `clock_pin=`, `mosi_pin=`, `miso_pin=`, or `select_pin=` builds one, and it
-  needs the `gpiozero` extra.
+  needs `scietex.hal.spi[gpiozero]`.
 * `FakeSpiTransport` replays scripted responses, so code can run without
   hardware or extras.
 
 ```python
 from BDPotentiometer.mcp4xxx import MCP4231
-from BDPotentiometer.transport import SpiDevTransport
+from scietex.hal.spi import SpiDevTransport
 
 
 my_pot = MCP4231(r_ab=10e3, transport=SpiDevTransport(bus=0, device=0))
@@ -74,7 +77,8 @@ my_pot = MCP4231(r_ab=10e3, transport=SpiDevTransport(bus=0, device=0))
 For tests, the fake backend needs no extra:
 
 ```python
-from BDPotentiometer.transport import FakeSpiTransport
+from BDPotentiometer.mcp4xxx import MCP4231
+from scietex.hal.spi import FakeSpiTransport
 
 
 my_pot = MCP4231(r_ab=10e3, transport=FakeSpiTransport(default=[0, 0]))
@@ -85,10 +89,46 @@ my_pot = MCP4231(r_ab=10e3, transport=FakeSpiTransport(default=[0, 0]))
 `spidev.SpiDev` or a gpiozero SPI object), and `.close()` / `.closed` release
 and report the underlying transport.
 
-`from BDPotentiometer import *` follows `__all__`, which includes
-`GpiozeroSpiTransport`. That name is resolved lazily, so a star import without
-the `gpiozero` extra raises `AttributeError`; import the names you need
-explicitly when the optional backend may be absent.
+Transports are owned by whoever constructs them: a device closes only a
+transport it built itself from backend keywords, and leaves a transport passed
+with `transport=` or `spi=` open.
+
+`from BDPotentiometer import *` follows `__all__`, which lists only the model
+classes: `DigitalPotentiometerDevice`, `DigitalWiper`, `Potentiometer`, and
+`SpiDigitalWiper`. Import transports and transport exceptions from
+`scietex.hal.spi`.
+
+## Upgrading to 0.4.0
+
+0.4.0 moves the transport layer out of this package into the published
+`scietex.hal.spi` 0.1.0 distribution.
+
+Breaking changes:
+
+* `BDPotentiometer.transport` is gone; `scietex.hal.spi` replaces it.
+* These names are no longer importable from `BDPotentiometer`: `SpiTransport`,
+  `SpiDevTransport`, `FakeSpiTransport`, `I2cTransport`, `TransportError`,
+  `TransportClosed`, `is_spi_transport`, `fix_gpiozero_dual_cs_spi`, and
+  `GpiozeroSpiTransport`.
+* `__all__` now lists only `DigitalPotentiometerDevice`, `DigitalWiper`,
+  `Potentiometer`, and `SpiDigitalWiper`.
+* The `ImportError` for a missing backend now names `scietex.hal.spi[spi]` or
+  `scietex.hal.spi[gpiozero]` instead of the `BDPotentiometer` extras.
+
+Migration:
+
+```python
+# before
+from BDPotentiometer.transport import SpiDevTransport
+
+# after
+from scietex.hal.spi import SpiDevTransport
+```
+
+Install the matching transport extra, for example
+`pip install 'scietex.hal.spi[spi]'`. Device constructors, the
+`transport=`/`spi=`/pin keywords, `.close()`, `.closed`, `.transport`, and
+`.spi` are unchanged.
 
 Please see the [examples](examples) directory for more usage examples.
 

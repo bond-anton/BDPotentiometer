@@ -3,18 +3,16 @@
 import unittest
 from unittest import mock
 
+from scietex.hal.spi import FakeSpiTransport
+from scietex.hal.spi import gpiozero_spi as gpiozero_spi_module
+from scietex.hal.spi import spidev_spi as spidev_spi_module
+
 try:
     from src.BDPotentiometer.mcp4xxx import MCP4231, MCP4232, MCP4251
     from src.BDPotentiometer.mcp4xxx import mcp4xxx as mcp4xxx_module
-    from src.BDPotentiometer.transport import FakeSpiTransport
-    from src.BDPotentiometer.transport import gpiozero_spi as gpiozero_spi_module
-    from src.BDPotentiometer.transport import spidev_spi as spidev_spi_module
 except ModuleNotFoundError:
     from BDPotentiometer.mcp4xxx import MCP4231, MCP4232, MCP4251
     from BDPotentiometer.mcp4xxx import mcp4xxx as mcp4xxx_module
-    from BDPotentiometer.transport import FakeSpiTransport
-    from BDPotentiometer.transport import gpiozero_spi as gpiozero_spi_module
-    from BDPotentiometer.transport import spidev_spi as spidev_spi_module
 
 
 class _StubSpi:

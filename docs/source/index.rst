@@ -10,10 +10,11 @@ Check out the :doc:`usage` section for further information.
 
 .. note::
 
-   Three SPI backends ship today: ``spidev`` (default), gpiozero hardware SPI
-   (optional, selected by pin keywords), and an in-memory fake for tests. A
-   bare install has no hardware backend. ``I2cTransport`` is a protocol
-   placeholder for future chips; no I2C backend is implemented.
+   The SPI transport layer lives in the separate ``scietex.hal.spi``
+   distribution, which ships three backends: ``spidev`` (default), gpiozero
+   hardware SPI (optional, selected by pin keywords), and an in-memory fake for
+   tests. A bare install has no hardware backend. ``I2cTransport`` is a
+   protocol placeholder for future chips; no I2C backend is implemented.
 
 Contents
 --------

@@ -59,4 +59,4 @@ jobs:
         "$RUNNER_TEMP/core-venv/bin/python" -m pip install .
     - name: Verify core import stays backend-free
       run: |
-        "$RUNNER_TEMP/core-venv/bin/python" -c "import sys, BDPotentiometer, BDPotentiometer.transport; from BDPotentiometer.transport import FakeSpiTransport; assert 'gpiozero' not in sys.modules; assert 'spidev' not in sys.modules; print('core ok')"
+        "$RUNNER_TEMP/core-venv/bin/python" -c "import sys, BDPotentiometer, BDPotentiometer.mcp4xxx, scietex.hal.spi; assert 'gpiozero' not in sys.modules; assert 'spidev' not in sys.modules; print('core ok')"

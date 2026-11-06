@@ -2,9 +2,10 @@
 
 from typing import Any
 
+from scietex.hal.spi import SpiTransport
+
 from .. import DigitalPotentiometerDevice
 from ..__helpers import check_integer
-from ..transport.base import SpiTransport
 from .mcp4xxx import MCP4xxx, MCP4xxxPotentiometer, MCP4xxxWiper
 
 

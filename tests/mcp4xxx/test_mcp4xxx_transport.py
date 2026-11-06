@@ -2,22 +2,14 @@
 
 import unittest
 
+from scietex.hal.spi import FakeSpiTransport, TransportClosed, TransportError
+
 try:
     from src.BDPotentiometer.mcp4xxx import MCP4231, MCP4251
     from src.BDPotentiometer.mcp4xxx import mcp4xxx as mcp4xxx_module
-    from src.BDPotentiometer.transport import (
-        FakeSpiTransport,
-        TransportClosed,
-        TransportError,
-    )
 except ModuleNotFoundError:
     from BDPotentiometer.mcp4xxx import MCP4231, MCP4251
     from BDPotentiometer.mcp4xxx import mcp4xxx as mcp4xxx_module
-    from BDPotentiometer.transport import (
-        FakeSpiTransport,
-        TransportClosed,
-        TransportError,
-    )
 
 
 class _RaisingTransport:
