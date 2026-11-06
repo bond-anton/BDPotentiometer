@@ -11,8 +11,10 @@ A transport provides:
 
 * ``transfer(tx) -> list[int]`` -- send one frame of words in ``0..255`` and
   return the received words in the same order;
-* ``close()`` -- release the bus handle; repeated calls have no effect;
-* ``closed`` -- ``True`` once the handle has been closed.
+* ``close()`` -- release the bus handle; repeated calls have no effect. When
+  the underlying close fails, the transport stays open and ``close()`` can be
+  retried;
+* ``closed`` -- ``True`` once the handle has been closed successfully.
 
 The shipped backends satisfy the
 :class:`~BDPotentiometer.transport.SpiTransport` protocol. Any object with

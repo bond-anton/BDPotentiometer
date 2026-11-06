@@ -52,7 +52,8 @@ class MCP4xx2(DigitalPotentiometerDevice, MCP4xxx):
         :param label: Logger name for the device.
         :param log_level: Logger level for the device.
         :raises ValueError: If `r_ab`, `max_value`, or `channels` is invalid.
-        :raises TypeError: If a supplied transport lacks transfer() or close().
+        :raises TypeError: If `max_value` is not a real number, or a supplied
+            transport lacks transfer() or close().
         """
         if max_value is None:
             max_value = self._MAX_VALUE

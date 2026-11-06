@@ -86,7 +86,7 @@ class SpiDevTransport:
 
     @property
     def closed(self) -> bool:
-        """Return True once close() has run."""
+        """Return True once close() has completed successfully."""
         return self._closed
 
     def transfer(self, tx: Sequence[int]) -> list[int]:
@@ -102,7 +102,11 @@ class SpiDevTransport:
         return rx
 
     def close(self) -> None:
-        """Close the device handle. Repeated calls have no effect."""
+        """Close the device handle.
+
+        Repeated calls after a successful close have no effect; a failed close
+        leaves the transport open and retryable.
+        """
         if self._closed:
             return
         self._spi.close()

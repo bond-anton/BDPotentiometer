@@ -15,7 +15,9 @@ def get_logger(label: str, log_level: Union[int, None] = None) -> logging.Logger
     The level defaults to `logging.ERROR` when `log_level` is None. On first use
     the logger gets exactly one `logging.StreamHandler` with the package format;
     later calls reuse that handler and re-apply the logger level to every handler,
-    so changing `log_level` on a later call takes effect.
+    so changing `log_level` on a later call takes effect. Any int level,
+    including `logging.NOTSET`, is applied as given; only `None` selects
+    `logging.ERROR`.
 
     :param label: Logger name, also used to look up an already configured logger.
     :param log_level: Logging level such as `logging.DEBUG`; defaults to `logging.ERROR`.

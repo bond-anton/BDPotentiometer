@@ -70,9 +70,9 @@ def _check_status_response(data: list) -> None:
     """
     Validate the reserved bits of a status response.
 
-    :param data: Response data (list).
-    :raises ValueError: If the frame is shorter than two words or the reserved
-        bits are not set.
+    :param data: Response data (list or None).
+    :raises ValueError: If `data` is None, the frame is shorter than two words,
+        or the reserved bits are not set.
     """
     if data is None or len(data) < 2:
         raise ValueError(f"Wrong response {data}")
@@ -87,10 +87,10 @@ def _check_tcon_response(data: list) -> None:
     """
     Validate the reserved bit of a TCON response.
 
-    :param data: Response data (list). Both words are required even though
-        only the first carries the reserved bit.
-    :raises ValueError: If the frame is shorter than two words or the reserved
-        bit is not set.
+    :param data: Response data (list or None). Both words are required even
+        though only the first carries the reserved bit.
+    :raises ValueError: If `data` is None, the frame is shorter than two words,
+        or the reserved bit is not set.
     """
     if data is None or len(data) < 2:
         raise ValueError(f"Wrong response {data}")
@@ -231,6 +231,7 @@ class MCP4xxxWiper(SpiDigitalWiper):
         :param transport: Canonical SPI transport for the wiper.
         :param kwargs: Extra keywords forwarded to `SpiDigitalWiper`
             (`label`, `log_level`).
+        :raises TypeError: If `max_value` is not a real number.
         :raises ValueError: If `max_value` is not 128 or 256, or if neither
             `transport` nor `spi` is supplied.
         """
@@ -396,7 +397,8 @@ class MCP4xxx:
         by `shdn()`.
 
         :return: True when the status-register SHDN bit is set, otherwise False.
-        :raises ValueError: If the status response has invalid reserved bits.
+        :raises ValueError: If the status response is missing, shorter than two
+            words, or has invalid reserved bits.
         :raises ConnectionError: If the device has no transport.
         """
         data = self._require_transport().transfer([_R_CMD | _STATUS, 0])
@@ -414,7 +416,8 @@ class MCP4xxx:
         second dict.
 
         :return: Tuple of TCON state dicts, ``(channel 0, channel 1)``.
-        :raises ValueError: If the response lacks the reserved bit.
+        :raises ValueError: If the response is missing, shorter than two words,
+            or lacks the reserved bit.
         :raises ConnectionError: If the device has no transport.
         """
         data = self._require_transport().transfer([_R_CMD | _TCON, 0])
@@ -440,7 +443,8 @@ class MCP4xxx:
             ``shdn``, True puts the channel in shutdown.
         :param ch1: Channel 1 state, with the same keys and meaning as `ch0`.
         :return: True if the read-back matches the written value, otherwise False.
-        :raises ValueError: If the read-back response lacks the reserved bit.
+        :raises ValueError: If the read-back response is missing, shorter than
+            two words, or lacks the reserved bit.
         :raises ConnectionError: If the device has no transport.
         """
         default_tcon_value = {"shdn": False, "A": True, "W": True, "B": True}
@@ -463,7 +467,8 @@ class MCP4xxx:
         :param ch0: True puts channel 0 into shutdown; False leaves it on.
         :param ch1: True puts channel 1 into shutdown; False leaves it on.
         :return: True if the read-back matches the written value, otherwise False.
-        :raises ValueError: If the read-back response lacks the reserved bit.
+        :raises ValueError: If the read-back response is missing, shorter than
+            two words, or lacks the reserved bit.
         :raises ConnectionError: If the device has no transport.
         """
         return self.write_tcon(

@@ -73,7 +73,7 @@ class GpiozeroSpiTransport:
 
     @property
     def closed(self) -> bool:
-        """Return True once close() has run."""
+        """Return True once close() has completed successfully."""
         return self._closed
 
     def transfer(self, tx: Sequence[int]) -> list[int]:
@@ -89,7 +89,11 @@ class GpiozeroSpiTransport:
         return rx
 
     def close(self) -> None:
-        """Close an owned SPI handle. Repeated calls have no effect."""
+        """Close an owned SPI handle.
+
+        Repeated calls after a successful close have no effect; a failed close
+        leaves the transport open and retryable.
+        """
         if self._closed:
             return
         if self._owns_raw and self._handle is not None:

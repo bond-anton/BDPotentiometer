@@ -1,6 +1,8 @@
 # BDPotentiometer Multi-Bus Transport — Full Implementation Plan
 
-All line anchors are against the current tree. No code is modified by this document.
+> Historical design record. Line references and snippets reflect the plan as written, not the shipped code.
+
+All line anchors were against the tree at the time of writing. No code is modified by this document.
 
 ---
 
