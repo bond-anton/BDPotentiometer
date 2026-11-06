@@ -1,6 +1,6 @@
-"""Module to operate SPI digital potentiometer devices"""
+"""Digital potentiometer and wiper models with pluggable bus transports."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 from .__gpiozero_helpers import fix_gpiozero_dual_cs_spi

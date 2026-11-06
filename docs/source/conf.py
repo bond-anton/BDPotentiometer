@@ -1,13 +1,31 @@
 # Configuration file for the Sphinx documentation builder.
 
+import pathlib
+import re
+
 # -- Project information
 
 project = "BDPotentiometer"
 copyright = "2024, Anton Bondarenko"
 author = "Anton Bondarenko"
 
-release = "0.1.0"
-version = "0.1.0"
+
+def _read_version():
+    """Read __version__ from the package source without importing the package."""
+    init_path = (
+        pathlib.Path(__file__).resolve().parents[2]
+        / "src"
+        / "BDPotentiometer"
+        / "__init__.py"
+    )
+    match = re.search(r'^__version__ = "([^"]+)"', init_path.read_text(), re.MULTILINE)
+    if match is None:
+        raise RuntimeError(f"Cannot find __version__ in {init_path}")
+    return match.group(1)
+
+
+release = _read_version()
+version = release
 
 # -- General configuration
 
@@ -25,8 +43,6 @@ intersphinx_mapping = {
     "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
 }
 intersphinx_disabled_domains = ["std"]
-
-templates_path = ["_templates"]
 
 # -- Options for HTML output
 

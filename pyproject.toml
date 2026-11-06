@@ -28,6 +28,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["gpiozero>=1.6.2", "numpy"]
+docs = ["sphinx", "sphinx_rtd_theme", "gpiozero>=1.6.2", "numpy"]
 test = ["pytest", "numpy"]
 lint = ["ruff==0.17.4", "ty==0.0.99"]
 spi = ["spidev>=3.6"]
