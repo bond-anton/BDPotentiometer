@@ -5,7 +5,7 @@ from typing import Any, Union
 from .. import Potentiometer, SpiDigitalWiper
 from ..__helpers import check_integer, clamp
 from ..transport.base import SpiTransport, is_spi_transport
-from ..transport.gpiozero_spi import GpiozeroSpiTransport
+from ..transport.selection import GPIOZERO_SPI_ARGS, build_default_transport
 
 #: Supported `r_ab` values in ohms for MCP4XXX devices.
 resistance_list: tuple[float, ...] = (5e3, 10e3, 50e3, 100e3)
@@ -287,14 +287,22 @@ class MCP4xxx:
     canonical way to inject an SPI backend; ``spi=`` is a legacy alias used
     only when ``transport`` is None.
 
+    Without either, the default backend is ``SpiDevTransport`` (spidev), so
+    ``port`` is the spidev bus and ``device`` the chip-select line; spidev
+    comes from the ``spi`` extra. Supplying any of ``clock_pin``,
+    ``mosi_pin``, ``miso_pin``, or ``select_pin`` opts into
+    ``GpiozeroSpiTransport`` instead, which needs the ``gpiozero`` extra. A
+    missing package raises `ImportError` naming its extra.
+
     Compatibility surface: ``.transport`` returns the injected transport,
-    ``.spi`` returns the raw gpiozero SPI object when the transport wraps one
-    and the transport itself otherwise, ``.close()`` closes the transport, and
-    ``.closed`` is True after ``close()`` has run, when the transport reports
-    itself closed, or when there is no transport.
+    ``.spi`` returns the backend's raw handle (``spidev.SpiDev`` or the
+    gpiozero SPI object) when the transport wraps one and the transport
+    itself otherwise, ``.close()`` closes the transport, and ``.closed`` is
+    True after ``close()`` has run, when the transport reports itself closed,
+    or when there is no transport.
     """
 
-    _SPI_ARGS = GpiozeroSpiTransport._SPI_ARGS
+    _SPI_ARGS = GPIOZERO_SPI_ARGS
 
     def __init__(  # noqa: PLR0913
         self,
@@ -309,39 +317,42 @@ class MCP4xxx:
         select_pin: Any = None,
     ) -> None:
         """
-        Build the device from an SPI transport or from gpiozero pin settings.
+        Build the device from an SPI transport or from the legacy keywords.
 
-        When neither `transport` nor `spi` is supplied, the keyword-only pin
-        settings build a `GpiozeroSpiTransport`.
+        When neither `transport` nor `spi` is supplied, the keyword-only
+        settings build a transport: `SpiDevTransport` by default, or
+        `GpiozeroSpiTransport` when any pin keyword is given.
 
         :param transport: Canonical SPI transport to use (SpiTransport).
         :param spi: Legacy alias for `transport`, used only when `transport`
             is None.
-        :param port: gpiozero SPI port number.
-        :param device: gpiozero SPI device number.
-        :param clock_pin: GPIO pin used as SPI clock.
-        :param mosi_pin: GPIO pin used as SPI MOSI.
-        :param miso_pin: GPIO pin used as SPI MISO.
-        :param select_pin: GPIO pin used as SPI chip select.
+        :param port: spidev bus number, or the gpiozero SPI port when a pin
+            keyword is given.
+        :param device: spidev chip-select line, or the gpiozero SPI device
+            when a pin keyword is given.
+        :param clock_pin: GPIO pin used as SPI clock; any pin keyword selects
+            the gpiozero backend.
+        :param mosi_pin: GPIO pin used as SPI MOSI; selects the gpiozero
+            backend.
+        :param miso_pin: GPIO pin used as SPI MISO; selects the gpiozero
+            backend.
+        :param select_pin: GPIO pin used as SPI chip select; selects the
+            gpiozero backend.
         :raises TypeError: If the supplied transport lacks transfer() or close().
+        :raises ImportError: If the optional package for the selected backend
+            is missing.
         """
         if transport is None and spi is not None:
             transport = spi
         if transport is None:
-            provided_spi_args = {
-                "port": port,
-                "device": device,
-                "clock_pin": clock_pin,
-                "mosi_pin": mosi_pin,
-                "miso_pin": miso_pin,
-                "select_pin": select_pin,
-            }
-            spi_args = {
-                name: provided_spi_args[name]
-                for name in self._SPI_ARGS
-                if provided_spi_args[name] is not None
-            }
-            transport = GpiozeroSpiTransport(**spi_args)
+            transport = build_default_transport(
+                port=port,
+                device=device,
+                clock_pin=clock_pin,
+                mosi_pin=mosi_pin,
+                miso_pin=miso_pin,
+                select_pin=select_pin,
+            )
         if transport is not None and not is_spi_transport(transport):
             raise TypeError(
                 "Expected an SPI transport with transfer() and close(), "
@@ -357,7 +368,7 @@ class MCP4xxx:
 
     @property
     def spi(self):
-        """Backward-compatible accessor: raw gpiozero SPI if wrapped."""
+        """Backward-compatible accessor: the backend's raw handle if wrapped."""
         if self._transport is None:
             return None
         return getattr(self._transport, "raw", self._transport)

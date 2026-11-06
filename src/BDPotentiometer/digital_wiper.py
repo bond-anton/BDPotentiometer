@@ -336,7 +336,7 @@ class SpiDigitalWiper(DigitalWiper):
         """
         Compatibility accessor for the SPI interface; `transport` is canonical.
 
-        :return: SPI interface (raw gpiozero SPI if wrapped, else the transport)
+        :return: SPI interface (backend's raw handle if wrapped, else the transport)
         """
         if self._transport is None:
             return None

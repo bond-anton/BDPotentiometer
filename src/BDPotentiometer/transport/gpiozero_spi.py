@@ -5,7 +5,9 @@ from typing import Any
 
 from gpiozero import SPIDevice
 
+from ..__gpiozero_helpers import fix_gpiozero_dual_cs_spi
 from .base import TransportClosed, TransportError
+from .selection import GPIOZERO_SPI_ARGS
 
 
 class _GpiozeroSpiHandle(SPIDevice):
@@ -39,14 +41,7 @@ class GpiozeroSpiTransport:
     marks itself closed and leaves the shared bus open for its other users.
     """
 
-    _SPI_ARGS = (
-        "port",
-        "device",
-        "clock_pin",
-        "mosi_pin",
-        "miso_pin",
-        "select_pin",
-    )
+    _SPI_ARGS = GPIOZERO_SPI_ARGS
 
     def __init__(self, spi: Any = None, **spi_args) -> None:
         """
@@ -61,6 +56,7 @@ class GpiozeroSpiTransport:
         self._owns_raw = spi is None
         self._handle = None
         if spi is None:
+            fix_gpiozero_dual_cs_spi()
             self._handle = _GpiozeroSpiHandle(**spi_args)
             self._raw = self._handle.raw
         else:

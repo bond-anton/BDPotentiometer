@@ -2,12 +2,25 @@
 
 import unittest
 
-from gpiozero import SPI
-
 try:
     from src.BDPotentiometer import Potentiometer, SpiDigitalWiper
 except ModuleNotFoundError:
     from BDPotentiometer import Potentiometer, SpiDigitalWiper
+
+
+class _StubSpi:
+    """Minimal SPI transport used to exercise the setter."""
+
+    def __init__(self):
+        self.calls = []
+
+    def transfer(self, tx):
+        """Record the frame and return a zero response."""
+        self.calls.append(list(tx))
+        return [0] * len(tx)
+
+    def close(self):
+        """No-op close."""
 
 
 class TestSpiDigitalWiperSpiSetter(unittest.TestCase):
@@ -42,7 +55,7 @@ class TestSpiDigitalWiperSpiSetter(unittest.TestCase):
         """
         Test that a valid SPI interface is stored and not overwritten.
         """
-        spi = SPI.__new__(SPI)
+        spi = _StubSpi()
         self.spi_digital_wiper.spi = spi
         self.assertIs(self.spi_digital_wiper.spi, spi)
 

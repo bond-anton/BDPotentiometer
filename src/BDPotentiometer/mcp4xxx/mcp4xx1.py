@@ -41,19 +41,22 @@ class MCP4xx1(DigitalPotentiometerDevice, MCP4xxx):
         :param transport: Canonical SPI transport.
         :param spi: Legacy alias for `transport`, used only when `transport`
             is None.
-        :param port: gpiozero SPI port, used when no transport is supplied.
-        :param device: gpiozero SPI device, used when no transport is supplied.
-        :param clock_pin: GPIO clock pin, used when no transport is supplied.
-        :param mosi_pin: GPIO MOSI pin, used when no transport is supplied.
-        :param miso_pin: GPIO MISO pin, used when no transport is supplied.
-        :param select_pin: GPIO chip-select pin, used when no transport is
+        :param port: spidev bus number, used when no transport is supplied.
+        :param device: spidev chip-select line, used when no transport is
             supplied.
+        :param clock_pin: GPIO clock pin; any pin keyword selects the
+            gpiozero backend.
+        :param mosi_pin: GPIO MOSI pin; selects the gpiozero backend.
+        :param miso_pin: GPIO MISO pin; selects the gpiozero backend.
+        :param select_pin: GPIO chip-select pin; selects the gpiozero backend.
         :param invert: Invert the wiper code mapping when True.
         :param label: Logger name for the device.
         :param log_level: Logger level for the device.
         :raises ValueError: If `r_ab`, `max_value`, or `channels` is invalid.
         :raises TypeError: If `max_value` is not a real number, or a supplied
             transport lacks transfer() or close().
+        :raises ImportError: If the optional package for the selected backend
+            is missing.
         """
         if max_value is None:
             max_value = self._MAX_VALUE

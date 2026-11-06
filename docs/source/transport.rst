@@ -23,17 +23,23 @@ callable ``transfer`` and ``close`` methods is accepted.
 Backends
 --------
 
-:class:`~BDPotentiometer.transport.GpiozeroSpiTransport`
-   Default. Wraps a gpiozero hardware SPI object. Passing ``port=``,
-   ``device=``, ``clock_pin=``, ``mosi_pin=``, ``miso_pin=``, or
-   ``select_pin=`` to a device builds this transport.
-
 :class:`~BDPotentiometer.transport.SpiDevTransport`
-   Plain Linux ``spidev`` backend for ``/dev/spidev<bus>.<device>``. Requires
-   ``pip install 'BDPotentiometer[spi]'``.
+   Default. Opens ``/dev/spidev<bus>.<device>`` through ``spidev``. With no
+   transport and no pin keywords, ``port=`` and ``device=`` select this
+   transport, ``port`` mapping to the spidev bus and ``device`` to the
+   chip-select line. Requires ``pip install 'BDPotentiometer[spi]'``.
+
+:class:`~BDPotentiometer.transport.GpiozeroSpiTransport`
+   Optional. Wraps a gpiozero hardware SPI object. Passing ``clock_pin=``,
+   ``mosi_pin=``, ``miso_pin=``, or ``select_pin=`` to a device builds this
+   transport. Requires ``pip install 'BDPotentiometer[gpiozero]'``.
 
 :class:`~BDPotentiometer.transport.FakeSpiTransport`
-   In-memory backend with scripted responses, for tests without hardware.
+   In-memory backend with scripted responses, for tests without hardware. It
+   needs no extra.
+
+A bare install ships no hardware backend, and constructing a device for real
+hardware raises ``ImportError`` naming the extra to install.
 
 Injection
 ---------

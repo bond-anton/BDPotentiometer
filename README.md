@@ -8,14 +8,22 @@ through a pluggable transport layer.
 
 ## Installation
 
-To install BDPotentiometer use pip
+The bare package installs the core library only: the model classes and
+`FakeSpiTransport` work, while building a device for real hardware raises an
+`ImportError` naming the extra to install.
+
 ```shell
 $ pip install BDPotentiometer
 ```
 
-The optional `spi` extra installs `spidev`, which `SpiDevTransport` needs:
+The default hardware backend is spidev; the `spi` extra installs it:
 ```shell
 $ pip install 'BDPotentiometer[spi]'
+```
+
+The optional gpiozero backend needs its own extra:
+```shell
+$ pip install 'BDPotentiometer[gpiozero]'
 ```
 
 ## Usage
@@ -30,16 +38,25 @@ my_pot = MCP4231(r_ab=10e3, device=0)
 my_pot.channels[0].value = 43
 ```
 
+`device=` is the spidev chip-select line, so this selects `SpiDevTransport` and
+needs the `spi` extra. Pin keywords select the gpiozero backend instead:
+
+```python
+my_pot = MCP4231(r_ab=10e3, clock_pin=11, select_pin=8)
+```
+
 ## Transports
 
 SPI access goes through a transport object passed with `transport=`:
 
-* `GpiozeroSpiTransport` (default) wraps gpiozero hardware SPI. Passing
-  `port=`, `device=`, or the pin keywords builds one automatically.
-* `SpiDevTransport` talks to `/dev/spidev<bus>.<device>` through `spidev` and
-  requires the `spi` extra.
+* `SpiDevTransport` (default) opens `/dev/spidev<bus>.<device>` through
+  `spidev`; needs the `spi` extra. `port=` maps to the bus, `device=` to the
+  chip-select line.
+* `GpiozeroSpiTransport` (optional) wraps gpiozero hardware SPI; passing
+  `clock_pin=`, `mosi_pin=`, `miso_pin=`, or `select_pin=` builds one, and it
+  needs the `gpiozero` extra.
 * `FakeSpiTransport` replays scripted responses, so code can run without
-  hardware.
+  hardware or extras.
 
 ```python
 from BDPotentiometer.mcp4xxx import MCP4231
@@ -49,10 +66,19 @@ from BDPotentiometer.transport import SpiDevTransport
 my_pot = MCP4231(r_ab=10e3, transport=SpiDevTransport(bus=0, device=0))
 ```
 
+For tests, the fake backend needs no extra:
+
+```python
+from BDPotentiometer.transport import FakeSpiTransport
+
+
+my_pot = MCP4231(r_ab=10e3, transport=FakeSpiTransport(default=[0, 0]))
+```
+
 `spi=` is a legacy alias for `transport=`. `MCP4xxx` is not a
-`gpiozero.SPIDevice`; `.spi` returns the raw gpiozero SPI object when the
-gpiozero transport is in use, and `.close()` / `.closed` release and report the
-underlying transport.
+`gpiozero.SPIDevice`; `.spi` returns the backend's raw handle (a
+`spidev.SpiDev` or a gpiozero SPI object), and `.close()` / `.closed` release
+and report the underlying transport.
 
 Please see the [examples](examples) directory for more usage examples.
 

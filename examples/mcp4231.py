@@ -3,6 +3,7 @@
 from BDPotentiometer.mcp4xxx import MCP4231
 
 # Create potentiometer with total resistance 10 kOhm
+# `device=` selects the spidev backend and needs the `spi` extra
 my_pot = MCP4231(r_ab=10e3, device=0)
 
 # Label the two available channels with meaningful names

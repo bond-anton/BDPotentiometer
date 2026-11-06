@@ -34,7 +34,24 @@ jobs:
     - name: Verify installed wheel is importable
       working-directory: ${{ runner.temp }}
       run: |
-        python -c "import pathlib, BDPotentiometer; path = pathlib.Path(BDPotentiometer.__file__).resolve(); print(f'Imported {path}'); assert 'site-packages' in path.parts, path"
+        python -c "import pathlib, sys, BDPotentiometer; path = pathlib.Path(BDPotentiometer.__file__).resolve(); print(f'Imported {path}'); assert 'site-packages' in path.parts, path; assert 'gpiozero' not in sys.modules; assert 'spidev' not in sys.modules"
     - name: Test with pytest
       run: |
         pytest
+
+  core:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.9"
+    - name: Install without optional backends
+      run: |
+        python -m venv "$RUNNER_TEMP/core-venv"
+        "$RUNNER_TEMP/core-venv/bin/python" -m pip install --upgrade pip
+        "$RUNNER_TEMP/core-venv/bin/python" -m pip install .
+    - name: Verify core import stays backend-free
+      run: |
+        "$RUNNER_TEMP/core-venv/bin/python" -c "import sys, BDPotentiometer, BDPotentiometer.transport; from BDPotentiometer.transport import FakeSpiTransport; assert 'gpiozero' not in sys.modules; assert 'spidev' not in sys.modules; print('core ok')"

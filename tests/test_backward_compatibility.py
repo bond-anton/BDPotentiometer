@@ -1,7 +1,9 @@
 """Phase 5 backward-compatibility checks for the public API."""
 
+import subprocess
 import sys
 import unittest
+from pathlib import Path
 
 try:
     import BDPotentiometer as package
@@ -109,10 +111,23 @@ class TestCompatibilitySurface(unittest.TestCase):
             self.skipTest("gpiozero is not available")
         self.assertFalse(issubclass(MCP4xxx, SPIDevice))
 
-    def test_spidev_transport_without_spidev(self):
-        """SpiDevTransport is importable without importing or constructing spidev."""
+    def test_importing_package_does_not_import_spidev(self):
+        """Importing the package alone does not import the optional spidev."""
         self.assertIsNotNone(SpiDevTransport)
-        self.assertNotIn("spidev", sys.modules)
+        source_root = Path(__file__).resolve().parents[1] / "src"
+        code = (
+            "import sys\n"
+            f"sys.path.insert(0, {str(source_root)!r})\n"
+            "import BDPotentiometer\n"
+            "print('spidev' in sys.modules)\n"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.stdout.strip(), "False", result.stderr)
 
 
 if __name__ == "__main__":

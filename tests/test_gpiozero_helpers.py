@@ -1,6 +1,5 @@
 """Tests for the gpiozero dual-CS SPI helper."""
 
-import importlib
 import sys
 import unittest
 from unittest import mock
@@ -18,15 +17,21 @@ class TestGpiozeroHelpers(unittest.TestCase):
         """The helper is exported as a callable on every host."""
         self.assertTrue(callable(helpers.fix_gpiozero_dual_cs_spi))
 
+    def test_helper_without_gpiozero_does_not_raise(self):
+        """A host without gpiozero gets a no-op instead of an ImportError."""
+        blocked = {
+            "gpiozero": None,
+            "gpiozero.pins.local": None,
+            "gpiozero.pins.rpigpio": None,
+        }
+        with mock.patch.dict(sys.modules, blocked):
+            self.assertIsNone(helpers.fix_gpiozero_dual_cs_spi())
+
     def test_helper_without_pin_backend_does_not_raise(self):
         """A host without gpiozero's RPi pin backend gets a no-op stub."""
         blocked = {"gpiozero.pins.rpigpio": None, "RPi.GPIO": None}
-        try:
-            with mock.patch.dict(sys.modules, blocked):
-                reloaded = importlib.reload(helpers)
-                self.assertIsNone(reloaded.fix_gpiozero_dual_cs_spi())
-        finally:
-            importlib.reload(helpers)
+        with mock.patch.dict(sys.modules, blocked):
+            self.assertIsNone(helpers.fix_gpiozero_dual_cs_spi())
 
 
 if __name__ == "__main__":

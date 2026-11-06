@@ -17,9 +17,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 requires-python = ">=3.9"
-dependencies = [
-  "gpiozero>=1.6.2",
-]
+dependencies = []
 
 [project.urls]
 "Homepage" = "https://github.com/bond-anton/BDPotentiometer"
@@ -27,11 +25,12 @@ dependencies = [
 "Documentation" = "https://bdpotentiometer.readthedocs.io"
 
 [project.optional-dependencies]
-dev = ["gpiozero>=1.6.2", "numpy"]
+gpiozero = ["gpiozero>=1.6.2"]
+spi = ["spidev>=3.6"]
+dev = ["gpiozero>=1.6.2", "spidev>=3.6", "numpy"]
 docs = ["sphinx", "sphinx_rtd_theme", "gpiozero>=1.6.2", "numpy"]
 test = ["pytest", "numpy"]
 lint = ["ruff==0.17.4", "ty==0.0.99"]
-spi = ["spidev>=3.6"]
 
 [tool.setuptools.dynamic]
 version = {attr = "BDPotentiometer.__version__"}
