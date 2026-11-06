@@ -1,14 +1,18 @@
 Welcome to BDPotentiometer's documentation!
 ===========================================
 
-**BDPotentiometer** is a Python library for easy control of digital potentiometers.
-It has modular design, which allows to use any communication interface (SPI, I2C, UART) and any backend.
+**BDPotentiometer** is a Python library for easy control of digital
+potentiometers. It supports the MCP4xxx family over SPI through a pluggable
+transport layer, so the SPI backend can be replaced without changing device
+code.
 
 Check out the :doc:`usage` section for further information.
 
 .. note::
 
-   For now only `gpiozero <https://gpiozero.readthedocs.io>`_ SPI backend is implemented, but the project is under active development and soon more backends will become available.
+   Three SPI backends ship today: gpiozero hardware SPI (default), plain
+   ``spidev``, and an in-memory fake for tests. ``I2cTransport`` is a protocol
+   placeholder for future chips; no I2C backend is implemented.
 
 Contents
 --------
@@ -17,3 +21,5 @@ Contents
 
    introduction
    usage
+   transport
+   api

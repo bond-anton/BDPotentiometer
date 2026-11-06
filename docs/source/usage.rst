@@ -10,22 +10,67 @@ To install BDPotentiometer use pip
 
    $ pip install BDPotentiometer
 
+The optional ``spi`` extra installs ``spidev``, needed by
+:class:`~BDPotentiometer.transport.SpiDevTransport`:
+
+.. code-block:: console
+
+   $ pip install 'BDPotentiometer[spi]'
 
 Example (MCP4231)
 -----------------
-MCP4231 is a 7-bit digital potentiometer with two independent channels with SPI control.
 
-Import MCP4231 class first.
+MCP4231 is a 7-bit digital potentiometer with two independent channels and SPI
+control.
 
->>> from BDPotentiometer.mcp4xxx import MCP4231
+Import the MCP4231 class first.
 
-Then create a new potentiometer given the total resistance ``r_ab``.
-Parameter ``device`` specifies SPI device (chip enable pin) the pot is connected to.
+.. code-block:: python
 
->>> my_pot = MCP4231(r_ab=10e3, device=0)
+   from BDPotentiometer.mcp4xxx import MCP4231
 
-That is it. Now you can freely operate your pot.
+Then create a new potentiometer given the total resistance ``r_ab``. The value
+must be one of the entries in
+:data:`BDPotentiometer.mcp4xxx.resistance_list`. ``device`` selects the SPI
+chip-enable line the pot is connected to; the bus and pins depend on the
+wiring.
 
->>> my_pot.channels[0].value = 27
-27
+.. code-block:: python
 
+   my_pot = MCP4231(r_ab=10e3, device=0)
+   my_pot.set_value(0, 27)
+
+With no transport arguments the device builds a
+:class:`~BDPotentiometer.transport.GpiozeroSpiTransport`.
+
+Selecting a transport
+---------------------
+
+Pass a transport instance with ``transport=``.
+:class:`~BDPotentiometer.transport.SpiDevTransport` opens the Linux spidev
+device directly and needs the ``spi`` extra. ``bus`` and ``device`` identify
+``/dev/spidev<bus>.<device>``, so their values depend on the wiring:
+
+.. code-block:: python
+
+   from BDPotentiometer.mcp4xxx import MCP4231
+   from BDPotentiometer.transport import SpiDevTransport
+
+   transport = SpiDevTransport(bus=0, device=0)
+   my_pot = MCP4231(r_ab=10e3, transport=transport)
+   my_pot.set_value(0, 27)
+
+For tests and dry runs, :class:`~BDPotentiometer.transport.FakeSpiTransport`
+returns scripted frames instead of touching hardware:
+
+.. code-block:: python
+
+   from BDPotentiometer.mcp4xxx import MCP4231
+   from BDPotentiometer.transport import FakeSpiTransport
+
+   transport = FakeSpiTransport(default=[0, 0])
+   my_pot = MCP4231(r_ab=10e3, transport=transport)
+   my_pot.set_value(0, 27)
+   print(transport.calls[-1])
+
+See :doc:`transport` for backend selection, ownership, and permissions.
