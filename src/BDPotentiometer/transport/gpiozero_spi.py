@@ -30,9 +30,9 @@ class GpiozeroSpiTransport:
 
     With no `spi` argument the transport builds a private gpiozero
     `SPIDevice` from the same keyword arguments the legacy `MCP4xxx`
-    constructor accepted (`channel`, `port`, `device`, `clock_pin`,
-    `mosi_pin`, `miso_pin`, `select_pin`). `shared=True` is kept so that
-    several devices can share one hardware SPI port.
+    constructor accepted (`port`, `device`, `clock_pin`, `mosi_pin`,
+    `miso_pin`, `select_pin`). `shared=True` is kept so that several
+    devices can share one hardware SPI port.
 
     Ownership follows construction: a transport that built its own handle
     closes it, while a transport wrapping a caller-supplied `spi=` only
@@ -40,7 +40,6 @@ class GpiozeroSpiTransport:
     """
 
     _SPI_ARGS = (
-        "channel",
         "port",
         "device",
         "clock_pin",

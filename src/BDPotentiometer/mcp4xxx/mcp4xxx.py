@@ -1,6 +1,6 @@
 """MCP4XXX series SPI device base class"""
 
-from typing import Union
+from typing import Any, Union
 
 from .. import Potentiometer, SpiDigitalWiper
 from ..__helpers import clamp
@@ -180,11 +180,16 @@ class MCP4xxxWiper(SpiDigitalWiper):
         value = int(round(clamp(value, 0, self.max_code)))
         value = self.max_code - value if self.invert else value
         self.logger.debug("Setting value to %d", value)
-        data = self._require_transport().transfer(
-            _encode_wiper_write(self.channel, value)
-        )
-        _check_write_response(data)
-        self.potentiometer.wiper_position = value / self.max_value
+        previous_position = self.potentiometer.wiper_position
+        try:
+            data = self._require_transport().transfer(
+                _encode_wiper_write(self.channel, value)
+            )
+            _check_write_response(data)
+            self.potentiometer.wiper_position = value / self.max_value
+        except Exception:
+            self.potentiometer.wiper_position = previous_position
+            raise
         return value
 
     def _read_value(self):
@@ -200,16 +205,34 @@ class MCP4xxx:
 
     _SPI_ARGS = GpiozeroSpiTransport._SPI_ARGS
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         transport: Union[SpiTransport, None] = None,
         spi: Union[SpiTransport, None] = None,
-        **kwargs,
+        *,
+        port: Any = None,
+        device: Any = None,
+        clock_pin: Any = None,
+        mosi_pin: Any = None,
+        miso_pin: Any = None,
+        select_pin: Any = None,
     ) -> None:
         if transport is None and spi is not None:
             transport = spi
         if transport is None:
-            spi_args = {key: kwargs[key] for key in self._SPI_ARGS if key in kwargs}
+            provided_spi_args = {
+                "port": port,
+                "device": device,
+                "clock_pin": clock_pin,
+                "mosi_pin": mosi_pin,
+                "miso_pin": miso_pin,
+                "select_pin": select_pin,
+            }
+            spi_args = {
+                name: provided_spi_args[name]
+                for name in self._SPI_ARGS
+                if provided_spi_args[name] is not None
+            }
             transport = GpiozeroSpiTransport(**spi_args)
         if transport is not None and not is_spi_transport(transport):
             raise TypeError(

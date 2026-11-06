@@ -5,8 +5,10 @@ from copy import deepcopy
 
 try:
     from src.BDPotentiometer import Potentiometer, SpiDigitalWiper
+    from src.BDPotentiometer.transport import FakeSpiTransport
 except ModuleNotFoundError:
     from BDPotentiometer import Potentiometer, SpiDigitalWiper
+    from BDPotentiometer.transport import FakeSpiTransport
 
 
 class TestSpiDigitalWiperDeepCopy(unittest.TestCase):
@@ -19,8 +21,9 @@ class TestSpiDigitalWiperDeepCopy(unittest.TestCase):
         Set up Unittest
         """
         self.pot = Potentiometer(r_ab=10e3, r_w=75)
+        self.transport = FakeSpiTransport()
         self.spi_digital_wiper = SpiDigitalWiper(
-            spi=None, potentiometer=self.pot, max_value=128
+            spi=self.transport, potentiometer=self.pot, max_value=128
         )
 
     def test_spi_deepcopy(self):
@@ -28,12 +31,12 @@ class TestSpiDigitalWiperDeepCopy(unittest.TestCase):
         Test deepcopy for SpiDigitalWiper.
         """
 
-        self.spi_digital_wiper.r_a = 200
-        self.spi_digital_wiper.r_b = 400
-        self.spi_digital_wiper.r_load = 1e100
-        self.spi_digital_wiper.v_a = 5
-        self.spi_digital_wiper.v_b = 2
-        self.spi_digital_wiper.v_load = -1
+        self.spi_digital_wiper.potentiometer.r_a = 200
+        self.spi_digital_wiper.potentiometer.r_b = 400
+        self.spi_digital_wiper.potentiometer.r_load = 1e100
+        self.spi_digital_wiper.potentiometer.v_a = 5
+        self.spi_digital_wiper.potentiometer.v_b = 2
+        self.spi_digital_wiper.potentiometer.v_load = -1
         dw_copy = deepcopy(self.spi_digital_wiper)
         self.assertIsInstance(dw_copy, SpiDigitalWiper)
         self.assertNotEqual(dw_copy, self.spi_digital_wiper)
@@ -64,7 +67,12 @@ class TestSpiDigitalWiperDeepCopy(unittest.TestCase):
         self.assertEqual(
             dw_copy.potentiometer.v_load, self.spi_digital_wiper.potentiometer.v_load
         )
-        self.assertEqual(dw_copy.spi, self.spi_digital_wiper.spi)
+        self.assertIs(dw_copy.transport, self.transport)
+        self.assertIs(dw_copy.spi, self.spi_digital_wiper.spi)
+        dw_copy.potentiometer.r_a = 1234
+        dw_copy.potentiometer.wiper_position = 0.125
+        self.assertEqual(self.spi_digital_wiper.potentiometer.r_a, 200)
+        self.assertEqual(self.spi_digital_wiper.potentiometer.wiper_position, 0.5)
 
 
 if __name__ == "__main__":

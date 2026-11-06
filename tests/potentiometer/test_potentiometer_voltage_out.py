@@ -108,6 +108,24 @@ class TestPotentiometerVoltageOut(unittest.TestCase):
             with self.assertRaises(TypeError):
                 pot.v_w = v_w
 
+    def test_voltage_out_finite_values(self):
+        """v_w accepts numpy floats and rejects non-finite values."""
+        pot = Potentiometer(r_ab=10e3, r_w=75)
+        pot.r_a = 0.0
+        pot.r_b = 0.0
+        pot.r_load = 1e6
+        pot.v_a = 5.0
+        pot.v_b = 0.0
+        pot.v_load = 0.0
+        pot.wiper_position = 0.3
+        pot.v_w = np.float32(1.5)
+        np.testing.assert_allclose(pot.v_w, 1.5, rtol=1e-5)
+        position = pot.wiper_position
+        for voltage in [float("inf"), float("-inf"), float("nan")]:
+            with self.assertRaises(ValueError):
+                pot.v_w = voltage
+            self.assertEqual(pot.wiper_position, position)
+
 
 if __name__ == "__main__":
     unittest.main()

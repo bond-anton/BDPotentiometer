@@ -79,6 +79,33 @@ class TestDigitalPotentiometer(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.digital_pot.set_channel_label(-1, "CH C")
 
+    def test_channel_label_normalizes_to_str(self):
+        """
+        Integer labels are stored as strings and compared after normalization.
+        """
+        pot = Potentiometer(r_ab=10e3, r_w=75)
+        wiper = DigitalWiper(potentiometer=pot, max_value=128)
+        digital_pot = DigitalPotentiometerDevice(wiper=wiper, channels=2)
+        digital_pot.set_channel_label(0, 5)
+        self.assertEqual(digital_pot._get_channel_number_by_label_or_id("5"), 0)
+        self.assertEqual(digital_pot._get_channel_number_by_label_or_id(0), 0)
+        # A label already used by another channel is still rejected.
+        digital_pot = DigitalPotentiometerDevice(wiper=wiper, channels=6)
+        with self.assertRaises(ValueError):
+            digital_pot.set_channel_label(0, 5)
+        self.assertEqual(digital_pot._get_channel_number_by_label_or_id("0"), 0)
+        self.assertEqual(digital_pot._get_channel_number_by_label_or_id("5"), 5)
+
+    def test_channels_property_returns_copy(self):
+        """
+        Callers cannot add or remove channels through the property.
+        """
+        channels = self.digital_pot.channels
+        self.assertIsNot(channels, self.digital_pot.channels)
+        channels[99] = channels[0]
+        self.assertNotIn(99, self.digital_pot.channels)
+        self.assertIs(channels[0], self.digital_pot.channels[0])
+
     def test_value_set_and_get(self):
         """
         Test `set` and `read` functions, value property

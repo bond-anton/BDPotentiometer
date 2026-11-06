@@ -1,0 +1,98 @@
+"""Tests for MCP4XXX TCON and SHDN control over the SPI wire."""
+
+import unittest
+
+try:
+    from src.BDPotentiometer.mcp4xxx import MCP4231
+    from src.BDPotentiometer.mcp4xxx.mcp4xxx import _check_tcon_response
+    from src.BDPotentiometer.transport import FakeSpiTransport
+except ModuleNotFoundError:
+    from BDPotentiometer.mcp4xxx import MCP4231
+    from BDPotentiometer.mcp4xxx.mcp4xxx import _check_tcon_response
+    from BDPotentiometer.transport import FakeSpiTransport
+
+# Command bytes from the MCP4XXX protocol.
+_WRITE_TCON = 0b01000000
+_READ_TCON = 0b01001100
+_READ_STATUS = 0b01011100
+
+
+class TestMCP4xxxTcon(unittest.TestCase):
+    """TCON and SHDN requests are asserted at the wire frame level."""
+
+    def _build(self):
+        """Build a two-channel chip over a fake transport."""
+        fake = FakeSpiTransport(default=[0, 0])
+        device = MCP4231(r_ab=10e3, transport=fake)
+        fake.calls.clear()
+        return device, fake
+
+    def test_read_tcon_frame_and_parse(self):
+        """read_tcon sends the TCON read frame and decodes both nibbles."""
+        device, fake = self._build()
+        fake.queue([0b00000001, 0b10010110])
+        ch0, ch1 = device.read_tcon()
+        self.assertEqual(fake.calls, [[_READ_TCON, 0]])
+        self.assertEqual(ch0, {"shdn": True, "A": True, "W": True, "B": False})
+        self.assertEqual(ch1, {"shdn": False, "A": False, "W": False, "B": True})
+
+    def test_write_tcon_default_all_terminals_on(self):
+        """The default TCON connects every terminal on both channels."""
+        device, fake = self._build()
+        fake.queue([0, 0], [1, 0xFF])
+        self.assertTrue(device.write_tcon())
+        self.assertEqual(fake.calls, [[_WRITE_TCON, 0xFF], [_READ_TCON, 0]])
+
+    def test_write_tcon_clears_individual_terminals(self):
+        """Per-channel bits are packed into the low and high nibbles."""
+        device, fake = self._build()
+        ch0 = {"shdn": True, "A": False, "W": False, "B": True}
+        ch1 = {"shdn": False, "A": False, "W": True, "B": False}
+        fake.queue([0, 0], [1, 0xA1])
+        self.assertTrue(device.write_tcon(ch0=ch0, ch1=ch1))
+        self.assertEqual(fake.calls, [[_WRITE_TCON, 0xA1], [_READ_TCON, 0]])
+
+    def test_write_tcon_reports_read_back_mismatch(self):
+        """A read-back that differs from the request reports failure."""
+        device, fake = self._build()
+        fake.queue([0, 0], [1, 0x00])
+        self.assertFalse(device.write_tcon())
+
+    def test_shdn_asserts_channel_0_only(self):
+        """Selected channels gate the SHDN bit while keeping terminals on."""
+        device, fake = self._build()
+        fake.queue([0, 0], [1, 0xF7])
+        self.assertTrue(device.shdn(ch0=True, ch1=False))
+        self.assertEqual(fake.calls, [[_WRITE_TCON, 0xF7], [_READ_TCON, 0]])
+
+    def test_shdn_asserts_channel_1_only(self):
+        """The channel 1 shutdown bit lands in the high nibble."""
+        device, fake = self._build()
+        fake.queue([0, 0], [1, 0x7F])
+        self.assertTrue(device.shdn(ch0=False, ch1=True))
+        self.assertEqual(fake.calls, [[_WRITE_TCON, 0x7F], [_READ_TCON, 0]])
+
+    def test_get_shdn_pin_status(self):
+        """The SHDN status bit maps to True and False."""
+        device, fake = self._build()
+        fake.queue([1, 0b11100010])
+        self.assertTrue(device.get_shdn_pin_status())
+        fake.queue([1, 0b11100000])
+        self.assertFalse(device.get_shdn_pin_status())
+        self.assertEqual(fake.calls, [[_READ_STATUS, 0], [_READ_STATUS, 0]])
+
+    def test_read_tcon_rejects_malformed_response(self):
+        """A response without the reserved bit raises ValueError."""
+        device, fake = self._build()
+        fake.queue([0, 0])
+        with self.assertRaises(ValueError):
+            device.read_tcon()
+
+    def test_tcon_codec_rejects_too_short_response(self):
+        """A short response lacking the reserved bit raises ValueError."""
+        with self.assertRaises(ValueError):
+            _check_tcon_response([0])
+
+
+if __name__ == "__main__":
+    unittest.main()

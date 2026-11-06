@@ -59,6 +59,23 @@ class TestMCP4xxxConstructorWiring(unittest.TestCase):
             MCP4231(r_ab=10e3, port=0, device=1, clock_pin=11)
         adapter.assert_called_once_with(port=0, device=1, clock_pin=11)
 
+    def test_channel_kwarg_is_rejected(self):
+        """
+        channel= is not an accepted constructor keyword and is rejected.
+        """
+        with mock.patch.object(mcp4xxx_module, "GpiozeroSpiTransport") as adapter:
+            self.assertRaises(TypeError, MCP4231, r_ab=10e3, channel=1, device=0)
+        adapter.assert_not_called()
+
+    def test_mcp4xxx_forwards_port_and_device(self):
+        """
+        The base MCP4xxx constructor forwards port/device to the adapter.
+        """
+        with mock.patch.object(mcp4xxx_module, "GpiozeroSpiTransport") as adapter:
+            pot = mcp4xxx_module.MCP4xxx(port=1, device=1)
+        adapter.assert_called_once_with(port=1, device=1)
+        self.assertIs(pot.transport, adapter.return_value)
+
     def test_explicit_spi_is_used_directly(self):
         """
         spi= bypasses adapter construction and becomes the device transport.

@@ -5,11 +5,46 @@ import unittest
 try:
     from src.BDPotentiometer.mcp4xxx import MCP4231
     from src.BDPotentiometer.mcp4xxx import mcp4xxx as mcp4xxx_module
-    from src.BDPotentiometer.transport import FakeSpiTransport, TransportClosed
+    from src.BDPotentiometer.transport import (
+        FakeSpiTransport,
+        TransportClosed,
+        TransportError,
+    )
 except ModuleNotFoundError:
     from BDPotentiometer.mcp4xxx import MCP4231
     from BDPotentiometer.mcp4xxx import mcp4xxx as mcp4xxx_module
-    from BDPotentiometer.transport import FakeSpiTransport, TransportClosed
+    from BDPotentiometer.transport import (
+        FakeSpiTransport,
+        TransportClosed,
+        TransportError,
+    )
+
+
+class _RaisingTransport:
+    """Transport whose transfers always fail."""
+
+    def transfer(self, tx):
+        """Fail the write."""
+        raise TransportError("write failed")
+
+    def close(self) -> None:
+        """No-op close."""
+
+
+class _MutatingRaisingTransport:
+    """Transport that changes the software model and then fails."""
+
+    def __init__(self, potentiometer, position: float) -> None:
+        self.potentiometer = potentiometer
+        self.position = position
+
+    def transfer(self, tx):
+        """Simulate a write that corrupts the model before failing."""
+        self.potentiometer.wiper_position = self.position
+        raise TransportError("write failed after mutation")
+
+    def close(self) -> None:
+        """No-op close."""
 
 
 class TestMCP4xxxTransport(unittest.TestCase):
@@ -101,6 +136,30 @@ class TestMCP4xxxTransport(unittest.TestCase):
         with self.assertRaises(ConnectionError) as context:
             device.get_shdn_pin_status()
         self.assertEqual(str(context.exception), "SPI interface not set")
+
+    def test_failed_transfer_keeps_wiper_position(self):
+        """
+        A failing write propagates and leaves the software position untouched.
+        """
+        pot, _ = self._build()
+        wiper = pot.channels[0]
+        wiper.potentiometer.wiper_position = 0.25
+        wiper.transport = _RaisingTransport()
+        with self.assertRaises(TransportError):
+            wiper.value = 100
+        self.assertEqual(wiper.potentiometer.wiper_position, 0.25)
+
+    def test_failed_write_restores_wiper_position(self):
+        """
+        A write that mutates the model before failing is rolled back.
+        """
+        pot, _ = self._build()
+        wiper = pot.channels[0]
+        wiper.potentiometer.wiper_position = 0.25
+        wiper.transport = _MutatingRaisingTransport(wiper.potentiometer, 0.9)
+        with self.assertRaises(TransportError):
+            wiper.value = 100
+        self.assertEqual(wiper.potentiometer.wiper_position, 0.25)
 
 
 if __name__ == "__main__":

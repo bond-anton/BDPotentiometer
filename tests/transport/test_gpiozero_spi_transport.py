@@ -115,13 +115,14 @@ class TestGpiozeroSpiTransport(unittest.TestCase):
         self.assertEqual(handle.close_calls, 1)
         self.assertFalse(handle.raw.closed)
 
-    def test_spi_args_match_legacy_constructor(self) -> None:
+    def test_spi_args_match_gpiozero_constructor(self) -> None:
         """
-        The adapter accepts exactly the legacy gpiozero SPI keyword set.
+        The adapter accepts exactly the keywords gpiozero's SPI device accepts.
         """
-        expected = "channel port device clock_pin mosi_pin miso_pin select_pin"
+        expected = "port device clock_pin mosi_pin miso_pin select_pin"
         actual = GpiozeroSpiTransport._SPI_ARGS
         self.assertEqual(set(actual), set(expected.split()))
+        self.assertNotIn("channel", actual)
 
 
 if __name__ == "__main__":

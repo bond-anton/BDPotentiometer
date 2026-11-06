@@ -93,14 +93,14 @@ class Potentiometer:
     def __init__(
         self, r_ab: float = 1.0e5, wiper_position: float = 0.5, **kwargs
     ) -> None:
-        self._r_ab: float = check_positive(r_ab)
-        self._r_w: float = check_not_negative(kwargs.get("r_w", 0.0))
-        self._r_a: float = check_not_negative(kwargs.get("r_a", 0.0))
-        self._r_b: float = check_not_negative(kwargs.get("r_b", 0.0))
-        self._v_a: float = check_number(kwargs.get("v_a", 0.0))
-        self._v_b: float = check_number(kwargs.get("v_b", 0.0))
-        self._v_load: float = check_number(kwargs.get("v_load", 0.0))
-        self._r_load: float = check_not_negative(kwargs.get("r_load", 1.0e10))
+        self._r_ab: float = float(check_positive(r_ab))
+        self._r_w: float = float(check_not_negative(kwargs.get("r_w", 0.0)))
+        self._r_a: float = float(check_not_negative(kwargs.get("r_a", 0.0)))
+        self._r_b: float = float(check_not_negative(kwargs.get("r_b", 0.0)))
+        self._v_a: float = float(check_number(kwargs.get("v_a", 0.0)))
+        self._v_b: float = float(check_number(kwargs.get("v_b", 0.0)))
+        self._v_load: float = float(check_number(kwargs.get("v_load", 0.0)))
+        self._r_load: float = float(check_not_negative(kwargs.get("r_load", 1.0e10)))
         self._wiper_position: float = float(clamp(wiper_position, 0, 1))
         self.logger = get_logger(
             kwargs.get("label", "Potentiometer"), kwargs.get("log_level")
@@ -288,8 +288,7 @@ class Potentiometer:
 
         :param voltage: Voltage at the terminal W (float).
         """
-        if not isinstance(voltage, (float, int)):
-            raise TypeError(f"Float value expected, got {voltage} ({type(voltage)}).")
+        voltage = float(check_number(voltage))
         self.logger.debug("Setting V(W) to %2.2g V", voltage)
         if self.r_load != 0:
             if voltage == self.v_load:

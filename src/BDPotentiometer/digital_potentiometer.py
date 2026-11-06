@@ -97,12 +97,11 @@ class DigitalPotentiometerDevice:
         channel_id = self._get_channel_number_by_label_or_id(channel)
         if channel_id is None:
             raise ValueError(f"Channel {channel} does not exist.")
-        if label is None:
-            label = str(channel_id)
+        label = str(channel_id) if label is None else str(label)
         for idx, lbl in self.__labels.items():
             if lbl == label and idx != channel_id:
                 raise ValueError(f"Label {label} already assigned to channel {idx}.")
-        self.__labels[channel_id] = str(label)
+        self.__labels[channel_id] = label
         self.logger.debug("Channel %s label is set to %s", channel_id, label)
 
     @property
@@ -110,9 +109,12 @@ class DigitalPotentiometerDevice:
         """
         Available channels of the device.
 
+        The returned dictionary is a shallow copy, so adding or removing
+        entries does not affect the device.
+
         :return: dict of DigitalWiper objects
         """
-        return self.__channels
+        return dict(self.__channels)
 
     @property
     def channels_num(self) -> int:
@@ -256,7 +258,7 @@ class DigitalPotentiometerDevice:
 
         :return: B-W resistance for all channels as a tuple of floats.
         """
-        return tuple(wiper.r_wb for _, wiper in self.channels.items())
+        return tuple(wiper.r_wb for _, wiper in self.__channels.items())
 
     @r_wb.setter
     def r_wb(self, resistance_wb: Union[list[float], tuple[float, ...]]) -> None:
@@ -310,7 +312,7 @@ class DigitalPotentiometerDevice:
 
         :return: A-W resistance for all channels as a tuple of floats.
         """
-        return tuple(wiper.r_wa for _, wiper in self.channels.items())
+        return tuple(wiper.r_wa for _, wiper in self.__channels.items())
 
     @r_wa.setter
     def r_wa(self, resistance_wa: Union[list[float], tuple[float, ...]]) -> None:
@@ -359,7 +361,7 @@ class DigitalPotentiometerDevice:
     @property
     def r_a(self) -> tuple[float, ...]:
         """Resistance of the A terminal for all channels as a tuple of floats."""
-        return tuple(wiper.potentiometer.r_a for _, wiper in self.channels.items())
+        return tuple(wiper.potentiometer.r_a for _, wiper in self.__channels.items())
 
     @r_a.setter
     def r_a(self, resistance_a: Union[list[float], tuple[float, ...]]) -> None:
@@ -408,7 +410,7 @@ class DigitalPotentiometerDevice:
     @property
     def r_b(self) -> tuple[float, ...]:
         """Resistance of the B terminal for all channels as a tuple of floats."""
-        return tuple(wiper.potentiometer.r_b for _, wiper in self.channels.items())
+        return tuple(wiper.potentiometer.r_b for _, wiper in self.__channels.items())
 
     @r_b.setter
     def r_b(self, resistance_b: Union[list[float], tuple[float, ...]]) -> None:
@@ -457,7 +459,7 @@ class DigitalPotentiometerDevice:
     @property
     def r_load(self) -> tuple[float, ...]:
         """Load Resistance for all channels as a tuple of floats."""
-        return tuple(wiper.potentiometer.r_load for _, wiper in self.channels.items())
+        return tuple(wiper.potentiometer.r_load for _, wiper in self.__channels.items())
 
     @r_load.setter
     def r_load(self, resistance_l: Union[list[float], tuple[float, ...]]) -> None:
@@ -506,7 +508,7 @@ class DigitalPotentiometerDevice:
     @property
     def v_a(self) -> tuple[float, ...]:
         """Terminal A voltage for all channels as a tuple of floats."""
-        return tuple(wiper.potentiometer.v_a for _, wiper in self.channels.items())
+        return tuple(wiper.potentiometer.v_a for _, wiper in self.__channels.items())
 
     @v_a.setter
     def v_a(self, voltage_a: Union[list[float], tuple[float, ...]]) -> None:
@@ -551,7 +553,7 @@ class DigitalPotentiometerDevice:
     @property
     def v_b(self) -> tuple[float, ...]:
         """Terminal A voltage for all channels as a tuple of floats."""
-        return tuple(wiper.potentiometer.v_b for _, wiper in self.channels.items())
+        return tuple(wiper.potentiometer.v_b for _, wiper in self.__channels.items())
 
     @v_b.setter
     def v_b(self, voltage_b: Union[list[float], tuple[float, ...]]) -> None:
@@ -596,7 +598,7 @@ class DigitalPotentiometerDevice:
     @property
     def v_load(self) -> tuple[float, ...]:
         """The voltage at the load for all channels as a tuple of floats."""
-        return tuple(wiper.potentiometer.v_load for _, wiper in self.channels.items())
+        return tuple(wiper.potentiometer.v_load for _, wiper in self.__channels.items())
 
     @v_load.setter
     def v_load(self, voltage_l: Union[list[float], tuple[float, ...]]) -> None:
@@ -643,7 +645,7 @@ class DigitalPotentiometerDevice:
     @property
     def v_w(self) -> tuple[float, ...]:
         """Terminal W voltage for all channels as a tuple of floats."""
-        return tuple(wiper.potentiometer.v_w for _, wiper in self.channels.items())
+        return tuple(wiper.potentiometer.v_w for _, wiper in self.__channels.items())
 
     @v_w.setter
     def v_w(self, voltage_w: Union[list[float], tuple[float, ...]]) -> None:

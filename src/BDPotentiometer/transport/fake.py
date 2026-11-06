@@ -11,7 +11,9 @@ class FakeSpiTransport:
 
     Responses are consumed FIFO. `default` is returned once the queue is
     empty; with `strict=False` an empty queue yields zero-filled frames
-    instead of an error.
+    instead of an error. Frames are copied on the way in and out so that
+    mutating a caller's list cannot change a scripted response or a
+    recorded call.
     """
 
     def __init__(
@@ -20,7 +22,9 @@ class FakeSpiTransport:
         default: Optional[list[int]] = None,
         strict: bool = True,
     ) -> None:
-        self._responses = list(responses) if responses is not None else []
+        self._responses = (
+            [list(frame) for frame in responses] if responses is not None else []
+        )
         self._default = list(default) if default is not None else None
         self._strict = strict
         self.calls: list[list[int]] = []
@@ -28,13 +32,18 @@ class FakeSpiTransport:
 
     def queue(self, *responses: list[int]) -> None:
         """Append scripted response frames."""
-        self._responses.extend(responses)
+        self._responses.extend(list(frame) for frame in responses)
 
     def transfer(self, tx: Sequence[int]) -> list[int]:
-        """Return the next scripted frame for `tx`, validating its length."""
+        """Return the next scripted frame for `tx`, validating its words."""
         if self.closed:
             raise TransportClosed("FakeSpiTransport is closed")
         frame = list(tx)
+        for word in frame:
+            if not isinstance(word, int) or not 0 <= word <= 0xFF:
+                raise ValueError(
+                    f"SPI frame words must be ints in the range 0..255, got {word!r}"
+                )
         self.calls.append(frame)
         if self._responses:
             rx = list(self._responses.pop(0))

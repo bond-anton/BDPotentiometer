@@ -110,6 +110,64 @@ class TestFakeSpiTransport(unittest.TestCase):
         fake.close()
         self.assertTrue(fake.closed)
 
+    def test_constructor_frames_are_copied(self) -> None:
+        """
+        Mutating a frame after construction does not change the expectation.
+        """
+        frame = [0, 1]
+        fake = FakeSpiTransport(responses=[frame])
+        frame[1] = 99
+        self.assertEqual(fake.transfer([0, 0]), [0, 1])
+
+    def test_queued_frames_are_copied(self) -> None:
+        """
+        Mutating a frame after queueing does not change the expectation.
+        """
+        frame = [0, 1]
+        fake = FakeSpiTransport()
+        fake.queue(frame)
+        frame[1] = 99
+        self.assertEqual(fake.transfer([0, 0]), [0, 1])
+
+    def test_returned_frames_are_copies(self) -> None:
+        """
+        Mutating a returned frame does not edit the default response.
+        """
+        fake = FakeSpiTransport(default=[0, 7])
+        first = fake.transfer([0, 0])
+        first[1] = 99
+        self.assertEqual(fake.transfer([0, 0]), [0, 7])
+
+    def test_recorded_calls_are_copies(self) -> None:
+        """
+        Mutating the request frame after transfer does not edit the record.
+        """
+        fake = FakeSpiTransport(default=[0, 0])
+        tx = [1, 2]
+        fake.transfer(tx)
+        tx[1] = 99
+        self.assertEqual(fake.calls, [[1, 2]])
+
+    def test_out_of_range_word_raises(self) -> None:
+        """
+        A word above the SPI byte range is rejected before it is recorded.
+        """
+        fake = FakeSpiTransport(default=[0, 0])
+        for frame in ([0, 256], [0, -1], [256, 0]):
+            with self.assertRaises(ValueError):
+                fake.transfer(frame)
+        self.assertEqual(fake.calls, [])
+
+    def test_non_int_word_raises(self) -> None:
+        """
+        A non-integer word is rejected before it is recorded.
+        """
+        for word in ("1", 1.0, None):
+            fake = FakeSpiTransport(default=[0, 0])
+            with self.assertRaises(ValueError):
+                fake.transfer([0, word])
+            self.assertEqual(fake.calls, [])
+
 
 if __name__ == "__main__":
     unittest.main()
