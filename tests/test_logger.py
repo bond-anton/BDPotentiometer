@@ -15,23 +15,15 @@ class TestGetLogger(unittest.TestCase):
     Testing logger creation and reuse.
     """
 
-    NAMES = (
-        "bdpot-test-single-handler",
-        "bdpot-test-log-level",
-        "bdpot-test-log-notset",
-        "bdpot-test-keep-level",
-        "bdpot-test-concurrent",
-    )
-
     def tearDown(self) -> None:
-        for name in self.NAMES:
+        for name in list(logging.Logger.manager.loggerDict):
+            if not name.startswith("bdpot-test-"):
+                continue
             logger = logging.getLogger(name)
             for handler in list(logger.handlers):
                 logger.removeHandler(handler)
                 handler.close()
             logger.setLevel(logging.NOTSET)
-            if hasattr(logger, "_bdpot_configured"):
-                del logger._bdpot_configured
 
     def test_repeated_calls_keep_one_handler(self) -> None:
         """
@@ -69,6 +61,36 @@ class TestGetLogger(unittest.TestCase):
         """
         get_logger("bdpot-test-keep-level", logging.DEBUG)
         logger = get_logger("bdpot-test-keep-level")
+        self.assertEqual(logger.level, logging.DEBUG)
+        self.assertEqual(logger.handlers[0].level, logging.DEBUG)
+
+    def test_foreign_handler_is_not_releveled(self) -> None:
+        """
+        An explicit level only touches the handler installed by this module.
+        """
+        logger = logging.getLogger("bdpot-test-foreign-handler")
+        foreign = logging.NullHandler()
+        foreign.setLevel(logging.WARNING)
+        logger.addHandler(foreign)
+
+        get_logger("bdpot-test-foreign-handler", logging.DEBUG)
+
+        self.assertEqual(foreign.level, logging.WARNING)
+        package_handlers = [h for h in logger.handlers if h is not foreign]
+        self.assertEqual(len(package_handlers), 1)
+        self.assertEqual(package_handlers[0].level, logging.DEBUG)
+
+    def test_cleared_handler_is_reattached(self) -> None:
+        """
+        Clearing the handlers does not prevent the package handler coming back.
+        """
+        get_logger("bdpot-test-cleared-handler", logging.DEBUG)
+        logger = logging.getLogger("bdpot-test-cleared-handler")
+        logger.handlers.clear()
+
+        logger = get_logger("bdpot-test-cleared-handler")
+
+        self.assertEqual(len(logger.handlers), 1)
         self.assertEqual(logger.level, logging.DEBUG)
         self.assertEqual(logger.handlers[0].level, logging.DEBUG)
 

@@ -36,6 +36,13 @@ class TestDigitalWiperConstructor(unittest.TestCase):
             with self.assertRaises(ValueError):
                 _ = DigitalWiper(potentiometer=pot, max_value=max_value)
 
+    def test_base_max_code_equals_max_value(self) -> None:
+        """The base class exposes the full-range code contract `0..max_value`."""
+        pot = Potentiometer(r_ab=10e3, r_w=75)
+        digital_wiper = DigitalWiper(potentiometer=pot, max_value=256)
+        self.assertEqual(digital_wiper.max_code, 256)
+        self.assertEqual(digital_wiper.max_code, digital_wiper.max_value)
+
 
 if __name__ == "__main__":
     unittest.main()

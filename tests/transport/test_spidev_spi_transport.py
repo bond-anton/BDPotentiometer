@@ -104,6 +104,9 @@ class TestSpiDevTransport(unittest.TestCase):
     Testing the spidev-backed transport without hardware.
     """
 
+    def tearDown(self) -> None:
+        _ConfigFailingSpiDev.instances = []
+
     def test_open_applies_default_config(self) -> None:
         """
         Construction opens the requested bus/device and applies config.

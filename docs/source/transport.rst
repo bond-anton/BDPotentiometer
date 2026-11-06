@@ -14,7 +14,9 @@ A transport provides:
 * ``close()`` -- release the bus handle; repeated calls have no effect. When
   the underlying close fails, the transport stays open and ``close()`` can be
   retried;
-* ``closed`` -- ``True`` once the handle has been closed successfully.
+* ``closed`` -- ``True`` once ``close()`` has run. For a transport that wraps a
+  caller-supplied handle, this reports that the transport itself is closed, not
+  that the shared bus was closed.
 
 The shipped backends satisfy the
 :class:`~BDPotentiometer.transport.SpiTransport` protocol. Any object with
@@ -65,8 +67,9 @@ Ownership
 A device's ``close()`` delegates to its transport.
 
 * ``GpiozeroSpiTransport`` closes only a handle it built. When it wraps a
-  caller-supplied ``spi=`` object, ``close()`` marks the transport closed but
-  leaves the shared bus open for its other users.
+  caller-supplied ``spi=`` object, ``close()`` marks the transport closed
+  (``closed`` becomes ``True``) but leaves the shared bus open for its other
+  users.
 * ``SpiDevTransport`` always owns and closes its spidev handle.
 * ``FakeSpiTransport`` only flips its ``closed`` flag.
 

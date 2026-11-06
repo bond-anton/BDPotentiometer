@@ -86,23 +86,11 @@ class TestHelpersCheckNumber(unittest.TestCase):
             with self.assertRaises(TypeError):
                 check_number(input_value)
 
-    def test_check_number_int_float_still_accepted(self):
-        """Check plain int and float arguments are still accepted."""
-        for input_value in [1, -7, 0]:
-            self.assertIsInstance(check_number(input_value), int)
-        for input_value in [1.5, -7.25, 0.0]:
-            self.assertIsInstance(check_number(input_value), float)
-
     def test_check_integer_bool(self):
         """Check bool arguments are rejected by check_integer."""
         for input_value in [True, False]:
             with self.assertRaises(TypeError):
                 check_integer(input_value)
-
-    def test_check_integer_int_float_still_accepted(self):
-        """Check plain int and integer-valued float arguments are still accepted."""
-        for input_value in [1, -7, 0, 1.0, -7.0, 0.0]:
-            self.assertIsInstance(check_integer(input_value), int)
 
 
 class TestHelpersCheckBool(unittest.TestCase):

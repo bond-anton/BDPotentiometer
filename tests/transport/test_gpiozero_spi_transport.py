@@ -3,6 +3,8 @@
 import unittest
 from unittest import mock
 
+from gpiozero.exc import DeviceClosed
+
 try:
     from src.BDPotentiometer.transport import TransportClosed, TransportError
     from src.BDPotentiometer.transport import gpiozero_spi as gpiozero_spi_module
@@ -49,6 +51,14 @@ class _StubGpiozeroHandle:
         self.close_calls += 1
 
 
+class _DeviceClosedSpi(_StubSpi):
+    """Stand-in whose transfer reports a handle closed by its owner."""
+
+    def transfer(self, tx):
+        """Raise the gpiozero error for a closed device."""
+        raise DeviceClosed("SPI is closed")
+
+
 class _FailingCloseHandle:
     """Handle whose first close() fails before succeeding on retry."""
 
@@ -71,6 +81,10 @@ class TestGpiozeroSpiTransport(unittest.TestCase):
     """
     Testing the gpiozero-backed transport without hardware.
     """
+
+    def tearDown(self) -> None:
+        _StubGpiozeroHandle.instances = []
+        _FailingCloseHandle.instances = []
 
     def test_wraps_existing_spi(self) -> None:
         """
@@ -101,6 +115,25 @@ class TestGpiozeroSpiTransport(unittest.TestCase):
         transport = GpiozeroSpiTransport(spi=stub)
         with self.assertRaises(TransportError):
             transport.transfer([0x0C, 0])
+
+    def test_owner_closed_spi_raises_transport_closed(self) -> None:
+        """
+        A handle closed by its owner is translated to TransportClosed.
+        """
+        stub = _StubSpi()
+        stub.closed = True
+        transport = GpiozeroSpiTransport(spi=stub)
+        with self.assertRaises(TransportClosed):
+            transport.transfer([0x0C, 0])
+
+    def test_device_closed_transfer_raises_transport_closed(self) -> None:
+        """
+        A DeviceClosed raised mid-transfer is translated to TransportClosed.
+        """
+        transport = GpiozeroSpiTransport(spi=_DeviceClosedSpi())
+        with self.assertRaises(TransportClosed) as context:
+            transport.transfer([0x0C, 0])
+        self.assertIsInstance(context.exception.__cause__, DeviceClosed)
 
     def test_close_leaves_injected_spi_open(self) -> None:
         """

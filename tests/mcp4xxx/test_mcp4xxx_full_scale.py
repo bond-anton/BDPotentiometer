@@ -14,7 +14,7 @@ class TestMCP4xxxFullScale(unittest.TestCase):
     """Both families reach full scale at their step count."""
 
     def _build(self, chip, **kwargs):
-        fake = FakeSpiTransport(default=[0, 0])
+        fake = FakeSpiTransport(default=[0xFE, 0x00])
         device = chip(r_ab=10e3, transport=fake, **kwargs)
         fake.calls.clear()
         return device, fake

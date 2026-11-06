@@ -7,13 +7,13 @@ try:
         MCP4xxxPotentiometer,
         MCP4xxxWiper,
         _check_read_response,
-        # _check_status_response,
-        # _check_tcon_response,
-        # _parse_tcon_response,
-        # _tcon_to_cmd,
+        _check_status_response,
+        _check_tcon_response,
         _check_write_response,
         _coerce_max_value,
         _coerce_r_ab,
+        _decode_wiper_read,
+        _parse_status_response,
         resistance_list,
     )
 except ModuleNotFoundError:
@@ -21,13 +21,13 @@ except ModuleNotFoundError:
         MCP4xxxPotentiometer,
         MCP4xxxWiper,
         _check_read_response,
-        # _check_status_response,
-        # _check_tcon_response,
-        # _parse_tcon_response,
-        # _tcon_to_cmd,
+        _check_status_response,
+        _check_tcon_response,
         _check_write_response,
         _coerce_max_value,
         _coerce_r_ab,
+        _decode_wiper_read,
+        _parse_status_response,
         resistance_list,
     )
 
@@ -74,6 +74,41 @@ class MCP4xxxTestCase(unittest.TestCase):
             _check_read_response([])
         with self.assertRaises(ValueError):
             _check_read_response([0])
+
+    def test_read_response_rejects_unframed(self):
+        """Bits 15:9 must all be set in every read response."""
+        for data in ([0x01, 0x00], [0x7F, 0x00]):
+            with self.assertRaises(ValueError):
+                _check_read_response(data)
+        self.assertIsNone(_check_read_response([0xFE, 0x00]))
+        self.assertIsNone(_check_read_response([0xFF, 0x00]))
+
+    def test_wiper_read_rejects_unframed(self):
+        """A wiper read with a framing violation raises ValueError."""
+        for data in ([0x01, 0x00], [0x7F, 0x00]):
+            with self.assertRaises(ValueError):
+                _decode_wiper_read(data)
+
+    def test_status_read_rejects_unframed(self):
+        """A status read with a framing violation raises ValueError."""
+        for data in ([0x01, 0xE0], [0x7F, 0xE0]):
+            with self.assertRaises(ValueError):
+                _check_status_response(data)
+
+    def test_tcon_read_rejects_unframed(self):
+        """A TCON read with a framing violation raises ValueError."""
+        for data in ([0x01, 0x00], [0x7F, 0x00]):
+            with self.assertRaises(ValueError):
+                _check_tcon_response(data)
+
+    def test_parse_status_response(self):
+        """Only the SHDN bit is reported; forced bits are ignored."""
+        self.assertEqual(_parse_status_response([0xFF, 0xE2]), {"shdn": True})
+        self.assertEqual(_parse_status_response([0xFF, 0xE0]), {"shdn": False})
+
+    def test_decode_wiper_read_accepts_over_long_response(self):
+        """The decoder validates a minimum length, so extra words are ignored."""
+        self.assertEqual(_decode_wiper_read([0xFE, 0x2A, 0xFF]), 0x2A)
 
     def test_wiper_requires_transport(self):
         """A bus-backed wiper without a transport or spi fails fast."""

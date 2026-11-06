@@ -6,44 +6,27 @@ import sys
 import unittest
 from pathlib import Path
 
-try:
-    import BDPotentiometer as package
-    import BDPotentiometer.transport  # noqa: F401
-    from BDPotentiometer import (
-        DigitalPotentiometerDevice,
-        DigitalWiper,
-        FakeSpiTransport,
-        I2cTransport,
-        Potentiometer,
-        SpiDevTransport,
-        SpiDigitalWiper,
-        SpiTransport,
-        TransportClosed,
-        TransportError,
-        fix_gpiozero_dual_cs_spi,
-        is_spi_transport,
-    )
-    from BDPotentiometer.mcp4xxx import MCP4231, MCP4232, MCP4251
-    from BDPotentiometer.mcp4xxx.mcp4xxx import MCP4xxx
-except ModuleNotFoundError:
-    import src.BDPotentiometer.transport  # noqa: F401
-    from src import BDPotentiometer as package
-    from src.BDPotentiometer import (
-        DigitalPotentiometerDevice,
-        DigitalWiper,
-        FakeSpiTransport,
-        I2cTransport,
-        Potentiometer,
-        SpiDevTransport,
-        SpiDigitalWiper,
-        SpiTransport,
-        TransportClosed,
-        TransportError,
-        fix_gpiozero_dual_cs_spi,
-        is_spi_transport,
-    )
-    from src.BDPotentiometer.mcp4xxx import MCP4231, MCP4232, MCP4251
-    from src.BDPotentiometer.mcp4xxx.mcp4xxx import MCP4xxx
+SOURCE_ROOT = Path(__file__).resolve().parents[1] / "src"
+sys.path.insert(0, str(SOURCE_ROOT))
+
+import BDPotentiometer as package  # noqa: E402
+import BDPotentiometer.transport  # noqa: E402, F401
+from BDPotentiometer import (  # noqa: E402
+    DigitalPotentiometerDevice,
+    DigitalWiper,
+    FakeSpiTransport,
+    I2cTransport,
+    Potentiometer,
+    SpiDevTransport,
+    SpiDigitalWiper,
+    SpiTransport,
+    TransportClosed,
+    TransportError,
+    fix_gpiozero_dual_cs_spi,
+    is_spi_transport,
+)
+from BDPotentiometer.mcp4xxx import MCP4231, MCP4232, MCP4251  # noqa: E402
+from BDPotentiometer.mcp4xxx.mcp4xxx import MCP4xxx  # noqa: E402
 
 
 class TestPublicExports(unittest.TestCase):
@@ -85,6 +68,35 @@ class TestPublicExports(unittest.TestCase):
 
         self.assertIsInstance(GpiozeroSpiTransport, type)
 
+    def test_star_import_without_gpiozero(self):
+        """A star import works without gpiozero and skips the lazy attribute."""
+        namespace = {}
+        saved = sys.modules.get("gpiozero")
+        sys.modules["gpiozero"] = None
+        try:
+            exec("from BDPotentiometer import *", namespace)  # noqa: S102
+        finally:
+            if saved is None:
+                sys.modules.pop("gpiozero", None)
+            else:
+                sys.modules["gpiozero"] = saved
+        self.assertIn("DigitalWiper", namespace)
+        self.assertIn("FakeSpiTransport", namespace)
+        self.assertNotIn("GpiozeroSpiTransport", namespace)
+
+    def test_star_import_with_gpiozero(self):
+        """A star import works with gpiozero installed and skips the lazy name."""
+        namespace = {}
+        exec("from BDPotentiometer import *", namespace)  # noqa: S102
+        self.assertIn("DigitalWiper", namespace)
+        self.assertIn("FakeSpiTransport", namespace)
+        self.assertNotIn("GpiozeroSpiTransport", namespace)
+
+    def test_lazy_transport_stays_in_dir(self):
+        """The lazily resolved transport is still advertised by dir()."""
+        self.assertIn("GpiozeroSpiTransport", dir(package))
+        self.assertIn("GpiozeroSpiTransport", dir(BDPotentiometer.transport))
+
     def test_mcp4xxx_chips(self):
         """Chip classes remain importable from the mcp4xxx package."""
         for chip in (MCP4231, MCP4251, MCP4232):
@@ -122,10 +134,9 @@ class TestCompatibilitySurface(unittest.TestCase):
     def test_importing_package_does_not_import_spidev(self):
         """Importing the package alone does not import the optional spidev."""
         self.assertIsNotNone(SpiDevTransport)
-        source_root = Path(__file__).resolve().parents[1] / "src"
         code = (
             "import sys\n"
-            f"sys.path.insert(0, {str(source_root)!r})\n"
+            f"sys.path.insert(0, {str(SOURCE_ROOT)!r})\n"
             "import BDPotentiometer\n"
             "print('spidev' in sys.modules)\n"
         )
@@ -134,6 +145,7 @@ class TestCompatibilitySurface(unittest.TestCase):
             capture_output=True,
             text=True,
             check=False,
+            timeout=60,
         )
         self.assertEqual(result.stdout.strip(), "False", result.stderr)
 

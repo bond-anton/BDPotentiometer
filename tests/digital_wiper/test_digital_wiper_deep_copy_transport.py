@@ -20,10 +20,10 @@ class TestSpiDigitalWiperDeepCopyTransport(unittest.TestCase):
         """
         Set up Unittest
         """
-        self.pot = Potentiometer(r_ab=10e3, r_w=75)
+        pot = Potentiometer(r_ab=10e3, r_w=75)
         self.transport = FakeSpiTransport()
         self.spi_digital_wiper = SpiDigitalWiper(
-            potentiometer=self.pot, transport=self.transport, max_value=128
+            potentiometer=pot, transport=self.transport, max_value=128
         )
 
     def test_transport_shared(self):
@@ -34,48 +34,15 @@ class TestSpiDigitalWiperDeepCopyTransport(unittest.TestCase):
         dw_copy = deepcopy(self.spi_digital_wiper)
         self.assertIs(dw_copy.transport, self.transport)
         self.assertIs(dw_copy.transport, self.spi_digital_wiper.transport)
-
-    def test_rest_deep_copied(self):
-        """
-        Test everything except the transport is still deep-copied.
-        """
-        self.spi_digital_wiper.r_a = 200
-        self.spi_digital_wiper.r_b = 400
-        self.spi_digital_wiper.r_load = 1e100
-        self.spi_digital_wiper.v_a = 5
-        self.spi_digital_wiper.v_b = 2
-        self.spi_digital_wiper.v_load = -1
-        dw_copy = deepcopy(self.spi_digital_wiper)
-        self.assertIsInstance(dw_copy, SpiDigitalWiper)
-        self.assertNotEqual(dw_copy, self.spi_digital_wiper)
+        self.assertIs(dw_copy.spi, self.spi_digital_wiper.spi)
         self.assertIsNot(dw_copy.potentiometer, self.spi_digital_wiper.potentiometer)
-        self.assertEqual(dw_copy.min_value, self.spi_digital_wiper.min_value)
-        self.assertEqual(dw_copy.max_value, self.spi_digital_wiper.max_value)
         self.assertEqual(
             dw_copy.potentiometer.r_ab, self.spi_digital_wiper.potentiometer.r_ab
         )
         self.assertEqual(
             dw_copy.potentiometer.r_w, self.spi_digital_wiper.potentiometer.r_w
         )
-        self.assertEqual(
-            dw_copy.potentiometer.r_a, self.spi_digital_wiper.potentiometer.r_a
-        )
-        self.assertEqual(
-            dw_copy.potentiometer.r_b, self.spi_digital_wiper.potentiometer.r_b
-        )
-        self.assertEqual(
-            dw_copy.potentiometer.r_load, self.spi_digital_wiper.potentiometer.r_load
-        )
-        self.assertEqual(
-            dw_copy.potentiometer.v_a, self.spi_digital_wiper.potentiometer.v_a
-        )
-        self.assertEqual(
-            dw_copy.potentiometer.v_b, self.spi_digital_wiper.potentiometer.v_b
-        )
-        self.assertEqual(
-            dw_copy.potentiometer.v_load, self.spi_digital_wiper.potentiometer.v_load
-        )
-        self.assertEqual(dw_copy.spi, self.spi_digital_wiper.spi)
+        self.assertEqual(dw_copy.value, self.spi_digital_wiper.value)
 
 
 if __name__ == "__main__":

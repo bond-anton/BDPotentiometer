@@ -1,9 +1,10 @@
 """MCP4XXX series SPI device base class"""
 
+from contextlib import suppress
 from typing import Any, Union
 
 from .. import Potentiometer, SpiDigitalWiper
-from ..__helpers import check_integer, clamp
+from ..__helpers import check_bool, check_integer, clamp
 from ..transport.base import SpiTransport, is_spi_transport
 from ..transport.selection import GPIOZERO_SPI_ARGS, build_default_transport
 
@@ -52,30 +53,51 @@ def _check_write_response(data: list) -> None:
         raise ValueError(f"Wrong response {data}")
 
 
-def _check_read_response(data: list) -> None:
+def _check_response_frame(data: list) -> None:
     """
-    Reject a missing or truncated read response.
+    Validate the framing bits shared by every MCP4XXX read response.
 
-    The returned words are not inspected here; only the frame length is
-    validated.
+    Each response is 16 bits: SDO reports ``1111111`` in bits 15:9, so the
+    high byte is ``0b1111111x`` and bit 8 of that byte carries D8. The
+    ``bits 15:9 == 1111111`` invariant is common to wiper, status, and TCON
+    reads.
 
     :param data: Response data (list or None).
-    :raises ValueError: If `data` is None or shorter than two words.
+    :raises ValueError: If `data` is None, shorter than two words, or does not
+        satisfy the ``bits 15:9 == 1111111`` invariant.
     """
     if data is None or len(data) < 2:
         raise ValueError(f"Wrong response {data}")
+    if data[0] & 0xFE != 0xFE:
+        raise ValueError(f"Wrong response {data}")
+
+
+def _check_read_response(data: list) -> None:
+    """
+    Reject a missing, truncated, or unframed read response.
+
+    Only the framing is validated (``bits 15:9 == 1111111``); the data words
+    are not inspected here.
+
+    :param data: Response data (list or None).
+    :raises ValueError: If `data` is None, shorter than two words, or does not
+        satisfy the ``bits 15:9 == 1111111`` invariant.
+    """
+    _check_response_frame(data)
 
 
 def _check_status_response(data: list) -> None:
     """
-    Validate the reserved bits of a status response.
+    Validate the framing and reserved bits of a status response.
+
+    Framing requires ``bits 15:9 == 1111111``. The STATUS register (0x5)
+    additionally forces D8:D5 (bits 8:5 of the response) to 1.
 
     :param data: Response data (list or None).
     :raises ValueError: If `data` is None, the frame is shorter than two words,
-        or the reserved bits are not set.
+        the framing bits are not all set, or the reserved bits are not set.
     """
-    if data is None or len(data) < 2:
-        raise ValueError(f"Wrong response {data}")
+    _check_response_frame(data)
     reserved = (0b1, 0b11100000)
     if not (
         data[0] & reserved[0] == reserved[0] and data[1] & reserved[1] == reserved[1]
@@ -85,15 +107,17 @@ def _check_status_response(data: list) -> None:
 
 def _check_tcon_response(data: list) -> None:
     """
-    Validate the reserved bit of a TCON response.
+    Validate the framing and reserved bit of a TCON response.
+
+    Framing requires ``bits 15:9 == 1111111``. The TCON register (0x4) forces
+    D8 (bit 8 of the response) to 1.
 
     :param data: Response data (list or None). Both words are required even
         though only the first carries the reserved bit.
     :raises ValueError: If `data` is None, the frame is shorter than two words,
-        or the reserved bit is not set.
+        the framing bits are not all set, or the reserved bit is not set.
     """
-    if data is None or len(data) < 2:
-        raise ValueError(f"Wrong response {data}")
+    _check_response_frame(data)
     reserved = (0b1,)
     if not data[0] & reserved[0] == reserved[0]:
         raise ValueError(f"Wrong response {data}")
@@ -119,13 +143,23 @@ def _tcon_to_cmd(tcon: dict[str, bool]) -> int:
     """
     Convert a TCON state dict into the TCON command nibble.
 
-    :param tcon: Requested TCON state (dict).
+    :param tcon: Requested TCON state (dict) with exactly the keys ``shdn``,
+        ``A``, ``W``, and ``B``; every value must be a bool.
     :return: TCON command nibble (int).
+    :raises TypeError: If `tcon` is not a dict, or any value is not a bool.
+    :raises ValueError: If the key set is not exactly
+        ``{"shdn", "A", "W", "B"}``.
     """
-    shdn = 0 if tcon["shdn"] else 0b1000
-    terminal_a = 0b0100 if tcon["A"] else 0
-    terminal_w = 0b0010 if tcon["W"] else 0
-    terminal_b = 0b0001 if tcon["B"] else 0
+    if not isinstance(tcon, dict):
+        raise TypeError(f"Expected a TCON dict, got {type(tcon)}")
+    if set(tcon) != {"shdn", "A", "W", "B"}:
+        raise ValueError(
+            f"TCON must have exactly the keys shdn, A, W, B; got {list(tcon)}"
+        )
+    shdn = 0 if check_bool(tcon["shdn"]) else 0b1000
+    terminal_a = 0b0100 if check_bool(tcon["A"]) else 0
+    terminal_w = 0b0010 if check_bool(tcon["W"]) else 0
+    terminal_b = 0b0001 if check_bool(tcon["B"]) else 0
     return shdn | terminal_a | terminal_w | terminal_b
 
 
@@ -182,10 +216,27 @@ def _decode_wiper_read(data: list) -> int:
 
     :param data: Response data (list).
     :return: Wiper position value (int).
-    :raises ValueError: If `data` is None or shorter than two words.
+    :raises ValueError: If `data` is None, shorter than two words, or does not
+        satisfy the ``bits 15:9 == 1111111`` framing invariant.
     """
     _check_read_response(data)
     return ((data[0] & 0x01) << 8) | (data[1] & 0xFF)
+
+
+def _parse_status_response(data: list) -> dict[str, bool]:
+    """
+    Parse a status response into named register bits.
+
+    Only SHDN (bit 1) is defined; D8:D5 are forced to 1 and the remaining
+    bits are reserved, so they are not reported.
+
+    :param data: Response data (list).
+    :return: Parsed status with key ``shdn`` (dict).
+    :raises ValueError: If the response is missing, shorter than two words,
+        or its framing/reserved bits are invalid.
+    """
+    _check_status_response(data)
+    return {"shdn": bool(data[1] & _SHDN)}
 
 
 class MCP4xxxPotentiometer(Potentiometer):
@@ -215,7 +266,8 @@ class MCP4xxxWiper(SpiDigitalWiper):
     Values are clamped to ``0..max_code``. Both families count steps, so the
     full-scale divisor is also the highest code: 8-bit parts have `max_value`
     256 with codes 0..256, 7-bit parts `max_value` 128 with codes 0..128.
-    A failed write restores the previous wiper position before re-raising.
+    A failed write restores the software wiper position before re-raising; the
+    device itself is not re-read.
     """
 
     def __init__(
@@ -256,19 +308,6 @@ class MCP4xxxWiper(SpiDigitalWiper):
             transport=transport,
             **kwargs,
         )
-
-    @property
-    def max_code(self) -> int:
-        """
-        Highest wiper code accepted by the device.
-
-        Both families count steps, so the full-scale code equals `max_value`:
-        128 for a 7-bit part (codes 0..128) and 256 for an 8-bit part
-        (codes 0..256).
-
-        :return: Highest wiper code as int.
-        """
-        return self.max_value
 
     def _set_value(self, value: int) -> int:
         value = int(round(clamp(value, 0, self.max_code)))
@@ -362,6 +401,7 @@ class MCP4xxx:
             "miso_pin": miso_pin,
             "select_pin": select_pin,
         }
+        built_here = False
         if transport is None and spi is not None:
             transport = spi
         if transport is not None:
@@ -373,13 +413,22 @@ class MCP4xxx:
                 )
         else:
             transport = build_default_transport(**supplied)
-        if transport is not None and not is_spi_transport(transport):
-            raise TypeError(
-                "Expected an SPI transport with transfer() and close(), "
-                f"got {type(transport)}"
-            )
-        self._transport: Union[SpiTransport, None] = transport
-        self._closed = False
+            built_here = True
+        try:
+            if transport is not None and not is_spi_transport(transport):
+                raise TypeError(
+                    "Expected an SPI transport with transfer() and close(), "
+                    f"got {type(transport)}"
+                )
+            self._transport: Union[SpiTransport, None] = transport
+            self._closed = False
+        except Exception:
+            # Only a transport built here is ours to release; a caller-supplied
+            # one stays open because the caller still owns it.
+            if built_here and transport is not None:
+                with suppress(Exception):
+                    transport.close()
+            raise
 
     @property
     def transport(self) -> Union[SpiTransport, None]:
@@ -399,20 +448,32 @@ class MCP4xxx:
         True when the device has no transport, `close()` has run, or the
         transport reports itself closed.
 
-        A callable `closed` attribute is called first; only a literal True
-        result counts as closed.
+        A callable `closed` attribute is called first. The reported value is
+        coerced with `bool`. A transport whose `closed` probe raises counts as
+        not closed; the device's own flag still applies.
         """
         if self._transport is None:
             return True
-        reported = getattr(self._transport, "closed", False)
-        if callable(reported):
-            reported = reported()
-        return self._closed or (reported is True)
+        try:
+            reported = getattr(self._transport, "closed", False)
+            if callable(reported):
+                reported = reported()
+            reported = bool(reported)
+        except Exception:  # noqa: BLE001 - a broken probe must not leak
+            reported = False
+        return self._closed or reported
 
     def close(self) -> None:
-        """Close the underlying transport and mark the device closed."""
-        if self._transport is not None:
-            self._transport.close()
+        """
+        Close the underlying transport and mark the device closed.
+
+        The device is marked closed even when the transport's `close()` raises;
+        the exception is still propagated.
+        """
+        try:
+            if self._transport is not None:
+                self._transport.close()
+        finally:
             self._closed = True
 
     def _require_transport(self) -> SpiTransport:
@@ -435,12 +496,11 @@ class MCP4xxx:
 
         :return: True when the status-register SHDN bit is set, otherwise False.
         :raises ValueError: If the status response is missing, shorter than two
-            words, or has invalid reserved bits.
+            words, or has invalid framing or reserved bits.
         :raises ConnectionError: If the device has no transport.
         """
         data = self._require_transport().transfer([_R_CMD | _STATUS, 0])
-        _check_status_response(data)
-        return data[1] & _SHDN == _SHDN
+        return _parse_status_response(data)["shdn"]
 
     def read_tcon(self) -> tuple[dict[str, bool], dict[str, bool]]:
         """
@@ -454,7 +514,7 @@ class MCP4xxx:
 
         :return: Tuple of TCON state dicts, ``(channel 0, channel 1)``.
         :raises ValueError: If the response is missing, shorter than two words,
-            or lacks the reserved bit.
+            or lacks the framing/reserved bits.
         :raises ConnectionError: If the device has no transport.
         """
         data = self._require_transport().transfer([_R_CMD | _TCON, 0])
@@ -473,15 +533,18 @@ class MCP4xxx:
 
         A channel left as ``None`` keeps all terminals connected with shutdown
         deasserted, equivalent to ``{"shdn": False, "A": True, "W": True,
-        "B": True}``.
+        "B": True}``. The write frame sets D8 to 1, which Register 4-2 reserves
+        and forces to 1.
 
         :param ch0: Channel 0 state with keys ``shdn``, ``A``, ``W``, and ``B``.
             For ``A``, ``W``, and ``B``, True connects the terminal. For
             ``shdn``, True puts the channel in shutdown.
         :param ch1: Channel 1 state, with the same keys and meaning as `ch0`.
         :return: True if the read-back matches the written value, otherwise False.
-        :raises ValueError: If the read-back response is missing, shorter than
-            two words, or lacks the reserved bit.
+        :raises TypeError: If a channel state is not a dict with bool values.
+        :raises ValueError: If a channel state has the wrong keys, the write
+            response is missing, or the read-back response is missing, shorter
+            than two words, or lacks the framing/reserved bits.
         :raises ConnectionError: If the device has no transport.
         """
         default_tcon_value = {"shdn": False, "A": True, "W": True, "B": True}
@@ -492,7 +555,9 @@ class MCP4xxx:
         ch0_cmd = _tcon_to_cmd(ch0)
         ch1_cmd = _tcon_to_cmd(ch1)
         data = ch0_cmd | (ch1_cmd << 4)
-        _ = self._require_transport().transfer([_W_CMD | _TCON, data])
+        _check_write_response(
+            self._require_transport().transfer([_W_CMD | _TCON | 0x01, data])
+        )
         resp = self._require_transport().transfer([_R_CMD | _TCON, 0])
         _check_tcon_response(resp)
         return resp[1] == data
@@ -501,14 +566,20 @@ class MCP4xxx:
         """
         Put selected channels into shutdown through the TCON register.
 
+        The current TCON state is read first, so only the shutdown bit of each
+        channel is changed; the terminal connections are preserved.
+
         :param ch0: True puts channel 0 into shutdown; False leaves it on.
         :param ch1: True puts channel 1 into shutdown; False leaves it on.
         :return: True if the read-back matches the written value, otherwise False.
-        :raises ValueError: If the read-back response is missing, shorter than
-            two words, or lacks the reserved bit.
+        :raises TypeError: If `ch0` or `ch1` is not a bool.
+        :raises ValueError: If a read response is missing, shorter than two
+            words, or lacks the framing/reserved bits.
         :raises ConnectionError: If the device has no transport.
         """
-        return self.write_tcon(
-            ch0={"shdn": ch0, "A": True, "W": True, "B": True},
-            ch1={"shdn": ch1, "A": True, "W": True, "B": True},
-        )
+        ch0 = check_bool(ch0)
+        ch1 = check_bool(ch1)
+        current_ch0, current_ch1 = self.read_tcon()
+        current_ch0["shdn"] = ch0
+        current_ch1["shdn"] = ch1
+        return self.write_tcon(ch0=current_ch0, ch1=current_ch1)

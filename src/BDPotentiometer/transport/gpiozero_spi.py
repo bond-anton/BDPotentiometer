@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from gpiozero import SPIDevice
+from gpiozero.exc import DeviceClosed
 
 from ..__gpiozero_helpers import fix_gpiozero_dual_cs_spi
 from .base import TransportClosed, TransportError
@@ -37,8 +38,10 @@ class GpiozeroSpiTransport:
     devices can share one hardware SPI port.
 
     Ownership follows construction: a transport that built its own handle
-    closes it, while a transport wrapping a caller-supplied `spi=` only
-    marks itself closed and leaves the shared bus open for its other users.
+    closes it. A transport wrapping a caller-supplied `spi=` never closes it
+    and does not join gpiozero's shared reference count, so the supplied
+    handle's owner must outlive the wrapper. Once the owner closes the handle,
+    this transport's transfers raise `TransportClosed`.
     """
 
     _SPI_ARGS = GPIOZERO_SPI_ARGS
@@ -47,8 +50,10 @@ class GpiozeroSpiTransport:
         """
         Wrap an existing gpiozero SPI object or build a shared one.
 
-        :param spi: Existing gpiozero SPI object to wrap; when None a private
-            `SPIDevice` is built from `spi_args` and owned by this transport.
+        :param spi: Existing gpiozero SPI object to wrap. The caller keeps
+            ownership and must keep it open for the lifetime of this transport;
+            when None a private `SPIDevice` is built from `spi_args` and owned
+            by this transport.
         :param spi_args: gpiozero `SPIDevice` keywords (`port`, `device`,
             `clock_pin`, `mosi_pin`, `miso_pin`, `select_pin`).
         """
@@ -73,11 +78,29 @@ class GpiozeroSpiTransport:
         return self._closed
 
     def transfer(self, tx: Sequence[int]) -> list[int]:
-        """Transfer one frame and validate the response length."""
+        """Transfer one frame and validate the response length.
+
+        :param tx: Request frame.
+        :return: Response frame of the same length.
+        :raises TransportClosed: If this transport is closed or the owner of a
+            caller-supplied SPI handle has closed it.
+        :raises TransportError: If gpiozero returns the wrong number of words.
+        """
         if self._closed:
             raise TransportClosed("GpiozeroSpiTransport is closed")
+        raw_closed = getattr(self._raw, "closed", False)
+        if isinstance(raw_closed, bool) and raw_closed:
+            raise TransportClosed(
+                "The underlying gpiozero SPI handle is closed; its owner must "
+                "outlive this wrapper"
+            )
         frame = list(tx)
-        rx = list(self._raw.transfer(frame))
+        try:
+            rx = list(self._raw.transfer(frame))
+        except DeviceClosed as exc:
+            raise TransportClosed(
+                "The underlying gpiozero SPI handle was closed by its owner"
+            ) from exc
         if len(rx) != len(frame):
             raise TransportError(
                 f"gpiozero returned {len(rx)} words for a {len(frame)}-word request"
@@ -87,8 +110,10 @@ class GpiozeroSpiTransport:
     def close(self) -> None:
         """Close an owned SPI handle.
 
-        Repeated calls after a successful close have no effect; a failed close
-        leaves the transport open and retryable.
+        A wrapper around a caller-supplied handle only marks itself closed and
+        leaves that handle untouched; its owner must close it. Repeated calls
+        after a successful close have no effect; a failed close of an owned
+        handle leaves the transport open and retryable.
         """
         if self._closed:
             return

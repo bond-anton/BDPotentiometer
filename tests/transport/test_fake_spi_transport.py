@@ -91,6 +91,27 @@ class TestFakeSpiTransport(unittest.TestCase):
         with self.assertRaises(TransportError):
             fake.transfer([0, 0])
 
+    def test_mismatched_frame_is_not_consumed(self) -> None:
+        """
+        A rejected frame stays queued and the failed call is not recorded.
+        """
+        fake = FakeSpiTransport(responses=[[0], [0, 5]])
+        with self.assertRaises(TransportError):
+            fake.transfer([0, 0])
+        self.assertEqual(fake.calls, [])
+        self.assertEqual(fake.transfer([0]), [0])
+        self.assertEqual(fake.transfer([0, 0]), [0, 5])
+        self.assertEqual(fake.calls, [[0], [0, 0]])
+
+    def test_closed_is_read_only(self) -> None:
+        """
+        A closed transport cannot be reopened by assigning to `closed`.
+        """
+        fake = FakeSpiTransport()
+        fake.close()
+        with self.assertRaises(AttributeError):
+            fake.closed = False
+
     def test_close_blocks_transfers(self) -> None:
         """
         Transfers after close() raise TransportClosed.

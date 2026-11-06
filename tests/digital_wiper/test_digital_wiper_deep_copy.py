@@ -18,9 +18,8 @@ class TestDigitalWiperDeepCopy(unittest.TestCase):
         """
         Set up Unittest
         """
-        self.pot = Potentiometer(r_ab=10e3, r_w=75)
-        self.digital_wiper = DigitalWiper(potentiometer=self.pot, max_value=128)
-        self.digital_wiper_locked = DigitalWiper(potentiometer=self.pot, max_value=128)
+        pot = Potentiometer(r_ab=10e3, r_w=75)
+        self.digital_wiper = DigitalWiper(potentiometer=pot, max_value=128)
 
     def test_deepcopy(self):
         """
@@ -34,8 +33,8 @@ class TestDigitalWiperDeepCopy(unittest.TestCase):
         self.digital_wiper.v_load = 0
         dw_copy = deepcopy(self.digital_wiper)
         self.assertIsInstance(dw_copy, DigitalWiper)
-        self.assertNotEqual(dw_copy, self.digital_wiper)
-        self.assertNotEqual(dw_copy.potentiometer, self.digital_wiper.potentiometer)
+        self.assertIsNot(dw_copy, self.digital_wiper)
+        self.assertIsNot(dw_copy.potentiometer, self.digital_wiper.potentiometer)
         self.assertEqual(dw_copy.min_value, self.digital_wiper.min_value)
         self.assertEqual(dw_copy.max_value, self.digital_wiper.max_value)
         self.assertEqual(

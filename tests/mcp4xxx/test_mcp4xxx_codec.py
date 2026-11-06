@@ -53,7 +53,7 @@ class MCP4xxxCodecTestCase(unittest.TestCase):
 
     def test_decode_wiper_read(self):
         """Test read response decoding."""
-        self.assertEqual(_decode_wiper_read([0, 43]), 43)
+        self.assertEqual(_decode_wiper_read([0xFE, 43]), 43)
 
     def test_decode_wiper_read_full_scale(self):
         """D8 set in the high byte yields code 256."""

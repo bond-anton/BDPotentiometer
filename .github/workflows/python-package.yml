@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
     - uses: actions/checkout@v4
@@ -35,6 +35,11 @@ jobs:
       working-directory: ${{ runner.temp }}
       run: |
         python -c "import pathlib, sys, BDPotentiometer; path = pathlib.Path(BDPotentiometer.__file__).resolve(); print(f'Imported {path}'); assert 'site-packages' in path.parts, path; assert 'gpiozero' not in sys.modules; assert 'spidev' not in sys.modules"
+    - name: Verify wheel ships py.typed
+      working-directory: ${{ runner.temp }}
+      run: |
+        python -m pip wheel "$GITHUB_WORKSPACE" -w "$RUNNER_TEMP/wheel" --no-deps
+        python -c "import pathlib, zipfile; wheels = list(pathlib.Path('wheel').glob('*.whl')); assert len(wheels) == 1, wheels; names = zipfile.ZipFile(wheels[0]).namelist(); marker = 'BDPotentiometer/py.typed'; assert marker in names, marker; print(f'{marker} present in {wheels[0].name}')"
     - name: Test with pytest
       run: |
         pytest

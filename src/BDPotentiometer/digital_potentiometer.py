@@ -6,6 +6,7 @@ from typing import Any, Callable, Union
 from .__helpers import (
     check_bool,
     check_integer,
+    check_label,
     check_not_negative,
     check_number,
     check_positive,
@@ -114,6 +115,12 @@ class DigitalPotentiometerDevice:
         """
         Look for channel number by label or number provided.
 
+        A string is matched against the channel labels first, so a custom label
+        always wins over a numeric id. If no label matches, a string that spells
+        a non-negative channel number is resolved as an id, so both a custom
+        label and the default numeric label reach the same channel. The lookup
+        strips surrounding whitespace exactly as `set_channel_label` does.
+
         Invalid input is reported as "not found" rather than raised. An unknown
         label, a bool, a negative or fractional number, and a value that is not
         a number all return `None`, so callers only check for `None`.
@@ -123,18 +130,22 @@ class DigitalPotentiometerDevice:
             number, or `None`.
         """
         if isinstance(channel, str):
-            try:
-                return list(self.__labels.values()).index(channel)
-            except ValueError:
+            text = channel.strip()
+            for channel_id, label in self.__labels.items():
+                if label == text:
+                    return channel_id
+            if not text.isdecimal():
                 return None
+            channel_id = int(text)
+            return channel_id if channel_id in self.__channels else None
         if isinstance(channel, bool):
             return None
         try:
-            channel = check_integer(check_not_negative(channel))
+            channel_id = check_integer(check_not_negative(channel))
         except (TypeError, ValueError):
             return None
-        if channel in self.__channels:
-            return channel
+        if channel_id in self.__channels:
+            return channel_id
         return None
 
     def set_channel_label(
@@ -144,23 +155,25 @@ class DigitalPotentiometerDevice:
         Assign a string label to a channel.
 
         Labels must stay unique. Without a label the channel number is used as
-        the label. A label is normalized by stripping surrounding whitespace;
-        an empty label is rejected.
+        the label, which is how the default numeric labels are restored. A label
+        must be a string; it is normalized by stripping surrounding whitespace
+        and must stay non-empty after stripping.
+
+        Resetting a label with `label=None` raises `ValueError` as well when the
+        channel number is currently taken by another channel: the reset would
+        otherwise duplicate that label, and uniqueness is never broken
+        silently.
 
         :param channel: Channel number or label.
         :param label: Label for the channel (str).
+        :raises TypeError: If `label` is not a str.
         :raises ValueError: If the channel does not exist, the label is empty,
-            or the label is taken.
+            too long, or already assigned to another channel.
         """
         channel_id = self._get_channel_number_by_label_or_id(channel)
         if channel_id is None:
             raise ValueError(f"Channel {channel} does not exist.")
-        if label is None:
-            text = str(channel_id)
-        else:
-            text = str(label).strip()
-            if not text:
-                raise ValueError(f"Label for channel {channel_id} is empty.")
+        text = str(channel_id) if label is None else check_label(label)
         for idx, lbl in self.__labels.items():
             if lbl == text and idx != channel_id:
                 raise ValueError(f"Label {text} already assigned to channel {idx}.")

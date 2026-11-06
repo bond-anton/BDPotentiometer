@@ -37,6 +37,19 @@ class _RawSpiStub:
         """No-op close."""
 
 
+class _NoneRawSpiStub:
+    """Transport-like object whose `raw` attribute is None."""
+
+    raw = None
+
+    def transfer(self, tx):
+        """Return a zero response."""
+        return [0] * len(tx)
+
+    def close(self):
+        """No-op close."""
+
+
 class TestSpiDigitalWiperSpiSetter(unittest.TestCase):
     """
     Testing SpiDigitalWiper SPI setter.
@@ -46,9 +59,9 @@ class TestSpiDigitalWiperSpiSetter(unittest.TestCase):
         """
         Set up Unittest
         """
-        self.pot = Potentiometer(r_ab=10e3, r_w=75)
+        pot = Potentiometer(r_ab=10e3, r_w=75)
         self.spi_digital_wiper = SpiDigitalWiper(
-            spi=None, potentiometer=self.pot, max_value=128
+            spi=None, potentiometer=pot, max_value=128
         )
 
     def test_set_spi_none(self):
@@ -92,6 +105,26 @@ class TestSpiDigitalWiperSpiSetter(unittest.TestCase):
         self.spi_digital_wiper.transport = raw
         self.spi_digital_wiper.spi = self.spi_digital_wiper.spi
         self.assertIs(self.spi_digital_wiper.transport, raw)
+
+    def test_spi_self_assignment_without_raw_preserves_transport(self):
+        """
+        Test self-assignment of a plain transport (no `.raw`) is a no-op.
+        """
+        spi = _StubSpi()
+        self.spi_digital_wiper.transport = spi
+        self.assertIs(self.spi_digital_wiper.spi, spi)
+        self.spi_digital_wiper.spi = self.spi_digital_wiper.spi
+        self.assertIs(self.spi_digital_wiper.transport, spi)
+
+    def test_spi_getter_falls_back_when_raw_is_none(self):
+        """
+        Test a transport with `raw = None` is exposed itself, not detached.
+        """
+        spi = _NoneRawSpiStub()
+        self.spi_digital_wiper.transport = spi
+        self.assertIs(self.spi_digital_wiper.spi, spi)
+        self.spi_digital_wiper.spi = self.spi_digital_wiper.spi
+        self.assertIs(self.spi_digital_wiper.transport, spi)
 
     def test_transport_self_assignment_preserves_transport(self):
         """

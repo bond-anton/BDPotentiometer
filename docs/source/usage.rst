@@ -73,7 +73,16 @@ than rounded, and booleans, ``NaN``, and infinities are rejected as numbers.
 nearest code.
 
 ``set_channel_label`` strips surrounding whitespace and rejects an empty
-label. Passing ``port``, ``device``, or any pin keyword together with
+label. Labels must stay unique: assigning a label another channel already
+holds raises ``ValueError``. With ``label=None`` the channel number becomes the
+label, which also raises ``ValueError`` if another channel already holds that
+default number.
+
+Channel arguments accept a label or an integer id. A string is resolved as a
+label first; an integer is resolved as a channel id. A string that matches no
+label is reported as an unknown channel.
+
+Passing ``port``, ``device``, or any pin keyword together with
 ``transport=`` or ``spi=`` raises ``TypeError``.
 
 ``label`` and ``log_level`` configure the device logger. A logger is

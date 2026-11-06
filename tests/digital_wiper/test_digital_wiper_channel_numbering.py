@@ -27,14 +27,15 @@ class _RegisterWiper(DigitalWiper):
 class _DisconnectedWiper(DigitalWiper):
     """Wiper whose reads fail once its bus is detached."""
 
-    def __init__(self, potentiometer: Potentiometer, **kwargs):
+    def __init__(self, potentiometer: Potentiometer, registers: dict, **kwargs):
+        self.registers = dict(registers)
         self.connected = True
         super().__init__(potentiometer=potentiometer, **kwargs)
 
     def _read_value(self) -> int:
         if not self.connected:
             raise ConnectionError("SPI interface not set")
-        return 0
+        return self.registers[self.channel]
 
 
 class TestDigitalWiperChannelNumbering(unittest.TestCase):
@@ -61,13 +62,12 @@ class TestDigitalWiperChannelNumbering(unittest.TestCase):
             for channel_number_ in [-1, 1.12]:
                 with self.assertRaises(ValueError):
                     digital_wiper.channel = channel_number_
+                self.assertEqual(digital_wiper.channel, channel_number)
             # Wrong channel number type
             for channel_number_ in ["1", None]:
                 with self.assertRaises(TypeError):
                     digital_wiper.channel = channel_number_
-            self.assertEqual(
-                digital_wiper.channel, channel_number
-            )  # Check that channel number did not_change
+                self.assertEqual(digital_wiper.channel, channel_number)
 
     def test_channel_change_reloads_cached_value(self):
         """The cached code after a channel change belongs to the new channel."""
@@ -90,14 +90,22 @@ class TestDigitalWiperChannelNumbering(unittest.TestCase):
         self.assertEqual(registers[1], 50)
         self.assertEqual(wiper.value, 50)
 
-    def test_channel_change_without_bus_raises_after_assigning(self):
-        """A detached bus-backed wiper raises ConnectionError from `read()`."""
+    def test_channel_change_rolls_back_when_read_fails(self):
+        """A failed reload restores the previous channel and cached code."""
         pot = Potentiometer(r_ab=20e3, r_w=50)
-        wiper = _DisconnectedWiper(potentiometer=pot, max_value=128)
+        wiper = _DisconnectedWiper(
+            potentiometer=pot, registers={0: 42, 1: 50}, max_value=128
+        )
+        self.assertEqual(wiper.value, 42)
         wiper.connected = False
         with self.assertRaises(ConnectionError):
             wiper.channel = 1
-        self.assertEqual(wiper.channel, 1)
+        self.assertEqual(wiper.channel, 0)
+        # The cache must still hold channel 0's code, not channel 1's.
+        self.assertEqual(wiper._DigitalWiper__value, 42)
+        wiper.connected = True
+        self.assertEqual(wiper.value, 42)
+        self.assertEqual(wiper.registers[1], 50)
 
 
 if __name__ == "__main__":

@@ -20,10 +20,10 @@ class TestSpiDigitalWiperDeepCopy(unittest.TestCase):
         """
         Set up Unittest
         """
-        self.pot = Potentiometer(r_ab=10e3, r_w=75)
+        pot = Potentiometer(r_ab=10e3, r_w=75)
         self.transport = FakeSpiTransport()
         self.spi_digital_wiper = SpiDigitalWiper(
-            spi=self.transport, potentiometer=self.pot, max_value=128
+            spi=self.transport, potentiometer=pot, max_value=128
         )
 
     def test_spi_deepcopy(self):
@@ -39,8 +39,8 @@ class TestSpiDigitalWiperDeepCopy(unittest.TestCase):
         self.spi_digital_wiper.potentiometer.v_load = -1
         dw_copy = deepcopy(self.spi_digital_wiper)
         self.assertIsInstance(dw_copy, SpiDigitalWiper)
-        self.assertNotEqual(dw_copy, self.spi_digital_wiper)
-        self.assertNotEqual(dw_copy.potentiometer, self.spi_digital_wiper.potentiometer)
+        self.assertIsNot(dw_copy, self.spi_digital_wiper)
+        self.assertIsNot(dw_copy.potentiometer, self.spi_digital_wiper.potentiometer)
         self.assertEqual(dw_copy.min_value, self.spi_digital_wiper.min_value)
         self.assertEqual(dw_copy.max_value, self.spi_digital_wiper.max_value)
         self.assertEqual(

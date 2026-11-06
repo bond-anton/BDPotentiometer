@@ -3,7 +3,7 @@
 import unittest
 
 try:
-    from src.BDPotentiometer.mcp4xxx import MCP4231
+    from src.BDPotentiometer.mcp4xxx import MCP4231, MCP4251
     from src.BDPotentiometer.mcp4xxx import mcp4xxx as mcp4xxx_module
     from src.BDPotentiometer.transport import (
         FakeSpiTransport,
@@ -11,7 +11,7 @@ try:
         TransportError,
     )
 except ModuleNotFoundError:
-    from BDPotentiometer.mcp4xxx import MCP4231
+    from BDPotentiometer.mcp4xxx import MCP4231, MCP4251
     from BDPotentiometer.mcp4xxx import mcp4xxx as mcp4xxx_module
     from BDPotentiometer.transport import (
         FakeSpiTransport,
@@ -68,7 +68,7 @@ class TestMCP4xxxTransport(unittest.TestCase):
     """
 
     def _build(self):
-        fake = FakeSpiTransport(default=[0, 0])
+        fake = FakeSpiTransport(default=[0xFE, 0x00])
         pot = MCP4231(r_ab=10e3, transport=fake)
         fake.calls.clear()
         return pot, fake
@@ -78,7 +78,7 @@ class TestMCP4xxxTransport(unittest.TestCase):
         Set value on channel 0 writes the channel 0 frame, then reads it back.
         """
         pot, fake = self._build()
-        fake.queue([0, 43], [0, 43])
+        fake.queue([0, 43], [0xFE, 43])
         value = pot.set_value(0, 43)
         self.assertEqual(
             fake.calls,
@@ -92,7 +92,7 @@ class TestMCP4xxxTransport(unittest.TestCase):
         Set value on channel 1 writes the channel 1 frame.
         """
         pot, fake = self._build()
-        fake.queue([0, 43], [0, 43])
+        fake.queue([0, 43], [0xFE, 43])
         value = pot.set_value(1, 43)
         self.assertEqual(
             fake.calls,
@@ -106,7 +106,7 @@ class TestMCP4xxxTransport(unittest.TestCase):
         Reading channel 0 submits the channel 0 read frame.
         """
         pot, fake = self._build()
-        fake.queue([0, 43])
+        fake.queue([0xFE, 43])
         self.assertEqual(pot.get_value(0), 43)
         self.assertEqual(fake.calls, [[0b00001100, 0]])
 
@@ -115,9 +115,46 @@ class TestMCP4xxxTransport(unittest.TestCase):
         Reading channel 1 submits the channel 1 read frame.
         """
         pot, fake = self._build()
-        fake.queue([0, 44])
+        fake.queue([0xFE, 44])
         self.assertEqual(pot.get_value(1), 44)
         self.assertEqual(fake.calls, [[0b00011100, 0]])
+
+    def test_write_channel_0_lower_clamp(self):
+        """
+        A negative value on a 7-bit part clamps to code 0 and sends that.
+        """
+        pot, fake = self._build()
+        fake.queue([0, 0], [0xFE, 0x00])
+        self.assertEqual(pot.set_value(0, -1), 0)
+        self.assertEqual(fake.calls[0], [0b00000000, 0x00])
+        self.assertEqual(pot.channels[0].potentiometer.wiper_position, 0.0)
+
+    def test_write_channel_1_lower_clamp_on_8_bit_part(self):
+        """
+        A negative value on an 8-bit part clamps to code 0 on channel 1.
+        """
+        fake = FakeSpiTransport(default=[0xFE, 0x00])
+        pot = MCP4251(r_ab=10e3, transport=fake)
+        fake.calls.clear()
+        fake.queue([0, 0], [0xFE, 0x00])
+        self.assertEqual(pot.set_value(1, -1), 0)
+        self.assertEqual(fake.calls[0], [0b00010000, 0x00])
+        self.assertEqual(pot.channels[1].potentiometer.wiper_position, 0.0)
+
+    def test_write_channel_1_full_scale_on_8_bit_part(self):
+        """
+        Code 256 on channel 1 rides D8 in the high byte and reports full scale.
+        """
+        fake = FakeSpiTransport(default=[0xFE, 0x00])
+        pot = MCP4251(r_ab=10e3, transport=fake)
+        fake.calls.clear()
+        fake.queue([0, 0], [0xFF, 0x00])
+        self.assertEqual(pot.set_value(1, 256), 256)
+        self.assertEqual(
+            fake.calls,
+            [[0b00010001, 0x00], [0b00011100, 0]],
+        )
+        self.assertEqual(pot.channels[1].potentiometer.wiper_position, 1.0)
 
     def test_transport_shared_by_all_channels(self):
         """

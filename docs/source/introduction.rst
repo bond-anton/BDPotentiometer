@@ -109,6 +109,14 @@ steps and 129 taps with codes ``0..128``, 8-bit parts have 256 steps and 257
 taps with codes ``0..256``. The resulting :math:`x / N` is the relative wiper
 position in the range 0 to 1.
 
+Chip constructors validate their arguments against the specific part.
+``max_value`` must equal that part's own divisor — 128 for 7-bit parts, 256 for
+8-bit parts — so a 7-bit part rejects 256 and an 8-bit part rejects 128.
+``channels`` must be an integer in ``1..N`` for that part, not merely positive.
+Anything else raises ``ValueError`` (or ``TypeError`` for a non-numeric value).
+Leaving both arguments unset uses the values that match the part. A wiper
+attached to a chip also refuses to have its ``max_value`` reassigned.
+
 
 Programming Digital Potentiometer
 ---------------------------------

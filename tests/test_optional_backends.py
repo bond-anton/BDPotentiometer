@@ -75,6 +75,26 @@ class TestOptionalBackends(unittest.TestCase):
         )
         self.assert_ran(result)
 
+    def test_missing_gpiozero_selection_names_the_extra(self):
+        """Transport selection raises and restores sys.modules afterwards."""
+        from BDPotentiometer.transport import selection
+
+        backend_name = "BDPotentiometer.transport.gpiozero_spi"
+        saved_backend = sys.modules.pop(backend_name, None)
+        saved_gpiozero = sys.modules.get("gpiozero")
+        sys.modules["gpiozero"] = None
+        try:
+            with self.assertRaises(ImportError) as context:
+                selection.build_default_transport(clock_pin=11)
+            self.assertIn("BDPotentiometer[gpiozero]", str(context.exception))
+        finally:
+            if saved_gpiozero is None:
+                sys.modules.pop("gpiozero", None)
+            else:
+                sys.modules["gpiozero"] = saved_gpiozero
+            if saved_backend is not None:
+                sys.modules[backend_name] = saved_backend
+
     def test_missing_gpiozero_hides_transport_attribute(self):
         """Without gpiozero, hasattr is False and dir still advertises the name."""
         result = _run_isolated(
@@ -109,7 +129,7 @@ class TestOptionalBackends(unittest.TestCase):
             "sys.modules['gpiozero'] = None\n"
             "from BDPotentiometer.mcp4xxx import MCP4231\n"
             "from BDPotentiometer.transport import FakeSpiTransport\n"
-            "fake = FakeSpiTransport(default=[0, 0])\n"
+            "fake = FakeSpiTransport(default=[0b11111110, 0])\n"
             "pot = MCP4231(r_ab=10e3, transport=fake)\n"
             "pot.set_value(0, 43)\n"
             "if fake.calls[-2:] != [[0b00000000, 43], [0b00001100, 0]]:\n"

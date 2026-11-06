@@ -39,10 +39,12 @@ class TestDigitalWiperValue(unittest.TestCase):
                 digital_wiper.value = value_new
                 self.assertEqual(digital_wiper.value, max_value)
                 self.assertEqual(digital_wiper.value, digital_wiper.max_value)
-        # Wrong parameter type
-        for value_new in [None, "1"]:
-            with self.assertRaises(TypeError):
-                digital_wiper.value = value_new
+            # Wrong parameter type: the rejection leaves the value untouched
+            digital_wiper.value = 1
+            for value_new in [None, "1"]:
+                with self.assertRaises(TypeError):
+                    digital_wiper.value = value_new
+                self.assertEqual(digital_wiper.value, 1)
 
     def test_value_rejects_fractional_and_non_finite(self):
         """
@@ -56,10 +58,12 @@ class TestDigitalWiperValue(unittest.TestCase):
             for value_new in [1.5, 0.25, -2.5, float("nan"), float("inf")]:
                 with self.assertRaises(ValueError):
                     digital_wiper.value = value_new
+                self.assertEqual(digital_wiper.value, 1)
             # Booleans and non-numbers are rejected as a type error
             for value_new in [True, False, "1", None]:
                 with self.assertRaises(TypeError):
                     digital_wiper.value = value_new
+                self.assertEqual(digital_wiper.value, 1)
             # Integral floats are still accepted
             digital_wiper.value = 2.0
             self.assertEqual(digital_wiper.value, 2)

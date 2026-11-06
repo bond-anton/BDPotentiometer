@@ -24,9 +24,9 @@ class _StubSpi:
         self.calls = []
 
     def transfer(self, tx):
-        """Record the frame and return a zero response."""
+        """Record the frame and report wiper code 0."""
         self.calls.append(list(tx))
-        return [0, 0]
+        return [0xFE, 0]
 
     def close(self):
         """No-op close."""
@@ -52,7 +52,7 @@ class TestMCP4xxxConstructorWiring(unittest.TestCase):
         A bare constructor builds the default spidev transport.
         """
         with mock.patch.object(spidev_spi_module, "SpiDevTransport") as adapter:
-            adapter.return_value.transfer.return_value = [0, 0]
+            adapter.return_value.transfer.return_value = [0xFE, 0]
             pot = MCP4231(r_ab=10e3)
         adapter.assert_called_once_with(bus=0, device=0)
         self.assertIs(pot.transport, adapter.return_value)
@@ -62,7 +62,7 @@ class TestMCP4xxxConstructorWiring(unittest.TestCase):
         device= alone stays on the default spidev backend.
         """
         with mock.patch.object(spidev_spi_module, "SpiDevTransport") as adapter:
-            adapter.return_value.transfer.return_value = [0, 0]
+            adapter.return_value.transfer.return_value = [0xFE, 0]
             pot = MCP4231(r_ab=10e3, device=1)
         adapter.assert_called_once_with(bus=0, device=1)
         self.assertIs(pot.transport, adapter.return_value)
@@ -72,7 +72,7 @@ class TestMCP4xxxConstructorWiring(unittest.TestCase):
         A pin keyword opts into the gpiozero backend with all keywords forwarded.
         """
         with mock.patch.object(gpiozero_spi_module, "GpiozeroSpiTransport") as adapter:
-            adapter.return_value.transfer.return_value = [0, 0]
+            adapter.return_value.transfer.return_value = [0xFE, 0]
             MCP4231(r_ab=10e3, port=0, device=1, clock_pin=11)
         adapter.assert_called_once_with(port=0, device=1, clock_pin=11)
 
@@ -124,7 +124,7 @@ class TestMCP4xxxConstructorWiring(unittest.TestCase):
         """
         transport= cannot be combined with backend keywords and names the offender.
         """
-        fake = FakeSpiTransport(default=[0, 0])
+        fake = FakeSpiTransport(default=[0xFE, 0])
         with self.assertRaises(TypeError) as raised:
             MCP4231(r_ab=10e3, device=0, transport=fake)
         self.assertIn("device", str(raised.exception))
@@ -134,7 +134,7 @@ class TestMCP4xxxConstructorWiring(unittest.TestCase):
         An 8-bit dual pot constructs through the same default backend path.
         """
         with mock.patch.object(spidev_spi_module, "SpiDevTransport") as adapter:
-            adapter.return_value.transfer.return_value = [0, 0]
+            adapter.return_value.transfer.return_value = [0xFE, 0]
             pot = MCP4251(r_ab=10e3, device=0)
         adapter.assert_called_once_with(bus=0, device=0)
         self.assertEqual(pot.channels_num, 2)
@@ -144,7 +144,7 @@ class TestMCP4xxxConstructorWiring(unittest.TestCase):
         A rheostat constructs through the same default backend path.
         """
         with mock.patch.object(spidev_spi_module, "SpiDevTransport") as adapter:
-            adapter.return_value.transfer.return_value = [0, 0]
+            adapter.return_value.transfer.return_value = [0xFE, 0]
             pot = MCP4232(r_ab=10e3, device=1)
         adapter.assert_called_once_with(bus=0, device=1)
         self.assertEqual(pot.channels_num, 2)

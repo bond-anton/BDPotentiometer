@@ -18,9 +18,6 @@ class TestSpiDigitalWiperConstructor(unittest.TestCase):
         Set up Unittest
         """
         self.pot = Potentiometer(r_ab=10e3, r_w=75)
-        self.spi_digital_wiper = SpiDigitalWiper(
-            spi=None, potentiometer=self.pot, max_value=128
-        )
 
     def test_spi_digital_wiper(self):
         """

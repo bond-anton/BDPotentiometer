@@ -23,12 +23,12 @@ class TestMCP4xxDeviceKwargs(unittest.TestCase):
         """
         MCP4252(invert=True) reports inversion and writes the inverted code.
         """
-        fake = FakeSpiTransport(default=[0, 0])
+        fake = FakeSpiTransport(default=[0xFE, 0x00])
         pot = MCP4252(r_ab=10e3, transport=fake, invert=True)
         self.assertIs(pot.channels[0].invert, True)
         self.assertEqual(pot.invert, (True, True))
         fake.calls.clear()
-        fake.queue([0, 0], [0, 246])
+        fake.queue([0, 0], [0xFE, 246])
         value = pot.set_value(0, 10)
         self.assertEqual(fake.calls, [[0b00000000, 246], [0b00001100, 0]])
         self.assertEqual(value, 10)
@@ -37,7 +37,7 @@ class TestMCP4xxDeviceKwargs(unittest.TestCase):
         """
         invert reaches the wiper; label and log_level reach the device only.
         """
-        fake = FakeSpiTransport(default=[0, 0])
+        fake = FakeSpiTransport(default=[0xFE, 0x00])
         pot = MCP4251(
             r_ab=10e3,
             transport=fake,
@@ -61,7 +61,7 @@ class TestMCP4xxDeviceKwargs(unittest.TestCase):
         """
         A misspelled keyword is rejected instead of being silently swallowed.
         """
-        fake = FakeSpiTransport(default=[0, 0])
+        fake = FakeSpiTransport(default=[0xFE, 0x00])
         with self.assertRaisesRegex(TypeError, "invertt"):
             MCP4251(r_ab=10e3, transport=fake, invertt=True)
 
@@ -69,7 +69,7 @@ class TestMCP4xxDeviceKwargs(unittest.TestCase):
         """
         transport= plus a backend keyword is rejected instead of dropped.
         """
-        fake = FakeSpiTransport(default=[0, 0])
+        fake = FakeSpiTransport(default=[0xFE, 0x00])
         with self.assertRaisesRegex(TypeError, "device.*transport"):
             MCP4251(r_ab=10e3, transport=fake, device=0)
 
@@ -77,7 +77,7 @@ class TestMCP4xxDeviceKwargs(unittest.TestCase):
         """
         spi= plus several backend keywords names every offender.
         """
-        fake = FakeSpiTransport(default=[0, 0])
+        fake = FakeSpiTransport(default=[0xFE, 0x00])
         with self.assertRaisesRegex(TypeError, "port, clock_pin"):
             MCP4251(r_ab=10e3, spi=fake, port=0, clock_pin=11)
 
@@ -86,7 +86,7 @@ class TestMCP4xxDeviceKwargs(unittest.TestCase):
         Backend keywords without transport= keep selecting the default backend.
         """
         with mock.patch.object(spidev_spi_module, "SpiDevTransport") as adapter:
-            adapter.return_value.transfer.return_value = [0, 0]
+            adapter.return_value.transfer.return_value = [0xFE, 0x00]
             pot = MCP4251(r_ab=10e3, device=0)
         adapter.assert_called_once_with(bus=0, device=0)
         self.assertEqual(pot.channels_num, 2)
@@ -103,8 +103,8 @@ class TestMCP4xxDeviceKwargs(unittest.TestCase):
                 self.is_closed = False
 
             def transfer(self, tx):
-                """Return a zero response."""
-                return [0, 0]
+                """Report wiper code 0."""
+                return [0xFE, 0x00]
 
             def close(self) -> None:
                 """Mark the backend closed."""

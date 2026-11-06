@@ -6,12 +6,16 @@ import numpy as np
 
 try:
     from src.BDPotentiometer.__helpers import (
+        LABEL_MAX_LENGTH,
+        check_label,
         check_not_negative,
         check_positive,
         clamp,
     )
 except ModuleNotFoundError:
     from BDPotentiometer.__helpers import (
+        LABEL_MAX_LENGTH,
+        check_label,
         check_not_negative,
         check_positive,
         clamp,
@@ -58,7 +62,16 @@ class TestHelpers(unittest.TestCase):
             with self.assertRaises(ValueError):
                 check_not_negative(input_value)
         # Check TypeError is raised for wrong argument type.
-        for input_value in ["-17.3", "a", [0.0], [1.0, 17.2], (np.pi,), (2, 2.3), None]:
+        for input_value in [
+            "-17.3",
+            "a",
+            [0.0],
+            [1.0, 17.2],
+            (np.pi,),
+            (2, 2.3),
+            None,
+            True,
+        ]:
             with self.assertRaises(TypeError):
                 check_not_negative(input_value)
 
@@ -99,7 +112,16 @@ class TestHelpers(unittest.TestCase):
             with self.assertRaises(ValueError):
                 check_positive(input_value)
         # Check TypeError is raised for wrong argument type.
-        for input_value in ["-17.3", "a", [0.0], [1.0, 17.2], (np.pi,), (2, 2.3), None]:
+        for input_value in [
+            "-17.3",
+            "a",
+            [0.0],
+            [1.0, 17.2],
+            (np.pi,),
+            (2, 2.3),
+            None,
+            True,
+        ]:
             with self.assertRaises(TypeError):
                 check_positive(input_value)
 
@@ -158,15 +180,61 @@ class TestHelpers(unittest.TestCase):
         Testing clamp function errors.
         """
         # Check TypeError is raised for wrong argument type.
-        for input_value in ["-17.3", "a", [0.0], [1.0, 17.2], (np.pi,), (2, 2.3), None]:
+        for input_value in [
+            "-17.3",
+            "a",
+            [0.0],
+            [1.0, 17.2],
+            (np.pi,),
+            (2, 2.3),
+            None,
+            True,
+        ]:
             with self.assertRaises(TypeError):
                 clamp(input_value, -10.0, 10)
-        for left in ["-17.3", "a", [0.0], [1.0, 17.2], (np.pi,), (2, 2.3), None]:
+        for left in ["-17.3", "a", [0.0], [1.0, 17.2], (np.pi,), (2, 2.3), None, False]:
             with self.assertRaises(TypeError):
                 clamp(10, left, 10.0)
-        for right in ["-17.3", "a", [0.0], [1.0, 17.2], (np.pi,), (2, 2.3), None]:
+        for right in ["-17.3", "a", [0.0], [1.0, 17.2], (np.pi,), (2, 2.3), None, True]:
             with self.assertRaises(TypeError):
                 clamp(10, -10, right)
+
+
+class TestHelpersCheckLabel(unittest.TestCase):
+    """Test case for the `check_label` helper."""
+
+    def test_check_label_returns_stripped_text(self):
+        """Surrounding whitespace never becomes part of the stored label."""
+        for input_value, expected in [
+            ("a", "a"),
+            (" a ", "a"),
+            ("\tCH A\n", "CH A"),
+            ("CH A", "CH A"),
+        ]:
+            with self.subTest(input_value=input_value):
+                self.assertEqual(check_label(input_value), expected)
+
+    def test_check_label_rejects_non_str(self):
+        """Non-string labels are rejected instead of coerced to text."""
+        for input_value in [5, 5.0, True, None, b"a", ["a"], ("a",)]:
+            with self.subTest(input_value=input_value), self.assertRaises(TypeError):
+                check_label(input_value)
+
+    def test_check_label_rejects_empty(self):
+        """A label that is empty or whitespace only is rejected."""
+        for input_value in ["", " ", "\t", "\n  \t"]:
+            with self.subTest(input_value=input_value), self.assertRaises(ValueError):
+                check_label(input_value)
+
+    def test_check_label_length_limit(self):
+        """Labels up to the limit are accepted, longer ones are rejected."""
+        self.assertEqual(check_label("x" * LABEL_MAX_LENGTH), "x" * LABEL_MAX_LENGTH)
+        with self.assertRaises(ValueError):
+            check_label("x" * (LABEL_MAX_LENGTH + 1))
+        # Whitespace is stripped before the length is measured.
+        self.assertEqual(
+            check_label(" " + "x" * LABEL_MAX_LENGTH + " "), "x" * LABEL_MAX_LENGTH
+        )
 
 
 if __name__ == "__main__":

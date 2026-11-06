@@ -6,7 +6,7 @@ import re
 # -- Project information
 
 project = "BDPotentiometer"
-copyright = "2024, Anton Bondarenko"
+copyright = "2024-2026, Anton Bondarenko"
 author = "Anton Bondarenko"
 
 

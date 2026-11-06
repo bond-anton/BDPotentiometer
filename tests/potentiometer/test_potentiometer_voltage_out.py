@@ -256,6 +256,100 @@ class TestPotentiometerVoltageOut(unittest.TestCase):
             pot.v_w = 5.0
         self.assertEqual(pot.wiper_position, 0.4)
 
+    def test_voltage_out_near_equal_rails_does_not_divide_by_zero(self):
+        """
+        Rails one ulp apart with a far-away v_load used to make the unloaded
+        solution divide by a k + 1 denominator that rounds to exactly zero.
+        """
+        label = "bdpot-test-v-w-near-equal-rails"
+        pot = Potentiometer(
+            r_ab=1e5,
+            r_a=0.0,
+            r_b=0.0,
+            r_w=0.0,
+            r_load=1e6,
+            v_a=1.0,
+            v_b=0.9999999999999999,
+            v_load=1e6,
+            label=label,
+        )
+        pot.wiper_position = 0.5
+        with self.assertLogs(label, level="WARNING"):
+            pot.v_w = pot.v_load
+        self.assertEqual(pot.wiper_position, 1.0)
+        self.assertEqual(pot.v_w, 1.0)
+
+    def test_voltage_out_saturates_at_nearest_loaded_endpoint(self):
+        """
+        A huge series r_a limits the loaded output far below the rail span; the
+        unreachable target must saturate at the endpoint with the higher output
+        instead of being compared with the rails and held.
+        """
+        label = "bdpot-test-v-w-nearest-endpoint"
+        pot = Potentiometer(
+            r_ab=1e3,
+            r_a=1e6,
+            r_b=0.0,
+            r_w=0.0,
+            r_load=1e10,
+            v_a=10.0,
+            v_b=0.0,
+            v_load=0.0,
+            label=label,
+        )
+        pot.wiper_position = 0.5
+        with self.assertLogs(label, level="WARNING"):
+            pot.v_w = 9.0
+        self.assertEqual(pot.wiper_position, 1.0)
+        np.testing.assert_allclose(pot.v_w, 0.009990008992007094, rtol=1e-12)
+
+    def test_voltage_out_rail_equal_to_v_load_saturates_with_warning(self):
+        """
+        With v_b == v_load the loaded divider cannot reach v_load at x = 0, so
+        the endpoint is a saturation, not a solution, and must be reported.
+        """
+        label = "bdpot-test-v-w-rail-equal-v-load"
+        pot = Potentiometer(
+            r_ab=100,
+            r_a=0.0,
+            r_b=10.0,
+            r_w=0.0,
+            r_load=10.0,
+            v_a=10.0,
+            v_b=5.0,
+            v_load=5.0,
+            label=label,
+        )
+        pot.wiper_position = 0.5
+        with self.assertLogs(label, level="WARNING"):
+            pot.v_w = 5.0
+        self.assertEqual(pot.wiper_position, 0.0)
+        np.testing.assert_allclose(pot.v_w, 110.0 / 21.0, rtol=1e-12)
+        self.assertNotEqual(pot.v_w, pot.v_load)
+
+    def test_voltage_out_near_v_load_with_dominant_wiper_resistance(self):
+        """
+        With r_load << r_w the load pulls the output within a few hundred ppb of
+        v_load, so the divider equation cancels its leading terms. The scaled
+        solve must still find the position instead of holding the wiper.
+        """
+        pot = Potentiometer(
+            r_ab=1e5,
+            r_a=0.0,
+            r_b=1.14e5,
+            r_w=2.28e6,
+            r_load=0.041,
+            v_a=10.0,
+            v_b=-100.0,
+            v_load=1.0,
+        )
+        pot.wiper_position = 0.0
+        target = pot.v_w
+        pot.wiper_position = 0.5
+        pot.v_w = target
+        self.assertEqual(pot.wiper_position, 0.0)
+        np.testing.assert_allclose(pot.v_w, target, rtol=1e-12)
+
     def test_voltage_out_finite_values(self):
         """v_w accepts numpy floats and rejects non-finite values."""
         pot = Potentiometer(r_ab=10e3, r_w=75)

@@ -85,6 +85,11 @@ my_pot = MCP4231(r_ab=10e3, transport=FakeSpiTransport(default=[0, 0]))
 `spidev.SpiDev` or a gpiozero SPI object), and `.close()` / `.closed` release
 and report the underlying transport.
 
+`from BDPotentiometer import *` follows `__all__`, which includes
+`GpiozeroSpiTransport`. That name is resolved lazily, so a star import without
+the `gpiozero` extra raises `AttributeError`; import the names you need
+explicitly when the optional backend may be absent.
+
 Please see the [examples](examples) directory for more usage examples.
 
 Detailed documentation is available at https://bdpotentiometer.readthedocs.io

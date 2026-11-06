@@ -77,22 +77,86 @@ class TestDigitalPotentiometer(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.digital_pot.set_channel_label(-1, "CH C")
 
-    def test_channel_label_normalizes_to_str(self):
+    def test_channel_label_rejects_non_str(self):
         """
-        Integer labels are stored as strings and compared after normalization.
+        Non-string labels are rejected instead of silently coerced.
         """
         pot = Potentiometer(r_ab=10e3, r_w=75)
         wiper = DigitalWiper(potentiometer=pot, max_value=128)
         digital_pot = DigitalPotentiometerDevice(wiper=wiper, channels=2)
-        digital_pot.set_channel_label(0, 5)
-        self.assertEqual(digital_pot._get_channel_number_by_label_or_id("5"), 0)
+        for label in [5, 5.0, True, b"CH A", ["CH A"]]:
+            with self.subTest(label=label), self.assertRaises(TypeError):
+                digital_pot.set_channel_label(0, label)
         self.assertEqual(digital_pot._get_channel_number_by_label_or_id(0), 0)
-        # A label already used by another channel is still rejected.
+
+    def test_channel_label_rejects_overlong_label(self):
+        """
+        A label longer than the limit is rejected before it is stored.
+        """
+        pot = Potentiometer(r_ab=10e3, r_w=75)
+        wiper = DigitalWiper(potentiometer=pot, max_value=128)
+        digital_pot = DigitalPotentiometerDevice(wiper=wiper, channels=2)
+        digital_pot.set_channel_label(0, "x" * 64)
+        self.assertEqual(digital_pot._get_channel_number_by_label_or_id("x" * 64), 0)
+        with self.assertRaises(ValueError):
+            digital_pot.set_channel_label(1, "x" * 65)
+        self.assertEqual(digital_pot._get_channel_number_by_label_or_id("1"), 1)
+
+    def test_channel_label_cannot_shadow_numeric_label(self):
+        """
+        A string label that equals another channel's default number is rejected.
+        """
+        pot = Potentiometer(r_ab=10e3, r_w=75)
+        wiper = DigitalWiper(potentiometer=pot, max_value=128)
         digital_pot = DigitalPotentiometerDevice(wiper=wiper, channels=6)
         with self.assertRaises(ValueError):
-            digital_pot.set_channel_label(0, 5)
+            digital_pot.set_channel_label(0, "5")
         self.assertEqual(digital_pot._get_channel_number_by_label_or_id("0"), 0)
         self.assertEqual(digital_pot._get_channel_number_by_label_or_id("5"), 5)
+
+    def test_channel_lookup_string_id_fallback(self):
+        """
+        A numeric string resolves as an id when no custom label matches it.
+        """
+        pot = Potentiometer(r_ab=10e3, r_w=75)
+        wiper = DigitalWiper(potentiometer=pot, max_value=128)
+        digital_pot = DigitalPotentiometerDevice(wiper=wiper, channels=3)
+        digital_pot.set_channel_label(0, "CH A")
+        digital_pot.set_channel_label(1, "CH B")
+        digital_pot.set_channel_label(2, "CH C")
+        # Custom labels hide the default numeric labels, but the ids still work.
+        self.assertEqual(digital_pot._get_channel_number_by_label_or_id("0"), 0)
+        self.assertEqual(digital_pot._get_channel_number_by_label_or_id(" 2 "), 2)
+        self.assertEqual(digital_pot.get_value("2"), digital_pot.get_value(2))
+        self.assertIsNone(digital_pot._get_channel_number_by_label_or_id("3"))
+        self.assertIsNone(digital_pot._get_channel_number_by_label_or_id("-1"))
+        self.assertIsNone(digital_pot._get_channel_number_by_label_or_id("1.0"))
+
+    def test_channel_lookup_label_wins_over_id(self):
+        """
+        A string label takes precedence over the same id in the fallback.
+        """
+        pot = Potentiometer(r_ab=10e3, r_w=75)
+        wiper = DigitalWiper(potentiometer=pot, max_value=128)
+        digital_pot = DigitalPotentiometerDevice(wiper=wiper, channels=3)
+        digital_pot.set_channel_label(0, "CH A")
+        digital_pot.set_channel_label(2, "0")
+        self.assertEqual(digital_pot._get_channel_number_by_label_or_id("0"), 2)
+        self.assertEqual(digital_pot._get_channel_number_by_label_or_id(0), 0)
+
+    def test_channel_label_reset_blocked_when_number_taken(self):
+        """
+        `label=None` raises when another channel holds the restored number.
+        """
+        pot = Potentiometer(r_ab=10e3, r_w=75)
+        wiper = DigitalWiper(potentiometer=pot, max_value=128)
+        digital_pot = DigitalPotentiometerDevice(wiper=wiper, channels=2)
+        digital_pot.set_channel_label(0, "CH A")
+        digital_pot.set_channel_label(1, "0")
+        with self.assertRaises(ValueError):
+            digital_pot.set_channel_label(0, None)
+        self.assertEqual(digital_pot._get_channel_number_by_label_or_id("CH A"), 0)
+        self.assertEqual(digital_pot._get_channel_number_by_label_or_id("0"), 1)
 
     def test_channels_property_returns_copy(self):
         """
@@ -239,20 +303,16 @@ class TestDigitalPotentiometer(unittest.TestCase):
         self.assertEqual(self.digital_pot.v_w, (0, 0))
         self.digital_pot.v_a = (-5, 5)
         self.digital_pot.v_w = (-2.5, 2.5)
-        self.assertEqual(
-            self.digital_pot.v_w,
-            (
-                self.digital_pot.channels[0].v_w,
-                self.digital_pot.channels[1].v_w,
-            ),
+        # One wiper code step expressed in volts, so the tolerance below is
+        # derived from the divider span rather than from a resistance.
+        v_step = abs(self.digital_pot.v_a[0] - self.digital_pot.v_b[0]) / (
+            self.digital_pot.channels[0].max_value
         )
-        self.assertEqual(
-            self.digital_pot.get_v_w("CH A"),
-            self.digital_pot.channels[0].v_w,
-        )
-        self.assertEqual(
-            self.digital_pot.get_v_w("CH B"),
-            self.digital_pot.channels[1].v_w,
+        np.testing.assert_allclose(self.digital_pot.v_w, (-2.5, 2.5), atol=v_step)
+        np.testing.assert_allclose(
+            (self.digital_pot.get_v_w("CH A"), self.digital_pot.get_v_w("CH B")),
+            (-2.5, 2.5),
+            atol=v_step,
         )
         with self.assertRaises(ValueError):
             self.digital_pot.get_v_w("CH XXX")
@@ -262,19 +322,16 @@ class TestDigitalPotentiometer(unittest.TestCase):
             self.digital_pot.v_w = 5
         self.digital_pot.set_v_w(0, -1)
         self.digital_pot.set_v_w("CH B", 1.5)
-        self.assertEqual(
-            self.digital_pot.v_w,
-            (
-                self.digital_pot.channels[0].v_w,
-                self.digital_pot.channels[1].v_w,
-            ),
+        v_step = abs(self.digital_pot.v_a[0] - self.digital_pot.v_b[0]) / (
+            self.digital_pot.channels[0].max_value
+        )
+        np.testing.assert_allclose(
+            (self.digital_pot.get_v_w("CH A"), self.digital_pot.get_v_w("CH B")),
+            (-1, 1.5),
+            atol=v_step,
         )
         with self.assertRaises(ValueError):
             self.digital_pot.set_v_w(2, 5)
-        min_r_step = (self.pot.r_ab + self.pot.r_w) / self.digital_pot.channels[
-            0
-        ].max_value
-        self.assertTrue(abs(self.digital_pot.channels[0].v_w - 1) < min_r_step * 5)
 
     def test_r_lim(self):
         """
@@ -356,11 +413,18 @@ class TestDigitalPotentiometer(unittest.TestCase):
         """
         self.digital_pot.set_channel_label(0, "  CH A  ")
         self.assertEqual(self.digital_pot._get_channel_number_by_label_or_id("CH A"), 0)
+        # Lookups strip too, so every whitespace variant reaches the channel.
+        self.assertEqual(
+            self.digital_pot._get_channel_number_by_label_or_id("  CH A  "), 0
+        )
+        self.assertEqual(
+            self.digital_pot.get_value(" CH A "), self.digital_pot.get_value(0)
+        )
         with self.assertRaises(ValueError):
             self.digital_pot.set_channel_label(1, " CH A ")
         with self.assertRaises(ValueError) as ctx:
             self.digital_pot.set_channel_label(1, "   ")
-        self.assertIn("channel 1", str(ctx.exception))
+        self.assertIn("non-empty", str(ctx.exception))
         with self.assertRaises(ValueError):
             self.digital_pot.set_channel_label(1, "")
         self.assertEqual(self.digital_pot._get_channel_number_by_label_or_id("CH B"), 1)

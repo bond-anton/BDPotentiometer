@@ -38,7 +38,12 @@ class FakeSpiTransport:
         self._default = list(default) if default is not None else None
         self._strict = strict
         self.calls: list[list[int]] = []
-        self.closed = False
+        self._closed = False
+
+    @property
+    def closed(self) -> bool:
+        """Return True once the transport has been closed."""
+        return self._closed
 
     def queue(self, *responses: list[int]) -> None:
         """Append scripted response frames."""
@@ -48,7 +53,9 @@ class FakeSpiTransport:
         """Return the next scripted frame for `tx`.
 
         Request words must be ints in 0..255; a malformed word raises
-        `ValueError` before the call is recorded.
+        `ValueError` before the call is recorded. A frame that fails validation
+        stays at the head of the queue and is not recorded as a call, so the
+        caller can retry with a matching request.
 
         :param tx: Request frame.
         :return: Response frame of the same length.
@@ -57,7 +64,7 @@ class FakeSpiTransport:
         :raises TransportError: If no response is available in strict mode or
             the scripted response length does not match the request.
         """
-        if self.closed:
+        if self._closed:
             raise TransportClosed("FakeSpiTransport is closed")
         frame = list(tx)
         for word in frame:
@@ -65,21 +72,26 @@ class FakeSpiTransport:
                 raise ValueError(
                     f"SPI frame words must be ints in the range 0..255, got {word!r}"
                 )
-        self.calls.append(frame)
         if self._responses:
-            rx = list(self._responses.pop(0))
+            rx = list(self._responses[0])
+            from_queue = True
         elif self._default is not None:
             rx = list(self._default)
+            from_queue = False
         elif self._strict:
             raise TransportError("FakeSpiTransport has no scripted response")
         else:
+            self.calls.append(frame)
             return [0] * len(frame)
         if len(rx) != len(frame):
             raise TransportError(
                 f"Response length {len(rx)} does not match request length {len(frame)}"
             )
+        if from_queue:
+            self._responses.pop(0)
+        self.calls.append(frame)
         return rx
 
     def close(self) -> None:
         """Close the transport. Repeated calls have no effect."""
-        self.closed = True
+        self._closed = True

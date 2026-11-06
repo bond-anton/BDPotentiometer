@@ -11,23 +11,29 @@ from .base import (
 )
 from .fake import FakeSpiTransport
 from .selection import (
-    GPIOZERO_PIN_ARGS,  # noqa: F401 - re-exported for callers
-    GPIOZERO_SPI_ARGS,  # noqa: F401 - re-exported for callers
-    build_default_transport,  # noqa: F401 - re-exported for callers
+    GPIOZERO_PIN_ARGS,
+    GPIOZERO_SPI_ARGS,
+    build_default_transport,
 )
 from .spidev_spi import SpiDevTransport
 
 if TYPE_CHECKING:
-    from .gpiozero_spi import GpiozeroSpiTransport
+    from .gpiozero_spi import GpiozeroSpiTransport  # noqa: F401
+
+#: Names resolved lazily by `__getattr__`; kept out of `__all__` so a star
+#: import works on a core install without the optional gpiozero package.
+_LAZY_ATTRIBUTES = ("GpiozeroSpiTransport",)
 
 __all__ = [
     "FakeSpiTransport",
-    "GpiozeroSpiTransport",
+    "GPIOZERO_PIN_ARGS",
+    "GPIOZERO_SPI_ARGS",
     "I2cTransport",
     "SpiDevTransport",
     "SpiTransport",
     "TransportClosed",
     "TransportError",
+    "build_default_transport",
     "is_spi_transport",
 ]
 
@@ -49,4 +55,4 @@ def __getattr__(name: str) -> Any:
 
 def __dir__() -> list[str]:
     """List the module attributes, including lazily resolved names."""
-    return sorted(set(__all__) | set(globals()))
+    return sorted(set(__all__) | set(globals()) | set(_LAZY_ATTRIBUTES))

@@ -15,12 +15,14 @@ def check_number(num: Union[float, int, Real]) -> Union[float, int]:
     """
     Check that `num` is a finite real number.
 
-    Infinity and `NaN` are rejected. Both `+0.0` and `-0.0` are returned as
-    `0.0`; integers are returned as int, all other numbers as float.
+    Infinity and `NaN` are rejected. `bool` is rejected as well even though it
+    is an `int` subclass: `True` and `False` are flags, not measurements, and
+    accepting them as numbers hides caller mistakes. Both `+0.0` and `-0.0` are
+    returned as `0.0`; integers are returned as int, all other numbers as float.
 
     :param num: variable to check.
     :return: Unchanged `num` as int or float.
-    :raises TypeError: If `num` is not a real number.
+    :raises TypeError: If `num` is not a real number, or is a `bool`.
     :raises ValueError: If `num` is infinite or `NaN`.
     """
     if isinstance(num, bool):
@@ -47,7 +49,7 @@ def check_integer(num: Union[float, int, Real]) -> int:
 
     :param num: Number (either int or float) to be checked.
     :return: int representation of `num`.
-    :raises TypeError: If `num` is not a real number.
+    :raises TypeError: If `num` is not a real number, or is a `bool`.
     :raises ValueError: If `num` is infinite, `NaN`, or has a fractional part.
     """
     num = check_number(num)
@@ -69,13 +71,47 @@ def check_bool(value: bool) -> bool:
     return value
 
 
+LABEL_MAX_LENGTH = 64
+
+
+def check_label(value: str) -> str:
+    """
+    Check that `value` is a non-empty string usable as a channel label.
+
+    Non-string input is rejected instead of coerced, so a label can never be
+    confused with a channel number. Surrounding whitespace is stripped and the
+    stripped text is returned, so `" a "` and `"a"` are the same label and an
+    all-whitespace string is empty.
+
+    :param value: Label to check.
+    :return: Stripped label as str.
+    :raises TypeError: If `value` is not a str.
+    :raises ValueError: If `value` is empty after stripping, or longer than
+        `LABEL_MAX_LENGTH` characters.
+    """
+    if not isinstance(value, str):
+        raise TypeError(f"Expected a string label, got {value!r} of type {type(value)}")
+    text = value.strip()
+    if not text:
+        raise ValueError("Expected a non-empty label")
+    if len(text) > LABEL_MAX_LENGTH:
+        raise ValueError(
+            f"Expected a label of at most {LABEL_MAX_LENGTH} characters, "
+            f"got {len(text)}"
+        )
+    return text
+
+
 def check_not_negative(num: Union[float, int]) -> Union[float, int]:
     """
     Check that `num` is a not negative number.
 
+    `bool` is rejected as a type error even though it is an `int` subclass; pass
+    `0` or `1` explicitly when a numeric flag is intended.
+
     :param num: Either float or int number.
     :return: `num` unchanged.
-    :raises TypeError: If `num` is not a real number.
+    :raises TypeError: If `num` is not a real number, or is a `bool`.
     :raises ValueError: If `num` is negative, infinite, or `NaN`.
     """
     num = check_number(num)
@@ -88,9 +124,12 @@ def check_positive(num: Union[float, int]) -> Union[float, int]:
     """
     Check that `num` is a positive number.
 
+    `bool` is rejected as a type error even though it is an `int` subclass; pass
+    `1` explicitly when a numeric flag is intended.
+
     :param num: Either float or int number.
     :return: `num` unchanged.
-    :raises TypeError: If `num` is not a real number.
+    :raises TypeError: If `num` is not a real number, or is a `bool`.
     :raises ValueError: If `num` is zero, negative, infinite, or `NaN`.
     """
     num = check_number(num)
@@ -107,13 +146,15 @@ def clamp(
 
     The bounds may be passed in any order: swapped bounds are normalized before
     the comparison. A float `value` always stays a float, even when it is
-    clamped to an int bound.
+    clamped to an int bound. All three arguments reject `bool` even though it
+    is an `int` subclass; pass `0` or `1` explicitly when a numeric flag is
+    intended.
 
     :param value: Either float or int number to be coerced.
     :param min_value: Lower coerce range boundary.
     :param max_value: Upper coerce range boundary.
     :return: Value coerced to the given range.
-    :raises TypeError: If an argument is not a real number.
+    :raises TypeError: If an argument is not a real number, or is a `bool`.
     :raises ValueError: If an argument is infinite or `NaN`.
     """
     value = check_number(value)

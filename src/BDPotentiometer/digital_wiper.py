@@ -78,16 +78,27 @@ class DigitalWiper:
         Set the wiper channel number and reload the cached value.
 
         The cache belongs to the previous channel, so it is refreshed with
-        `read()`. On a bus-backed wiper without a transport that raises
-        `ConnectionError` from `read()`, after the channel has been assigned.
+        `read()`. If that read fails (a detached transport or a bus error),
+        the previous channel number and the cached code are restored before the
+        error is re-raised, so the wiper never reports a new channel while
+        still holding the old channel's code.
 
         :param channel_id: Channel number, a non-negative int.
         :raises TypeError: If `channel_id` is not a real number.
         :raises ValueError: If `channel_id` is negative, fractional, `NaN`, or
             infinite.
+        :raises ConnectionError: If `read()` cannot reach the device.
         """
-        self.__channel = check_integer(check_not_negative(channel_id))
-        self.read()
+        new_channel = check_integer(check_not_negative(channel_id))
+        previous_channel = self.__channel
+        previous_value = self.__value
+        self.__channel = new_channel
+        try:
+            self.read()
+        except Exception:
+            self.__channel = previous_channel
+            self.__value = previous_value
+            raise
 
     @property
     def invert(self) -> bool:
@@ -175,7 +186,8 @@ class DigitalWiper:
         The base class has no bus: it derives the code from
         `potentiometer.wiper_position` and clamps it to `0..max_code`, so a
         position of 1.0 never exceeds the accepted code range. Bus-backed
-        subclasses override this to read the device register instead.
+        subclasses override this method and return the device register code
+        as read, so the clamp only guards the model-backed base class.
 
         :return: Wiper position value (int).
         """
@@ -188,8 +200,9 @@ class DigitalWiper:
 
         The value must be an integer: integral floats are accepted, fractional
         values, booleans, `NaN`, and infinities are rejected. It is then
-        clamped to [`min_value`, `max_code`] and inverted when `invert` is set,
-        then stored in `potentiometer.wiper_position` as `value / max_value`.
+        clamped to `0..max_code` (`min_value` is always 0 and not a bound of
+        its own) and inverted when `invert` is set, then stored in
+        `potentiometer.wiper_position` as `value / max_value`.
         Bus-backed subclasses override this to send the code to the device.
 
         :param value: Requested wiper position value (int).
@@ -351,7 +364,8 @@ class SpiDigitalWiper(DigitalWiper):
         during construction and then require the transport up front.
 
         :param potentiometer: `Potentiometer` instance the wiper drives.
-        :param spi: SPI transport, kept for compatibility with the old signature.
+        :param spi: SPI transport used when `transport` is None; the older name
+            for the same argument.
         :param max_value: Number of discrete steps, also the full-scale divisor (int).
         :param invert: Mirror the wiper position, so value 0 is at terminal A (bool).
         :param transport: Canonical SPI transport; wins over `spi` when both are given.
@@ -394,11 +408,14 @@ class SpiDigitalWiper(DigitalWiper):
         """
         Compatibility accessor for the SPI interface; `transport` is canonical.
 
-        :return: SPI interface (backend's raw handle if wrapped, else the transport)
+        :return: The backend's raw handle when the transport exposes a non-None
+            `raw` attribute, otherwise the transport itself; `None` when no
+            transport is attached.
         """
         if self._transport is None:
             return None
-        return getattr(self._transport, "raw", self._transport)
+        raw = getattr(self._transport, "raw", None)
+        return self._transport if raw is None else raw
 
     @spi.setter
     def spi(self, spi: Union[SpiTransport, None]) -> None:

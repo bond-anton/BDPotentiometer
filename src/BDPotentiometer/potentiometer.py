@@ -48,9 +48,11 @@ class Potentiometer:
     The voltage at the A and B terminals of the potentiometer can be controlled
     using the parameters `v_a` and `v_b`.
     To obtain the voltage at the terminal W read the `v_w` property; assigning to it
-    moves the wiper to the position that produces the requested voltage.
+    moves the wiper to the position that produces the requested voltage when one
+    exists, and otherwise saturates at the terminal with the closest output.
     The resistance of the load can be set using the property `r_load`.
-    The potential at the another end of the load resistor is set using the `v_load` property.
+    The potential at the other end of the load resistor is set using the `v_load`
+    property.
 
     If we set the resistance `r_a` to a very high value, the potentiometer will turn
     into a rheostat with a floating A terminal.
@@ -307,10 +309,22 @@ class Potentiometer:
 
         :return: Voltage at terminal W as float.
         """
+        return self._v_w_at(self.wiper_position)
+
+    def _v_w_at(self, position: float) -> float:
+        """
+        Voltage at terminal W for an arbitrary wiper position.
+
+        `v_w` evaluates this for the current position; the setter also needs the
+        two terminal voltages to decide where an unreachable target saturates.
+
+        :param position: Wiper position in the range from 0 (B) to 1 (A).
+        :return: Voltage at terminal W as float.
+        """
         if self.r_load + self.r_w == 0:
             return self.v_load
-        r_left = self.r_a + self.r_ab * (1 - self.wiper_position)
-        r_right = self.r_b + self.r_ab * self.wiper_position
+        r_left = self.r_a + self.r_ab * (1 - position)
+        r_right = self.r_b + self.r_ab * position
         r_bot = self.r_w + self.r_load
         v_bot = (
             self.v_a * r_bot * r_right
@@ -326,14 +340,15 @@ class Potentiometer:
         Move the wiper to the position that gives the requested W voltage.
 
         When no wiper position can produce the requested voltage, the wiper
-        saturates at the terminal the target points at; if even that is
-        ambiguous the position is kept and a warning is logged. The requested
-        voltage is clamped by the divider, so the property does not raise for
-        an unreachable target.
+        saturates at the terminal whose actual output is closest to the target
+        and a warning is logged; if both terminals are equally close, the
+        position is kept and a warning is logged instead. The requested voltage
+        is never rejected, so the property does not raise for an unreachable
+        target.
 
-        A target within `rel_tol=1e-9` and `abs_tol=1e-12` of `v_load` is
-        solved as an unloaded divider, because the load current vanishes and
-        the general solution divides by it.
+        A target exactly equal to `v_load` draws no load current and is solved
+        as an unloaded divider. Any other target, including one arbitrarily
+        close to `v_load`, is solved with the loaded divider equation.
 
         When the load resistance `r_load` is zero the load shorts the wiper, the
         output no longer depends on the wiper position, and the wiper is centred
@@ -345,56 +360,107 @@ class Potentiometer:
         """
         voltage = float(check_number(voltage))
         self.logger.debug("Setting V(W) to %2.2g V", voltage)
-        if self.r_load != 0:
-            if m.isclose(voltage, self.v_load, rel_tol=1e-9, abs_tol=1e-12):
-                self._v_out_eq_v_load()
-            else:
-                self._v_out_gen_solution(voltage)
-        else:
+        if self.r_load == 0:
             self.logger.debug("R(Load) is zero, wiper has no effect, centring it")
             self.wiper_position = 0.5
+        else:
+            self._v_out_gen_solution(voltage)
 
-    def _v_out_eq_v_load(self):
+    def _v_out_eq_v_load(self) -> None:
         """
-        Pick the wiper position that keeps V(W) equal to `v_load`.
+        Pick the wiper position for which the open-circuit divider gives
+        `v_load`.
 
-        With no load current the wiper voltage follows the unloaded divider, so
-        `v_load` is reachable only inside the rail span; a target outside it is
-        clamped to the nearest terminal. When `v_a == v_b == v_load` every
+        `v_load` is reachable when the open-circuit divider voltage at some
+        position equals it, which for a linear divider means that `v_load` lies
+        between the open-circuit voltages at the two terminals. Otherwise the
+        wiper saturates at the terminal whose loaded output is closest to
+        `v_load` and a warning is logged. When `v_a == v_b == v_load` every
         position produces the target and the wiper is centred. When
         `v_a == v_b != v_load` no position produces the target at all; the
         wiper is left untouched and a warning is logged.
         """
         self.logger.debug("Load current is zero, V_load = V_w = %s", self.v_load)
-        if self.v_b == self.v_a == self.v_load:
-            self.logger.debug("V_a = V_b = V_load = %s", self.v_load)
-            self.logger.debug(
-                "V_w independent of wiper position, setting wiper to the middle."
-            )
-            self.wiper_position = 0.5
-        elif self.v_b == self.v_a:
+        span = self.v_a - self.v_b
+        if span == 0:
+            if self.v_load == self.v_a:
+                self.logger.debug("V_a = V_b = V_load = %s", self.v_load)
+                self.logger.debug(
+                    "V_w independent of wiper position, setting wiper to the middle."
+                )
+                self.wiper_position = 0.5
+            else:
+                self.logger.warning(
+                    "V_a = V_b = %s is unreachable for V_load = %s at any wiper "
+                    "position, holding position %s",
+                    self.v_a,
+                    self.v_load,
+                    self.wiper_position,
+                )
+            return
+        # Open-circuit divider: (V_a - V_load) / r_left = (V_load - V_b) / r_right.
+        # Solving for the B-W resistance avoids the k + 1 denominator, which
+        # cancels to zero when the rails differ by a single ulp.
+        r_bw = (
+            (self.v_load - self.v_b) * (self.r_a + self.r_ab)
+            - (self.v_a - self.v_load) * self.r_b
+        ) / span
+        self.logger.debug("R_bw = %s", r_bw)
+        position = r_bw / self.r_ab
+        if -1e-12 <= position <= 1.0 + 1e-12:
+            self.logger.debug("Setting wiper to %s", position)
+            self.wiper_position = clamp(position, 0.0, 1.0)
+        else:
+            self._saturate(self.v_load)
+
+    def _saturate(self, voltage: float) -> None:
+        """
+        Move the wiper to the terminal whose output is closest to `voltage`.
+
+        Called when no wiper position reproduces the target. A warning reports
+        both terminal voltages; identical terminal voltages leave the position
+        untouched because neither terminal is preferable.
+
+        A target outside the output range is assigned by comparing it with the
+        terminal voltages, not by subtracting it from both: the differences are
+        nearly equal when the target is far outside a narrow range, and the
+        comparison would lose the side that the target lies on.
+        """
+        v_at_b = self._v_w_at(0.0)
+        v_at_a = self._v_w_at(1.0)
+        if v_at_b == v_at_a:
             self.logger.warning(
-                "V_a = V_b = %s is unreachable for V_load = %s at any wiper "
-                "position, holding position %s",
-                self.v_a,
-                self.v_load,
+                "No wiper position gives V(W) = %s V, both terminals produce "
+                "%s V, holding position %s",
+                voltage,
+                v_at_b,
                 self.wiper_position,
             )
-        elif self.v_b == self.v_load:
-            self.logger.debug("V_a != V_b = V_load = %s", self.v_load)
-            self.logger.debug("Setting wiper to 0")
-            self.wiper_position = 0
-        elif self.v_a == self.v_load:
-            self.logger.debug("V_b != V_a = V_load = %s", self.v_load)
-            self.logger.debug("Setting wiper to 1")
-            self.wiper_position = 1
+            return
+        low, high = (v_at_b, v_at_a) if v_at_b < v_at_a else (v_at_a, v_at_b)
+        if voltage >= high:
+            position = 1.0 if v_at_a > v_at_b else 0.0
+        elif voltage <= low:
+            position = 1.0 if v_at_a < v_at_b else 0.0
+        elif abs(v_at_b - voltage) < abs(v_at_a - voltage):
+            position = 0.0
+        elif abs(v_at_a - voltage) < abs(v_at_b - voltage):
+            position = 1.0
         else:
-            k = (self.v_a - self.v_load) / (self.v_load - self.v_b)
-            r_bw = (self.r_a + self.r_ab - k * self.r_b) / (k + 1)
-            self.logger.debug("R_bw = %s", r_bw)
-            r_bw = clamp(r_bw, 0.0, self.r_ab)
-            self.logger.debug("Setting wiper to %s", r_bw / self.r_ab)
-            self.wiper_position = r_bw / self.r_ab
+            self.logger.warning(
+                "No wiper position gives V(W) = %s V, both terminals are equally "
+                "far, holding position %s",
+                voltage,
+                self.wiper_position,
+            )
+            return
+        self.logger.warning(
+            "No wiper position gives V(W) = %s V, saturating at %s (V(W) = %s V)",
+            voltage,
+            "A" if position == 1.0 else "B",
+            v_at_a if position == 1.0 else v_at_b,
+        )
+        self.wiper_position = position
 
     def _v_out_gen_solution(self, voltage: float) -> None:
         """
@@ -404,47 +470,51 @@ class Potentiometer:
         have two valid positions or none. Two roots are disambiguated by keeping
         the one closest to the current position; a root just outside [0, 1] is
         clamped to the terminal. When no root is usable the wiper saturates at
-        the terminal the target points at, and a target that cannot be reached
-        at all leaves the position untouched with a warning.
+        the terminal whose output is closest to the target, and an ambiguous
+        target leaves the position untouched; both cases log a warning.
+
+        The quadratic is built from resistances normalized by `r_ab`. Normalizing
+        keeps every coefficient on the scale of the resistances themselves; the
+        unscaled form subtracts terms of order `r_w * r_top`, which cancels the
+        root when `r_w` dominates `r_load`.
         """
-        i_l: float = (self.v_load - voltage) / self.r_load
-        v_bot: float = voltage - i_l * self.r_w
-        self.logger.debug("V_bot = %s, V_b = %s, V_a = %s", v_bot, self.v_b, self.v_a)
-        r_tl: float = self.r_ab + self.r_a
-        r_top: float = self.r_ab + self.r_a + self.r_b
-        v_top: float = self.v_b - self.v_a
-        b: float = self.r_b - r_tl + v_top / i_l
-        c: float = (
-            v_bot * r_top / i_l
-            - self.r_b * r_tl
-            - (self.v_a * self.r_b + self.v_b * r_tl) / i_l
+        v_a = self.v_a
+        v_b = self.v_b
+        v_load = self.v_load
+        if voltage == v_load:
+            # Zero load current: the equation degenerates to the open-circuit
+            # divider, which is linear in the position.
+            self._v_out_eq_v_load()
+            return
+        # The load branch is the series r_w + r_load to v_load. In normalized
+        # units r_b = r_b / r_ab, s = r_left(0) / r_ab, beta = (r_w + r_load) / r_ab.
+        r_b = self.r_b / self.r_ab
+        s = 1.0 + self.r_a / self.r_ab
+        beta = (self.r_w + self.r_load) / self.r_ab
+        delta = voltage - v_load
+        alpha = 1.0 + self.r_w / self.r_load
+        # A2 * x^2 + A1 * x + A0 = 0.
+        a2 = delta * alpha
+        a1 = -a2 * (s - r_b) + beta * (v_a - v_b)
+        a0 = beta * (v_a * r_b + v_b * s - v_load * (s + r_b)) - a2 * (
+            beta * (s + r_b) + s * r_b
         )
-        # The monic quadratic is x^2 + (b / r_ab) * x + c / r_ab^2 = 0. The
-        # textbook formula cancels catastrophically when b dominates, so build
-        # the well-conditioned root and derive the second one from the product.
-        d = b * b - 4 * c
-        candidates = []
-        if d >= 0:
-            q = -(b + m.copysign(1.0, b) * m.sqrt(d)) / (2 * self.r_ab)
-            if q == 0:
-                roots = [0.0] if c == 0 else []
-            else:
-                roots = [q, c / (self.r_ab * self.r_ab * q)]
-            candidates = [
-                clamp(root, 0.0, 1.0) for root in roots if -1e-12 <= root <= 1.0 + 1e-12
-            ]
+        self.logger.debug("V_out coefficients: %s, %s, %s", a2, a1, a0)
+        d = a1 * a1 - 4 * a2 * a0
+        if d < 0:
+            roots = []
+        else:
+            # The textbook formula cancels catastrophically when a1 dominates,
+            # so build the well-conditioned root and derive the second one from
+            # the product a0 / a2.
+            q = -(a1 + m.copysign(1.0, a1) * m.sqrt(d)) / 2
+            roots = [0.0] if q == 0 else [q / a2, a0 / q]
+        candidates = [
+            clamp(root, 0.0, 1.0) for root in roots if -1e-12 <= root <= 1.0 + 1e-12
+        ]
         if candidates:
             self.wiper_position = min(
                 candidates, key=lambda root: abs(self.wiper_position - root)
             )
             return
-        if v_bot <= self.v_b < self.v_a or v_bot >= self.v_b > self.v_a:
-            self.logger.debug("Coerce to V_b, setting wiper to 0")
-            self.wiper_position = 0
-        elif v_bot <= self.v_a < self.v_b or v_bot >= self.v_a > self.v_b:
-            self.logger.debug("Coerce to V_a, setting wiper to 1")
-            self.wiper_position = 1
-        else:
-            self.logger.warning(
-                "No wiper position gives V(W) = %s V, wiper holds position", voltage
-            )
+        self._saturate(voltage)

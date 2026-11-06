@@ -29,7 +29,14 @@ class TestMCP4xxxSpiDevTransport(unittest.TestCase):
         A chip built on SpiDevTransport submits the MCP4231 write frame.
         """
         raw = mock.MagicMock()
-        raw.xfer2.side_effect = lambda tx: [0] * len(tx)
+
+        def _xfer2(tx):
+            # The constructor and the post-write read both issue a read frame.
+            if tx[0] & 0b00001100 == 0b00001100:
+                return [0xFE, 0x00]
+            return [0] * len(tx)
+
+        raw.xfer2.side_effect = _xfer2
         with mock.patch.dict(sys.modules, {"spidev": _stub_module(raw)}):
             transport = SpiDevTransport(bus=0, device=0)
             pot = MCP4231(r_ab=10e3, transport=transport)
