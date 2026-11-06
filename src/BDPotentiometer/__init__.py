@@ -1,6 +1,6 @@
 """Digital potentiometer and wiper models with pluggable bus transports."""
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 
 from typing import TYPE_CHECKING, Any
