@@ -29,6 +29,13 @@ class MCP4xxxCodecTestCase(unittest.TestCase):
         """Test write frame for channel 1."""
         self.assertEqual(_encode_wiper_write(1, 43), [0b00010000, 43])
 
+    def test_encode_wiper_write_out_of_range(self):
+        """Values outside the 0..255 register range raise ValueError."""
+        with self.assertRaises(ValueError):
+            _encode_wiper_write(0, 256)
+        with self.assertRaises(ValueError):
+            _encode_wiper_write(0, -1)
+
     def test_encode_wiper_read_channel_0(self):
         """Test read frame for channel 0."""
         self.assertEqual(_encode_wiper_read(0), [0b00001100, 0])

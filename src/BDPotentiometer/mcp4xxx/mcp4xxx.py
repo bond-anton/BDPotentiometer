@@ -110,6 +110,8 @@ def _encode_wiper_write(channel: int, value: int) -> list[int]:
     :param value: wiper position value (int).
     :return: Command frame ready for transfer (list).
     """
+    if not 0 <= value <= 0xFF:
+        raise ValueError(f"Wiper value must be in the range 0..255, got {value}")
     return [_W_CMD | _CH[channel], value]
 
 
@@ -162,9 +164,21 @@ class MCP4xxxWiper(SpiDigitalWiper):
             **kwargs,
         )
 
+    @property
+    def max_code(self) -> int:
+        """
+        Highest wiper code accepted by the device.
+
+        8-bit parts use `max_value` 256 as the full-scale divisor while the
+        wiper register holds codes 0..255.
+
+        :return: Highest wiper code as int.
+        """
+        return min(self.max_value, 0xFF)
+
     def _set_value(self, value: int) -> int:
-        value = int(round(clamp(value, 0, self.max_value)))
-        value = self.max_value - value if self.invert else value
+        value = int(round(clamp(value, 0, self.max_code)))
+        value = self.max_code - value if self.invert else value
         self.logger.debug("Setting value to %d", value)
         data = self._require_transport().transfer(
             _encode_wiper_write(self.channel, value)

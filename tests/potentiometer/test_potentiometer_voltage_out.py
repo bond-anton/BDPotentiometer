@@ -54,6 +54,45 @@ class TestPotentiometerVoltageOut(unittest.TestCase):
             pot.v_w = voltage
             np.testing.assert_allclose(pot.v_w, voltage)
 
+    def test_voltage_out_zero_load(self):
+        """Zero load resistance shorts the wiper to v_load."""
+        pot = Potentiometer(r_ab=10e3, r_w=75)
+        pot.r_a = 0.0
+        pot.r_b = 0.0
+        pot.r_load = 0.0
+        pot.v_a = 5.0
+        pot.v_b = 0.0
+        pot.v_load = 1.0
+        for pos in np.linspace(0, 1.0, num=101, endpoint=True):
+            pot.wiper_position = pos
+            np.testing.assert_allclose(pot.v_w, pot.v_load)
+
+    def test_voltage_out_with_load_source(self):
+        """The v_load source reaches the wiper through r_w."""
+        pot = Potentiometer(r_ab=10e3, r_w=75)
+        pot.r_a = 0.0
+        pot.r_b = 0.0
+        pot.r_load = 1e3
+        pot.v_a = 5.0
+        pot.v_b = 0.0
+        pot.v_load = 1.0
+        pot.wiper_position = 0.5
+        self.assertAlmostEqual(pot.v_w, 1.419580, places=6)
+
+    def test_voltage_out_round_trip(self):
+        """Setting v_w to the measured value keeps the wiper position."""
+        pot = Potentiometer(r_ab=10e3, r_w=75)
+        pot.r_a = 0.0
+        pot.r_b = 0.0
+        pot.r_load = 1e3
+        pot.v_a = 5.0
+        pot.v_b = 0.0
+        pot.v_load = 1.0
+        pot.wiper_position = 0.5
+        voltage = pot.v_w
+        pot.v_w = voltage
+        self.assertAlmostEqual(pot.wiper_position, 0.5, places=6)
+
     def test_voltage_out_wrong_type(self):
         """Testing TypeError is raised on wrong type voltage out input."""
         pot = Potentiometer(r_ab=10e3, r_w=75)

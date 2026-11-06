@@ -257,7 +257,9 @@ class Potentiometer:
         :param resistance: Resistance between terminals B and W (float)
         :return: Wiper position in the range [0: 1] (float).
         """
-        resistance = clamp(resistance, self.r_w, self.r_w + self.r_ab)
+        resistance = clamp(
+            resistance, self.r_w + self.r_b, self.r_w + self.r_b + self.r_ab
+        )
         self.logger.debug("Setting R(WB) to %2.2g Ohm", resistance)
         self.wiper_position = (resistance - self.r_w - self.r_b) / self.r_ab
 
@@ -277,7 +279,7 @@ class Potentiometer:
             + self.v_load * r_left * r_right
         ) / (r_bot * r_right + r_bot * r_left + r_left * r_right)
 
-        return v_bot / (self.r_load + self.r_w) * self.r_load
+        return (v_bot * self.r_load + self.v_load * self.r_w) / (self.r_load + self.r_w)
 
     @v_w.setter
     def v_w(self, voltage: float) -> None:

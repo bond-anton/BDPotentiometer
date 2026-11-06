@@ -32,6 +32,16 @@ class TestPotentiometerRwaRwb(unittest.TestCase):
         np.testing.assert_allclose(pot.r_wa, pot.r_w)
         np.testing.assert_allclose(pot.r_wb, pot.r_w + pot.r_ab)
 
+    def test_rwb_setter_with_terminal_b_resistance(self):
+        """r_wb setter clamps to the range reachable with r_b > 0."""
+        pot = Potentiometer(r_ab=100, r_w=10, r_b=20)
+        pot.r_wb = 120
+        np.testing.assert_allclose(pot.r_wb, 120)
+        np.testing.assert_allclose(pot.wiper_position, 0.9)
+        pot.r_wb = 999
+        np.testing.assert_allclose(pot.r_wb, 130)
+        np.testing.assert_allclose(pot.wiper_position, 1.0)
+
 
 if __name__ == "__main__":
     unittest.main()

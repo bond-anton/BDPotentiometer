@@ -88,6 +88,19 @@ class DigitalWiper:
         self.logger.debug("Set max value to %d", self.__max_value)
         self.value = self.__value
 
+    @property
+    def max_code(self) -> int:
+        """
+        Highest wiper code accepted by the device.
+
+        `max_value` is the full-scale divisor and may exceed the largest code
+        the register can hold (8-bit parts have `max_value` 256 but codes 0..255).
+        Override this property where the two differ.
+
+        :return: Highest wiper code as int.
+        """
+        return self.max_value
+
     def _read_value(self) -> int:
         """
         Read value of wiper position.
@@ -100,8 +113,8 @@ class DigitalWiper:
         """
         Calculate proper wiper position value.
         """
-        value = int(round(clamp(value, 0, self.max_value)))
-        value = self.max_value - value if self.invert else value
+        value = int(round(clamp(value, 0, self.max_code)))
+        value = self.max_code - value if self.invert else value
         self.logger.debug("Setting value to %d", value)
         self.potentiometer.wiper_position = value / self.max_value
         return value
@@ -124,7 +137,7 @@ class DigitalWiper:
         """
         self.read()
         if self.invert:
-            return self.max_value - self.__value
+            return self.max_code - self.__value
         return self.__value
 
     @value.setter
