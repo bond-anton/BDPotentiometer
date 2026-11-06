@@ -1,7 +1,7 @@
 """MCP4XXX series SPI device base class"""
 
 from contextlib import suppress
-from typing import Any, Union
+from typing import Any
 
 from .. import Potentiometer, SpiDigitalWiper
 from ..__helpers import check_bool, check_integer, clamp
@@ -273,10 +273,10 @@ class MCP4xxxWiper(SpiDigitalWiper):
     def __init__(
         self,
         potentiometer: MCP4xxxPotentiometer,
-        spi: Union[SpiTransport, None] = None,
+        spi: SpiTransport | None = None,
         max_value: int = 128,
         invert: bool = False,
-        transport: Union[SpiTransport, None] = None,
+        transport: SpiTransport | None = None,
         **kwargs,
     ):
         """
@@ -356,8 +356,8 @@ class MCP4xxx:
 
     def __init__(  # noqa: PLR0913
         self,
-        transport: Union[SpiTransport, None] = None,
-        spi: Union[SpiTransport, None] = None,
+        transport: SpiTransport | None = None,
+        spi: SpiTransport | None = None,
         *,
         port: Any = None,
         device: Any = None,
@@ -420,7 +420,7 @@ class MCP4xxx:
                     "Expected an SPI transport with transfer() and close(), "
                     f"got {type(transport)}"
                 )
-            self._transport: Union[SpiTransport, None] = transport
+            self._transport: SpiTransport | None = transport
             self._closed = False
         except Exception:
             # Only a transport built here is ours to release; a caller-supplied
@@ -431,7 +431,7 @@ class MCP4xxx:
             raise
 
     @property
-    def transport(self) -> Union[SpiTransport, None]:
+    def transport(self) -> SpiTransport | None:
         """SPI transport used by the device."""
         return self._transport
 
@@ -525,8 +525,8 @@ class MCP4xxx:
 
     def write_tcon(
         self,
-        ch0: Union[dict[str, bool], None] = None,
-        ch1: Union[dict[str, bool], None] = None,
+        ch0: dict[str, bool] | None = None,
+        ch1: dict[str, bool] | None = None,
     ) -> bool:
         """
         Write the terminal connection (TCON) state of both channels.

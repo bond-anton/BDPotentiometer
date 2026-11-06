@@ -13,14 +13,13 @@ license = { file = "LICENSE" }
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = []
 
 [project.urls]
@@ -49,7 +48,7 @@ pythonpath = [
 
 [tool.ruff]
 line-length = 88
-target-version = "py39"
+target-version = "py310"
 extend-exclude = ["docs"]
 
 [tool.ruff.lint]
@@ -66,7 +65,7 @@ line-ending = "auto"
 docstring-code-format = false
 
 [tool.ty.environment]
-python-version = "3.9"
+python-version = "3.10"
 
 [tool.ty.analysis]
 replace-imports-with-any = ["gpiozero.**", "spidev.**"]

@@ -38,7 +38,9 @@ def main():
         values[i] = pot.wiper_position
 
     print("Requested V_W [V] -> achieved V_W [V], wiper position:")
-    for voltage, actual, position in zip(v_out[::10], v_act[::10], values[::10]):
+    for voltage, actual, position in zip(
+        v_out[::10], v_act[::10], values[::10], strict=False
+    ):
         print(f"  {voltage:6.2f} -> {actual:6.2f}, {position:5.3f}")
     # plt.plot(v_out, values, 'r-o')
     # plt.plot(v_out, v_act, "b-o")

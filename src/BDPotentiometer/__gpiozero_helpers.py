@@ -10,14 +10,14 @@ function is a no-op.
 
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 
 _LOGGER = logging.getLogger(__name__)
 
 # The factory class installed by the last successful call. It lives at module
 # scope so a later call can recognize its own factory instead of stacking
 # another subclass on top of it.
-_PATCHED_FACTORY_CLS: Optional[type] = None
+_PATCHED_FACTORY_CLS: type | None = None
 
 
 def _fixed_factory_for(base_factory_cls: type) -> type:

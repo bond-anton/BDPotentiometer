@@ -1,6 +1,6 @@
 """Default SPI backend selection shared by the device constructors."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .base import SpiTransport
@@ -29,12 +29,12 @@ GPIOZERO_PIN_ARGS: tuple[str, ...] = (
 
 def build_default_transport(  # noqa: PLR0913
     *,
-    port: Optional[int] = None,
-    device: Optional[int] = None,
-    clock_pin: Optional[int] = None,
-    mosi_pin: Optional[int] = None,
-    miso_pin: Optional[int] = None,
-    select_pin: Optional[int] = None,
+    port: int | None = None,
+    device: int | None = None,
+    clock_pin: int | None = None,
+    mosi_pin: int | None = None,
+    miso_pin: int | None = None,
+    select_pin: int | None = None,
 ) -> "SpiTransport":
     """
     Build the default SPI transport from the legacy keyword arguments.

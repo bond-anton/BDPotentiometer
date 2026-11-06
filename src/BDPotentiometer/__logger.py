@@ -11,7 +11,6 @@ propagation on the returned logger if that is not wanted.
 
 import logging
 import threading
-from typing import Union
 
 # Guards handler installation so that two threads calling `get_logger` for the
 # same label cannot attach two handlers.
@@ -25,7 +24,7 @@ _FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 _PACKAGE_HANDLER_ATTR = "_bdpot_package_handler"
 
 
-def _package_handler(logger: logging.Logger) -> Union[logging.Handler, None]:
+def _package_handler(logger: logging.Logger) -> logging.Handler | None:
     """Return the handler installed by this module, if it is still attached."""
     for handler in logger.handlers:
         if getattr(handler, _PACKAGE_HANDLER_ATTR, False):
@@ -33,7 +32,7 @@ def _package_handler(logger: logging.Logger) -> Union[logging.Handler, None]:
     return None
 
 
-def get_logger(label: str, log_level: Union[int, None] = None) -> logging.Logger:
+def get_logger(label: str, log_level: int | None = None) -> logging.Logger:
     """
     Return the named logger `label`, configured once.
 

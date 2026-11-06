@@ -1,7 +1,8 @@
 """Digital potentiometer base class"""
 
 import copy
-from typing import Any, Callable, Union
+from collections.abc import Callable
+from typing import Any
 
 from .__helpers import (
     check_bool,
@@ -16,7 +17,7 @@ from .digital_wiper import DigitalWiper
 
 
 def _require_sequence(
-    values: Union[list[Any], tuple[Any, ...]],
+    values: list[Any] | tuple[Any, ...],
     length: int,
     check: Callable[[Any], Any],
 ) -> tuple[Any, ...]:
@@ -109,9 +110,7 @@ class DigitalPotentiometerDevice:
             kwargs.get("label", "DigiPot"), kwargs.get("log_level")
         )
 
-    def _get_channel_number_by_label_or_id(
-        self, channel: Union[int, str]
-    ) -> Union[int, None]:
+    def _get_channel_number_by_label_or_id(self, channel: int | str) -> int | None:
         """
         Look for channel number by label or number provided.
 
@@ -149,7 +148,7 @@ class DigitalPotentiometerDevice:
         return None
 
     def set_channel_label(
-        self, channel: Union[int, str] = 0, label: Union[str, None] = None
+        self, channel: int | str = 0, label: str | None = None
     ) -> None:
         """
         Assign a string label to a channel.
@@ -201,7 +200,7 @@ class DigitalPotentiometerDevice:
         """
         return len(self.__channels)
 
-    def set_value(self, channel: Union[int, str] = 0, value: int = 0) -> int:
+    def set_value(self, channel: int | str = 0, value: int = 0) -> int:
         """
         Method to set the value for a given channel.
 
@@ -216,7 +215,7 @@ class DigitalPotentiometerDevice:
         self.logger.debug("Channel %s value is set to %d", channel_id, value)
         return self.__channels[channel_id].value
 
-    def get_value(self, channel: Union[int, str] = 0) -> int:
+    def get_value(self, channel: int | str = 0) -> int:
         """
         Read value of a given channel.
 
@@ -238,7 +237,7 @@ class DigitalPotentiometerDevice:
         return tuple(wiper.value for _, wiper in self.__channels.items())
 
     @value.setter
-    def value(self, value: Union[list[int], tuple[int, ...]]) -> None:
+    def value(self, value: list[int] | tuple[int, ...]) -> None:
         """
         Set the wiper value for all channels.
 
@@ -253,7 +252,7 @@ class DigitalPotentiometerDevice:
             self.__channels[channel_id].value = value[idx]
             self.logger.debug("Channel %s value is set to %d", channel_id, value[idx])
 
-    def set_invert(self, channel: Union[int, str] = 0, invert: bool = False) -> int:
+    def set_invert(self, channel: int | str = 0, invert: bool = False) -> int:
         """
         Set the invert property for a given channel.
 
@@ -270,7 +269,7 @@ class DigitalPotentiometerDevice:
         self.logger.debug("Channel %s invert is set to %s", channel_id, invert)
         return self.__channels[channel_id].value
 
-    def get_invert(self, channel: Union[int, str] = 0) -> bool:
+    def get_invert(self, channel: int | str = 0) -> bool:
         """
         Get the invert property value for a given channel.
 
@@ -292,7 +291,7 @@ class DigitalPotentiometerDevice:
         return tuple(wiper.invert for _, wiper in self.__channels.items())
 
     @invert.setter
-    def invert(self, invert: Union[list[bool], tuple[bool, ...]]) -> None:
+    def invert(self, invert: list[bool] | tuple[bool, ...]) -> None:
         """
         Set the invert property for all channels.
 
@@ -306,7 +305,7 @@ class DigitalPotentiometerDevice:
             self.__channels[channel_id].invert = invert[idx]
             self.logger.debug("Channel %s invert is set to %s", channel_id, invert[idx])
 
-    def set_r_wb(self, channel: Union[int, str] = 0, resistance: float = 0) -> int:
+    def set_r_wb(self, channel: int | str = 0, resistance: float = 0) -> int:
         """
         Set the resistance for given channel between B and W terminals
         as close as possible to requested value.
@@ -322,7 +321,7 @@ class DigitalPotentiometerDevice:
         self.logger.debug("Channel %s r_wb is set to %s", channel_id, resistance)
         return self.__channels[channel_id].value
 
-    def get_r_wb(self, channel: Union[int, str] = 0) -> float:
+    def get_r_wb(self, channel: int | str = 0) -> float:
         """
         Get the resistance for given channel between B and W terminals.
 
@@ -344,7 +343,7 @@ class DigitalPotentiometerDevice:
         return tuple(wiper.r_wb for _, wiper in self.__channels.items())
 
     @r_wb.setter
-    def r_wb(self, resistance_wb: Union[list[float], tuple[float, ...]]) -> None:
+    def r_wb(self, resistance_wb: list[float] | tuple[float, ...]) -> None:
         """
         Set the B-W resistance for all channels.
 
@@ -363,7 +362,7 @@ class DigitalPotentiometerDevice:
                 "Channel %s r_wb is set to %s", channel_id, resistance_wb[idx]
             )
 
-    def set_r_wa(self, channel: Union[int, str] = 0, resistance: float = 0) -> int:
+    def set_r_wa(self, channel: int | str = 0, resistance: float = 0) -> int:
         """
         Set the resistance for given channel between A and W terminals
         as close as possible to requested value.
@@ -379,7 +378,7 @@ class DigitalPotentiometerDevice:
         self.logger.debug("Channel %s r_wa is set to %s", channel_id, resistance)
         return self.__channels[channel_id].value
 
-    def get_r_wa(self, channel: Union[int, str] = 0) -> float:
+    def get_r_wa(self, channel: int | str = 0) -> float:
         """
         Get the resistance for given channel between A and W terminals.
 
@@ -401,7 +400,7 @@ class DigitalPotentiometerDevice:
         return tuple(wiper.r_wa for _, wiper in self.__channels.items())
 
     @r_wa.setter
-    def r_wa(self, resistance_wa: Union[list[float], tuple[float, ...]]) -> None:
+    def r_wa(self, resistance_wa: list[float] | tuple[float, ...]) -> None:
         """
         Set the A-W resistance for all channels.
 
@@ -420,7 +419,7 @@ class DigitalPotentiometerDevice:
                 "Channel %s r_wa is set to %s", channel_id, resistance_wa[idx]
             )
 
-    def set_r_a(self, channel: Union[int, str] = 0, resistance: float = 0) -> int:
+    def set_r_a(self, channel: int | str = 0, resistance: float = 0) -> int:
         """
         Set the resistance of the A terminal (this can be current limiting resistor).
 
@@ -435,7 +434,7 @@ class DigitalPotentiometerDevice:
         self.logger.debug("Channel %s r_a is set to %s", channel_id, resistance)
         return self.__channels[channel_id].value
 
-    def get_r_a(self, channel: Union[int, str] = 0) -> float:
+    def get_r_a(self, channel: int | str = 0) -> float:
         """
         Get the resistance of the A terminal for a given channel.
 
@@ -453,7 +452,7 @@ class DigitalPotentiometerDevice:
         return tuple(wiper.potentiometer.r_a for _, wiper in self.__channels.items())
 
     @r_a.setter
-    def r_a(self, resistance_a: Union[list[float], tuple[float, ...]]) -> None:
+    def r_a(self, resistance_a: list[float] | tuple[float, ...]) -> None:
         """
         Set the A-terminal resistance for all channels.
 
@@ -472,7 +471,7 @@ class DigitalPotentiometerDevice:
                 "Channel %s r_a is set to %s", channel_id, resistance_a[idx]
             )
 
-    def set_r_b(self, channel: Union[int, str] = 0, resistance: float = 0) -> int:
+    def set_r_b(self, channel: int | str = 0, resistance: float = 0) -> int:
         """
         Set the resistance of the B terminal (this can be current limiting resistor).
 
@@ -487,7 +486,7 @@ class DigitalPotentiometerDevice:
         self.logger.debug("Channel %s r_b is set to %s", channel_id, resistance)
         return self.__channels[channel_id].value
 
-    def get_r_b(self, channel: Union[int, str] = 0) -> float:
+    def get_r_b(self, channel: int | str = 0) -> float:
         """
         Get the resistance of the B terminal for a given channel.
 
@@ -505,7 +504,7 @@ class DigitalPotentiometerDevice:
         return tuple(wiper.potentiometer.r_b for _, wiper in self.__channels.items())
 
     @r_b.setter
-    def r_b(self, resistance_b: Union[list[float], tuple[float, ...]]) -> None:
+    def r_b(self, resistance_b: list[float] | tuple[float, ...]) -> None:
         """
         Set the B-terminal resistance for all channels.
 
@@ -524,7 +523,7 @@ class DigitalPotentiometerDevice:
                 "Channel %s r_b is set to %s", channel_id, resistance_b[idx]
             )
 
-    def set_r_load(self, channel: Union[int, str] = 0, resistance: float = 0) -> int:
+    def set_r_load(self, channel: int | str = 0, resistance: float = 0) -> int:
         """
         Set the load resistance for a given channel.
 
@@ -539,7 +538,7 @@ class DigitalPotentiometerDevice:
         self.logger.debug("Channel %s r_load is set to %s", channel_id, resistance)
         return self.__channels[channel_id].value
 
-    def get_r_load(self, channel: Union[int, str] = 0) -> float:
+    def get_r_load(self, channel: int | str = 0) -> float:
         """
         Get the load resistance for a given channel.
 
@@ -557,7 +556,7 @@ class DigitalPotentiometerDevice:
         return tuple(wiper.potentiometer.r_load for _, wiper in self.__channels.items())
 
     @r_load.setter
-    def r_load(self, resistance_l: Union[list[float], tuple[float, ...]]) -> None:
+    def r_load(self, resistance_l: list[float] | tuple[float, ...]) -> None:
         """
         Set the load resistance for all channels.
 
@@ -576,7 +575,7 @@ class DigitalPotentiometerDevice:
                 "Channel %s r_load is set to %s", channel_id, resistance_l[idx]
             )
 
-    def set_v_a(self, channel: Union[int, str] = 0, voltage: float = 0) -> float:
+    def set_v_a(self, channel: int | str = 0, voltage: float = 0) -> float:
         """
         Set the terminal A voltage for a given channel.
 
@@ -591,7 +590,7 @@ class DigitalPotentiometerDevice:
         self.logger.debug("Channel %s v_a is set to %s", channel_id, voltage)
         return self.__channels[channel_id].potentiometer.v_a
 
-    def get_v_a(self, channel: Union[int, str] = 0) -> float:
+    def get_v_a(self, channel: int | str = 0) -> float:
         """
         Get the terminal A voltage for a given channel.
 
@@ -609,7 +608,7 @@ class DigitalPotentiometerDevice:
         return tuple(wiper.potentiometer.v_a for _, wiper in self.__channels.items())
 
     @v_a.setter
-    def v_a(self, voltage_a: Union[list[float], tuple[float, ...]]) -> None:
+    def v_a(self, voltage_a: list[float] | tuple[float, ...]) -> None:
         """
         Set the A-terminal voltage for all channels.
 
@@ -624,7 +623,7 @@ class DigitalPotentiometerDevice:
             self.__channels[channel_id].potentiometer.v_a = voltage_a[idx]
             self.logger.debug("Channel %s v_a is set to %s", channel_id, voltage_a[idx])
 
-    def set_v_b(self, channel: Union[int, str] = 0, voltage: float = 0) -> float:
+    def set_v_b(self, channel: int | str = 0, voltage: float = 0) -> float:
         """
         Set the terminal B voltage for a given channel.
 
@@ -639,7 +638,7 @@ class DigitalPotentiometerDevice:
         self.logger.debug("Channel %s v_b is set to %s", channel_id, voltage)
         return self.__channels[channel_id].potentiometer.v_b
 
-    def get_v_b(self, channel: Union[int, str] = 0) -> float:
+    def get_v_b(self, channel: int | str = 0) -> float:
         """
         Get the terminal B voltage for a given channel.
 
@@ -657,7 +656,7 @@ class DigitalPotentiometerDevice:
         return tuple(wiper.potentiometer.v_b for _, wiper in self.__channels.items())
 
     @v_b.setter
-    def v_b(self, voltage_b: Union[list[float], tuple[float, ...]]) -> None:
+    def v_b(self, voltage_b: list[float] | tuple[float, ...]) -> None:
         """
         Set the B-terminal voltage for all channels.
 
@@ -672,7 +671,7 @@ class DigitalPotentiometerDevice:
             self.__channels[channel_id].potentiometer.v_b = voltage_b[idx]
             self.logger.debug("Channel %s v_b is set to %s", channel_id, voltage_b[idx])
 
-    def set_v_load(self, channel: Union[int, str] = 0, voltage: float = 0) -> float:
+    def set_v_load(self, channel: int | str = 0, voltage: float = 0) -> float:
         """
         Set the voltage at the load for a given channel.
 
@@ -687,7 +686,7 @@ class DigitalPotentiometerDevice:
         self.logger.debug("Channel %s v_load is set to %s", channel_id, voltage)
         return self.__channels[channel_id].potentiometer.v_load
 
-    def get_v_load(self, channel: Union[int, str] = 0) -> float:
+    def get_v_load(self, channel: int | str = 0) -> float:
         """
         Get the voltage at the load for a given channel.
 
@@ -705,7 +704,7 @@ class DigitalPotentiometerDevice:
         return tuple(wiper.potentiometer.v_load for _, wiper in self.__channels.items())
 
     @v_load.setter
-    def v_load(self, voltage_l: Union[list[float], tuple[float, ...]]) -> None:
+    def v_load(self, voltage_l: list[float] | tuple[float, ...]) -> None:
         """
         Set the load voltage for all channels.
 
@@ -722,7 +721,7 @@ class DigitalPotentiometerDevice:
                 "Channel %s v_load is set to %s", channel_id, voltage_l[idx]
             )
 
-    def set_v_w(self, channel: Union[int, str] = 0, voltage: float = 0) -> float:
+    def set_v_w(self, channel: int | str = 0, voltage: float = 0) -> float:
         """
         Set the terminal W voltage for a given channel.
 
@@ -737,7 +736,7 @@ class DigitalPotentiometerDevice:
         self.logger.debug("Channel %s v_w is set to %s", channel_id, voltage)
         return self.__channels[channel_id].potentiometer.v_w
 
-    def get_v_w(self, channel: Union[int, str] = 0) -> float:
+    def get_v_w(self, channel: int | str = 0) -> float:
         """
         Get the terminal W voltage for a given channel.
 
@@ -755,7 +754,7 @@ class DigitalPotentiometerDevice:
         return tuple(wiper.potentiometer.v_w for _, wiper in self.__channels.items())
 
     @v_w.setter
-    def v_w(self, voltage_w: Union[list[float], tuple[float, ...]]) -> None:
+    def v_w(self, voltage_w: list[float] | tuple[float, ...]) -> None:
         """
         Set the W-terminal voltage for all channels.
 

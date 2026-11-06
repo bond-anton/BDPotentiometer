@@ -41,7 +41,9 @@ def main():
         values[i] = dw.value
 
     print("Requested V_W [V] -> achieved V_W [V], wiper value:")
-    for voltage, actual, value in zip(v_out[::10], v_act[::10], values[::10]):
+    for voltage, actual, value in zip(
+        v_out[::10], v_act[::10], values[::10], strict=False
+    ):
         print(f"  {voltage:6.2f} -> {actual:6.2f}, {value:6.1f}")
     # # plt.plot(v_out, values, 'r-o')
     # plt.plot(v_out, v_act, "b-o")
@@ -56,7 +58,9 @@ def main():
         v_out[i] = dw.v_w
 
     print("Requested wiper value -> achieved position, actual V_W [V]:")
-    for value, position, voltage in zip(values[::16], v_act[::16], v_out[::16]):
+    for value, position, voltage in zip(
+        values[::16], v_act[::16], v_out[::16], strict=False
+    ):
         print(f"  {value:3d} -> {position:5.3f}, {voltage:6.2f}")
     # plt.plot(values, v_out, 'r-o')
     # plt.plot(values, v_act, "b-o")

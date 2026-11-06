@@ -1,7 +1,7 @@
 """Module contains basic digital wiper class implementation"""
 
 from copy import deepcopy
-from typing import Union, cast
+from typing import cast
 
 from .__helpers import (
     check_bool,
@@ -349,10 +349,10 @@ class SpiDigitalWiper(DigitalWiper):
     def __init__(
         self,
         potentiometer: Potentiometer,
-        spi: Union[SpiTransport, None] = None,
+        spi: SpiTransport | None = None,
         max_value: int = 128,
         invert: bool = False,
-        transport: Union[SpiTransport, None] = None,
+        transport: SpiTransport | None = None,
         **kwargs,
     ):
         """
@@ -380,7 +380,7 @@ class SpiDigitalWiper(DigitalWiper):
         )
 
     @staticmethod
-    def _resolve_transport(value: object) -> Union[SpiTransport, None]:
+    def _resolve_transport(value: object) -> SpiTransport | None:
         if value is None:
             return None
         if is_spi_transport(value):
@@ -393,18 +393,18 @@ class SpiDigitalWiper(DigitalWiper):
         return self._transport
 
     @property
-    def transport(self) -> Union[SpiTransport, None]:
+    def transport(self) -> SpiTransport | None:
         """Canonical SPI transport; `spi` is a compatibility accessor."""
         return self._transport
 
     @transport.setter
-    def transport(self, value: Union[SpiTransport, None]) -> None:
+    def transport(self, value: SpiTransport | None) -> None:
         """Set the SPI transport, replacing the current one."""
         self._transport = self._resolve_transport(value)
         self.logger.debug("Transport set to %s", self._transport)
 
     @property
-    def spi(self) -> Union[SpiTransport, None]:
+    def spi(self) -> SpiTransport | None:
         """
         Compatibility accessor for the SPI interface; `transport` is canonical.
 
@@ -418,7 +418,7 @@ class SpiDigitalWiper(DigitalWiper):
         return self._transport if raw is None else raw
 
     @spi.setter
-    def spi(self, spi: Union[SpiTransport, None]) -> None:
+    def spi(self, spi: SpiTransport | None) -> None:
         """
         Compatibility setter for the SPI interface.
 

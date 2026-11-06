@@ -1,6 +1,6 @@
 """MCP4XX2 series rheostats"""
 
-from typing import Any, Union
+from typing import Any
 
 from .. import DigitalPotentiometerDevice
 from ..__helpers import check_integer
@@ -90,11 +90,11 @@ class MCP4xx2(DigitalPotentiometerDevice, MCP4xxx):
     def __init__(  # noqa: PLR0913
         self,
         r_ab: float = 10e3,
-        max_value: Union[int, None] = None,
-        channels: Union[int, None] = None,
+        max_value: int | None = None,
+        channels: int | None = None,
         *,
-        transport: Union[SpiTransport, None] = None,
-        spi: Union[SpiTransport, None] = None,
+        transport: SpiTransport | None = None,
+        spi: SpiTransport | None = None,
         port: Any = None,
         device: Any = None,
         clock_pin: Any = None,
@@ -102,8 +102,8 @@ class MCP4xx2(DigitalPotentiometerDevice, MCP4xxx):
         miso_pin: Any = None,
         select_pin: Any = None,
         invert: bool = False,
-        label: Union[str, None] = None,
-        log_level: Union[int, str, None] = None,
+        label: str | None = None,
+        log_level: int | str | None = None,
     ) -> None:
         """
         Build an MCP4XX2 rheostat device.

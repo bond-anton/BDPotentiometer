@@ -1,7 +1,6 @@
 """Scripted SPI transport for tests."""
 
 from collections.abc import Sequence
-from typing import Optional
 
 from .base import TransportClosed, TransportError
 
@@ -18,8 +17,8 @@ class FakeSpiTransport:
 
     def __init__(
         self,
-        responses: Optional[list[list[int]]] = None,
-        default: Optional[list[int]] = None,
+        responses: list[list[int]] | None = None,
+        default: list[int] | None = None,
         strict: bool = True,
     ) -> None:
         """

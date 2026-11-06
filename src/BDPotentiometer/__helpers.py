@@ -8,10 +8,9 @@ the requested range.
 
 from math import isnan
 from numbers import Integral, Real
-from typing import Union
 
 
-def check_number(num: Union[float, int, Real]) -> Union[float, int]:
+def check_number(num: float | int | Real) -> float | int:
     """
     Check that `num` is a finite real number.
 
@@ -43,7 +42,7 @@ def check_number(num: Union[float, int, Real]) -> Union[float, int]:
     return float(num)
 
 
-def check_integer(num: Union[float, int, Real]) -> int:
+def check_integer(num: float | int | Real) -> int:
     """
     Check that `num` is an integer and convert it to int.
 
@@ -102,7 +101,7 @@ def check_label(value: str) -> str:
     return text
 
 
-def check_not_negative(num: Union[float, int]) -> Union[float, int]:
+def check_not_negative(num: float | int) -> float | int:
     """
     Check that `num` is a not negative number.
 
@@ -120,7 +119,7 @@ def check_not_negative(num: Union[float, int]) -> Union[float, int]:
     return num
 
 
-def check_positive(num: Union[float, int]) -> Union[float, int]:
+def check_positive(num: float | int) -> float | int:
     """
     Check that `num` is a positive number.
 
@@ -139,8 +138,8 @@ def check_positive(num: Union[float, int]) -> Union[float, int]:
 
 
 def clamp(
-    value: Union[float, int], min_value: Union[float, int], max_value: Union[float, int]
-) -> Union[float, int]:
+    value: float | int, min_value: float | int, max_value: float | int
+) -> float | int:
     """
     Clamp `value` to the range between `min_value` and `max_value`.
 

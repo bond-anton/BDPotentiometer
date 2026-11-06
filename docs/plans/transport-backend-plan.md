@@ -18,7 +18,7 @@ All line anchors were against the tree at the time of writing. No code is modifi
 - Chip wiring — `mcp4xx1.py:10-20`, `mcp4xx2.py:10-18`.
 - Channel deepcopy — `digital_potentiometer.py:57-65`.
 - Public exports — `__init__.py:8-17`.
-- Python `>=3.9`, `gpiozero>=1.6.2`, pytest pythonpath `src` — `pyproject.toml:19-22,44-47`.
+- Python `>=3.10`, `gpiozero>=1.6.2`, pytest pythonpath `src` — `pyproject.toml:19-22,44-47`.
 - Optional extras currently are `dev`, `test`, `lint` — `pyproject.toml:29-32`. `spidev` is **not** a dependency today; Phase 1b adds it as an optional extra.
 - Test runner: `pytest` — `.github/workflows/python-package.yml:40-42`, `tox.ini:25-31`.
 
