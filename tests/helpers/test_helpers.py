@@ -6,16 +6,12 @@ import numpy as np
 
 try:
     from src.BDPotentiometer.__helpers import (
-        adjust_tuple,
-        build_tuple,
         check_not_negative,
         check_positive,
         clamp,
     )
 except ModuleNotFoundError:
     from BDPotentiometer.__helpers import (
-        adjust_tuple,
-        build_tuple,
         check_not_negative,
         check_positive,
         clamp,
@@ -171,99 +167,6 @@ class TestHelpers(unittest.TestCase):
         for right in ["-17.3", "a", [0.0], [1.0, 17.2], (np.pi,), (2, 2.3), None]:
             with self.assertRaises(TypeError):
                 clamp(10, -10, right)
-
-    def test_build_tuple(self):
-        """
-        Testing build_tuple function normal operation.
-        """
-        # Check normal operation: build tuple from single number.
-        for input_value in [-1.1, -1, -1.0, 0, 0.0, 1.0, 1, 1.1]:
-            for num in [1, 2, 3, 20, 3.0]:
-                for func in [lambda x: 2 * x, None]:
-                    output_value = build_tuple(input_value, num, func=func)
-                    self.assertEqual(len(output_value), num)
-                    for item in output_value:
-                        if func is None:
-                            self.assertEqual(item, input_value)
-                        else:
-                            self.assertEqual(item, func(input_value))
-                        self.assertIsInstance(
-                            item, float
-                        )  # build_tuple returns tuple of floats
-        # Check normal operation: apply func to given list or tuple.
-        for input_value in [[-1.1, -1, 3], (-1.0, 0, 0.0, 1.0, 1, 1.1)]:
-            for func in [lambda x: 2 * x, None]:
-                output_value = build_tuple(input_value, len(input_value), func=func)
-                self.assertEqual(len(output_value), len(input_value))
-                for item_out, item_in in zip(output_value, input_value):
-                    if func is None:
-                        self.assertEqual(item_out, item_in)
-                    else:
-                        self.assertEqual(item_out, func(item_in))
-                    self.assertIsInstance(
-                        item_out, float
-                    )  # build_tuple returns tuple of floats
-
-    def test_build_tuple_errors(self):
-        """
-        Testing build_tuple function errors.
-        """
-        # Check ValueError is raised for wrong number of elements
-        for input_value in [[2.1, np.pi], (0, 3.14, -4, 5.2)]:
-            with self.assertRaises(ValueError):
-                build_tuple(input_value, 3, func=None)
-        # Check ValueError is raised for wrong num parameter value
-        for num in [-3, 2.1, np.pi]:
-            with self.assertRaises(ValueError):
-                build_tuple(-10, num, func=None)
-        # Check TypeError is raised for wrong input value
-        for input_value in ["a", "2", [2.2, "1.0"], None]:
-            with self.assertRaises(TypeError):
-                build_tuple(input_value, 2, func=None)
-        # Check TypeError is raised for wrong num parameter value
-        for num in ["a", [1, 2, 3], "2", None]:
-            with self.assertRaises(TypeError):
-                build_tuple(-10, num, func=None)
-        # Check TypeError is raised for wrong func parameter value
-        for func in [2, "a", [1, 2, 3]]:
-            with self.assertRaises(TypeError):
-                build_tuple(-10, 2, func=func)
-
-    def test_adjust_tuple(self):
-        """
-        Testing adjust_tuple function
-        """
-        # Check truncate tuple or list
-        value = (1, 2.0, 3.0, 4.0, 5.0)  # int values will be converted to float
-        self.assertEqual(adjust_tuple(value, 2, default_value=4), (1.0, 2.0))
-        self.assertEqual(adjust_tuple(list(value), 2, default_value=4), (1.0, 2.0))
-        self.assertEqual(adjust_tuple(list(value), 2.0, default_value=4), (1.0, 2.0))
-        # Check grow tuple or list
-        value = (1, 2.0)  # int values will be converted to float
-        self.assertEqual(adjust_tuple(value, 4, default_value=4), (1.0, 2.0, 4.0, 4.0))
-        self.assertEqual(
-            adjust_tuple(list(value), 4, default_value=4), (1.0, 2.0, 4.0, 4.0)
-        )
-        # Check leave tuple or least unchanged
-        value = (1.0, 2.0, 3)  # int values will be converted to float
-        self.assertEqual(adjust_tuple(value, 3, default_value=4), (1.0, 2.0, 3.0))
-        self.assertEqual(adjust_tuple(list(value), 3, default_value=4), (1.0, 2.0, 3.0))
-        # Check TypeError is raised for wrong input value
-        for input_value in [1, 2.3, ["a", 2], (None, 1.1), None]:
-            with self.assertRaises(TypeError):
-                adjust_tuple(input_value, 2, default_value=4)
-        # Check TypeError is raised for wrong num value
-        for num in ["1", ["a", 2], (None, 1.1), None]:
-            with self.assertRaises(TypeError):
-                adjust_tuple((1.0, 2.2), num, default_value=4)
-        # Check ValueError is raised for wrong num value
-        for num in [-3, -1.0, 2.3]:
-            with self.assertRaises(ValueError):
-                adjust_tuple((1.0, 2.2), num, default_value=4)
-        # Check TypeError is raised for wrong default value
-        for default_value in ["1", ["a", 2], (None, 1.1), None]:
-            with self.assertRaises(TypeError):
-                adjust_tuple((1.0, 2.2), 2, default_value=default_value)
 
 
 if __name__ == "__main__":
