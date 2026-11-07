@@ -1,0 +1,15 @@
+.idea
+.tox
+.venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.ty_cache
+*.egg-info
+.coverage
+htmlcov
+uv.lock
+__pycache__
+build
+dist
+.vscode
